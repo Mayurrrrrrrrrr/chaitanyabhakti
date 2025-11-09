@@ -1,159 +1,188 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import './Medicines.css'; // हम यह CSS फ़ाइल बनाएँगे
+import './Medicines.css'; // We will update this CSS file
 
 const Medicines = () => {
-  const [medicines, setMedicines] = useState([]);
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // नए मेडिसिन फॉर्म के लिए स्टेट
+  // New medicine form state
   const [showForm, setShowForm] = useState(false);
   const [medName, setMedName] = useState('');
   const [dosage, setDosage] = useState('');
   const [times, setTimes] = useState([{ time: '08:00' }]);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
-    fetchMedicines();
+    fetchTodayLogs();
   }, []);
 
-  const fetchMedicines = async () => {
+  // Fetch today's schedule
+  const fetchTodayLogs = async () => {
+    setLoading(true);
     try {
-      const response = await api.get('/medicines');
-      setMedicines(response.data.medicines);
+      const response = await api.get('/medicines/logs/today');
+      setLogs(response.data.logs);
+      setError('');
     } catch (err) {
-      setError('दवाएँ लोड करने में विफल।');
+      setError('आज की दवाएँ लोड करने में विफल।');
     }
     setLoading(false);
   };
 
-  // समय जोड़ने/घटाने के लिए हेल्पर्स
+  // Mark a log as 'taken' or 'skipped'
+  const handleLogUpdate = async (log_id, status) => {
+    try {
+      await api.post(`/medicines/logs/${log_id}/update`, { status });
+      // Update the log in the local state to give instant feedback
+      setLogs(currentLogs =>
+        currentLogs.map(log =>
+          log.log_id === log_id ? { ...log, status: status } : log
+        )
+      );
+    } catch (err) {
+      setError('अपडेट करने में विफल।');
+    }
+  };
+
+  // --- Add New Medicine Form Logic ---
   const handleTimeChange = (index, value) => {
     const newTimes = [...times];
     newTimes[index].time = value;
     setTimes(newTimes);
   };
 
-  const addTimeSlot = () => {
-    setTimes([...times, { time: '14:00' }]);
-  };
-
+  const addTimeSlot = () => setTimes([...times, { time: '14:00' }]);
+  
   const removeTimeSlot = (index) => {
-    const newTimes = times.filter((_, i) => i !== index);
-    setTimes(newTimes);
+    if (times.length > 1) {
+      setTimes(times.filter((_, i) => i !== index));
+    }
   };
 
-  // नई दवा सेव करें
   const handleAddMedicine = async (e) => {
     e.preventDefault();
+    setFormError('');
     const timeArray = times.map(t => t.time); // ["08:00", "14:00"]
     
     try {
       await api.post('/medicines/add', {
         medicine_name: medName,
         dosage: dosage,
-        times: JSON.stringify(timeArray), // JSON स्ट्रिंग के रूप में भेजें
-        start_date: new Date().toISOString().split('T')[0], // आज से शुरू करें
+        times: JSON.stringify(timeArray),
+        start_date: new Date().toISOString().split('T')[0],
         frequency: `${timeArray.length} बार प्रतिदिन`
       });
       
-      // फॉर्म रीसेट करें और लिस्ट रिफ्रेश करें
+      // Reset form & refresh list
       setMedName('');
       setDosage('');
       setTimes([{ time: '08:00' }]);
       setShowForm(false);
-      fetchMedicines();
+      fetchTodayLogs(); // Re-fetch logs, as new logs for today might have been created
     } catch (err) {
-      setError(err.response?.data?.error || 'दवा जोड़ने में विफल।');
+      setFormError(err.response?.data?.error || 'दवा जोड़ने में विफल।');
     }
+  };
+  
+  // Helper to format time
+  const formatTime = (isoString) => {
+     try {
+       const date = new Date(isoString);
+       return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+     } catch (e) {
+       return 'Invalid Time';
+     }
   };
 
   return (
     <div className="medicine-page">
       <div className="card">
-        <h3 className="card-title">💊 मेरी दवाएँ</h3>
-        <p>अपनी दवाओं और उनके समय का ध्यान रखें।</p>
+        <h3 className="card-title">💊 आज की दवाएँ</h3>
+        <p>यहाँ आपकी आज की दवा का शेड्यूल है।</p>
+      </div>
+
+      {/* --- Today's Log List --- */}
+      <div className="medicine-log-list">
+        {loading && <p>लोड हो रहा है...</p>}
+        {error && <p className="error-message">{error}</p>}
+        
+        {!loading && logs.length === 0 && (
+          <div className="card"><p>आज के लिए कोई दवा शेड्यूल नहीं है।</p></div>
+        )}
+
+        {logs.map(log => (
+          <div key={log.log_id} className={`log-card card ${log.status}`}>
+            <div className="log-info">
+              <span className="log-time">{formatTime(log.scheduled_time)}</span>
+              <h4 className="log-title">{log.medicine_name}</h4>
+              <p className="log-dosage">{log.dosage_details}</p>
+            </div>
+            
+            {/* --- Log Actions --- */}
+            <div className="log-actions">
+              {log.status === 'pending' ? (
+                <>
+                  <button 
+                    className="btn-log btn-skip"
+                    onClick={() => handleLogUpdate(log.log_id, 'skipped')}
+                  >
+                    छोड़ें (Skip)
+                  </button>
+                  <button 
+                    className="btn-log btn-take"
+                    onClick={() => handleLogUpdate(log.log_id, 'taken')}
+                  >
+                    लें (Take)
+                  </button>
+                </>
+              ) : (
+                <div className={`log-status-badge ${log.status}`}>
+                  {log.status === 'taken' ? '✅ ले ली' : '❌ छोड़ी'}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* --- Add New Medicine Section --- */}
+      <div className="card">
         <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
           {showForm ? 'फॉर्म बंद करें' : '+ नई दवा जोड़ें'}
         </button>
       </div>
 
-      {/* --- नई दवा का फॉर्म --- */}
       {showForm && (
         <div className="card">
+          <h3 className="card-title">नई दवा जोड़ें</h3>
           <form onSubmit={handleAddMedicine} className="form-container">
-            {error && <p className="error-message">{error}</p>}
+            {formError && <p className="error-message">{formError}</p>}
             <div className="form-group">
               <label className="form-label">दवा का नाम</label>
-              <input
-                type="text"
-                value={medName}
-                onChange={(e) => setMedName(e.target.value)}
-                placeholder="जैसे: पैरासिटामोल"
-                className="form-input"
-                required
-              />
+              <input type="text" value={medName} onChange={(e) => setMedName(e.target.value)} placeholder="जैसे: पैरासिटामोल" className="form-input" required />
             </div>
             <div className="form-group">
               <label className="form-label">खुराक (Dosage)</label>
-              <input
-                type="text"
-                value={dosage}
-                onChange={(e) => setDosage(e.target.value)}
-                placeholder="जैसे: 1 गोली, 5ml"
-                className="form-input"
-                required
-              />
+              <input type="text" value={dosage} onChange={(e) => setDosage(e.target.value)} placeholder="जैसे: 1 गोली, 5ml" className="form-input" required />
             </div>
-            
             <div className="form-group">
               <label className="form-label">लेने का समय</label>
               {times.map((item, index) => (
                 <div key={index} className="time-slot">
-                  <input
-                    type="time"
-                    value={item.time}
-                    onChange={(e) => handleTimeChange(index, e.target.value)}
-                    className="form-input time-input"
-                    required
-                  />
+                  <input type="time" value={item.time} onChange={(e) => handleTimeChange(index, e.target.value)} className="form-input time-input" required />
                   {index > 0 && (
-                    <button type="button" onClick={() => removeTimeSlot(index)} className="btn-remove-time">
-                      X
-                    </button>
+                    <button type="button" onClick={() => removeTimeSlot(index)} className="btn-remove-time">X</button>
                   )}
                 </div>
               ))}
-              <button type="button" onClick={addTimeSlot} className="btn-add-time">
-                + और समय जोड़ें
-              </button>
+              <button type="button" onClick={addTimeSlot} className="btn-add-time">+ और समय जोड़ें</button>
             </div>
-            
             <button type="submit" className="btn btn-secondary">दवा सेव करें</button>
           </form>
         </div>
       )}
-
-      {/* --- दवाओं की सूची --- */}
-      <div className="medicine-list">
-        <h2>मेरी दवा की सूची</h2>
-        {loading && <p>लोड हो रहा है...</p>}
-        {medicines.length === 0 && !loading && (
-          <p>आपने अभी तक कोई दवा नहीं जोड़ी है।</p>
-        )}
-        {medicines.map(med => (
-          <div key={med.medicine_id} className="medicine-card card">
-            <h4 className="med-title">{med.medicine_name}</h4>
-            <p className="med-dosage">{med.dosage}</p>
-            <div className="med-times">
-              {JSON.parse(med.times).map((time, idx) => (
-                <span key={idx} className="med-time-tag">{time}</span>
-              ))}
-            </div>
-            {/* हम यहाँ 'taken' बटन भी जोड़ सकते हैं */}
-          </div>
-        ))}
-      </div>
     </div>
   );
 };

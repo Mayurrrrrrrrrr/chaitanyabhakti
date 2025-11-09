@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import './Dashboard.css'; 
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth(); // <-- 'user' was removed here
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -55,8 +55,8 @@ const Dashboard = () => {
       <div className="quick-links">
         <Link to="/family" className="quick-link">मेरा परिवार</Link>
         <Link to="/tasks" className="quick-link">मेरे कार्य</Link>
-        {/* "मेरी दवाएँ" के लिए नया लिंक */}
         <Link to="/medicines" className="quick-link">मेरी दवाएँ</Link> 
+        <Link to="/leaderboard" className="quick-link">🏆 लीडरबोर्ड</Link> 
       </div>
 
       <button onClick={logout} className="btn-logout">

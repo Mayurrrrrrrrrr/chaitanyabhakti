@@ -131,8 +131,7 @@ const injectDb = (req, res, next) => {
 // =====================================================
 const japaRoutes = require('./routes/japa.js');
 const familyRoutes = require('./routes/families.js');
-// --- These are the new files I will give you ---
-const taskRoutes = require('./routes/tasks.js');
+const taskRoutes = require('./routes/tasks.js'); // <-- THIS LINE
 const medicineRoutes = require('./routes/medicines.js');
 const scriptureRoutes = require('./routes/scriptures.js');
 const communityRoutes = require('./routes/community.js');
@@ -307,7 +306,7 @@ app.put('/api/user/profile', injectDb, authenticateToken, upload.single('profile
 // Use the imported routes
 app.use('/api/japa', injectDb, authenticateToken, japaRoutes);
 app.use('/api/families', injectDb, authenticateToken, familyRoutes);
-app.use('/api/tasks', injectDb, authenticateToken, taskRoutes);
+app.use('/api/tasks', injectDb, authenticateToken, taskRoutes); // <-- THIS LINE
 app.use('/api/medicines', injectDb, authenticateToken, medicineRoutes);
 app.use('/api/scriptures', injectDb, authenticateToken, scriptureRoutes);
 app.use('/api/community', injectDb, authenticateToken, communityRoutes);

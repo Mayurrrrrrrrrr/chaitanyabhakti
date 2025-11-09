@@ -3,109 +3,156 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  height: calc(100vh - 180px); /* Full height minus header/nav/padding */
-  text-align: center;
+  height: calc(100vh - 120px); /* Full height minus nav and header */
+  padding: 10px;
+  box-sizing: border-box;
 }
 
+/* --- Top Stats --- */
 .japa-stats {
   width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 10px;
 }
 
 .japa-total {
-  padding: 15px;
-  background: var(--bg-light);
+  background-color: #f0fdf4; /* Light green */
+  border: 2px solid #2ecc71; /* Green */
   border-radius: 12px;
-  box-shadow: var(--shadow-soft);
-  border: 1px solid var(--border-color);
+  padding: 10px 20px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(46, 204, 113, 0.1);
 }
 
 .japa-total-label {
   display: block;
   font-size: 1rem;
+  color: #065f46; /* Dark green */
   font-weight: 500;
-  color: var(--text-light);
 }
 
 .japa-total-count {
-  font-size: 3.5rem;
-  font-weight: 700;
-  color: var(--primary-color);
+  display: block;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #059669; /* Medium green */
   line-height: 1.1;
 }
 
+/* --- Main Bead Button --- */
 .japa-main {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
 }
 
-/* यह नया "नियोमॉर्फिक" बटन है */
 .japa-bead-button {
-  width: 260px;
-  height: 260px;
+  width: 250px;
+  height: 250px;
   border-radius: 50%;
+  background: radial-gradient(circle, #fde68a, #f59e0b); /* Yellow/Orange gradient */
   border: none;
-  background-color: var(--bg-color);
-  color: var(--secondary-color);
-  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4), 0 0 0 10px rgba(255, 255, 255, 0.2);
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  /* सुंदर सॉफ्ट शैडो */
-  box-shadow: 10px 10px 20px #d9d5d0,
-              -10px -10px 20px #ffffff;
-  transition: all 0.1s ease-out;
+  justify-content: center;
+  color: #78350f; /* Dark brown */
+  cursor: pointer;
+  transition: all 0.1s ease;
 }
 
-/* दबाने पर बटन अंदर जाएगा */
 .japa-bead-button:active {
-  transform: scale(0.98);
-  box-shadow: inset 10px 10px 20px #d9d5d0,
-              inset -10px -10px 20px #ffffff;
+  transform: scale(0.95);
+  box-shadow: 0 5px 15px rgba(245, 158, 11, 0.5), 0 0 0 5px rgba(255, 255, 255, 0.1);
 }
 
 .japa-bead-count {
-  font-size: 7rem;
-  font-weight: 700;
+  font-size: 6rem;
+  font-weight: bold;
   line-height: 1;
 }
 
 .japa-bead-label {
   font-size: 1.2rem;
   font-weight: 500;
-  color: var(--text-light);
+  margin-top: -10px;
 }
 
+/* --- Bottom Controls --- */
 .japa-controls {
   display: flex;
-  justify-content: space-around;
+  gap: 15px;
   width: 100%;
-  margin-bottom: 15px;
+  padding: 10px;
 }
 
 .japa-control-button {
-  background: var(--bg-light);
-  border: 1px solid var(--border-color);
-  padding: 10px 20px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  color: var(--text-light);
+  flex: 1;
+  padding: 16px;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: 500;
-  box-shadow: var(--shadow-soft);
-}
-.japa-control-button:active {
-  background-color: #f0f0f0;
+  background-color: #f1f5f9; /* Light gray */
+  color: #334155; /* Dark gray */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
+.japa-control-button:active {
+  background-color: #e2e8f0;
+  transform: translateY(1px);
+}
+
+/* --- Settings --- */
 .japa-settings {
+  padding: 10px;
+}
+
+.japa-settings label {
+  font-size: 1rem;
+  color: #64748b;
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  font-size: 0.9rem;
-  color: var(--text-light);
-  font-weight: 500;
+  align-items: center;
+  gap: 8px;
+}
+
+.japa-settings input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+/* --- Sync/Offline Banners --- */
+.japa-sync-banner, .japa-offline-banner {
+  padding: 10px;
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  color: white;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+.japa-sync-banner {
+  background-color: #f39c12; /* Orange */
+}
+
+.japa-offline-banner {
+  background-color: #c0392b; /* Red */
+}
+
+.japa-offline-banner button {
+  background: white;
+  color: #c0392b;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin-left: 10px;
+  cursor: pointer;
 }

@@ -10,6 +10,7 @@ const Family = () => {
 
   // Form states
   const [joinCode, setJoinCode] = useState('');
+  const [relation, setRelation] = useState('सदस्य'); // <-- NEW STATE
   const [familyName, setFamilyName] = useState('');
 
   useEffect(() => {
@@ -20,37 +21,54 @@ const Family = () => {
     try {
       const response = await api.get('/families/my-families');
       setMyFamilies(response.data.families);
-      setLoading(false);
     } catch (err) {
       console.error('परिवार लोड करने में विफल:', err);
       setError('आपके परिवार लोड करने में विफल।');
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const handleJoinFamily = async (e) => {
     e.preventDefault();
+    if (!joinCode) {
+       setError('Please enter a family code.');
+       return;
+    }
     setError('');
     try {
-      await api.post('/families/join', { family_code: joinCode });
+      // ** UPDATED API CALL **
+      await api.post('/families/join', { 
+        family_code: joinCode,
+        relation_label: relation, // <-- SEND NEW RELATION
+        relation_label_en: relation // <-- Sending same for both for simplicity
+      });
       setJoinCode('');
-      fetchFamilies(); // लिस्ट रिफ्रेश करें
-    } catch (err) { // <-- यहाँ { ब्रैकेट जोड़ दिया गया है
+      setRelation('सदस्य'); // Reset form
+      fetchFamilies(); // Refresh list
+    } catch (err) { 
       setError(err.response?.data?.error || 'परिवार में शामिल होने में विफल।');
     }
   };
 
   const handleCreateFamily = async (e) => {
     e.preventDefault();
+     if (!familyName) {
+       setError('Please enter a family name.');
+       return;
+    }
     setError('');
     try {
       await api.post('/families/create', { family_name: familyName });
       setFamilyName('');
-      fetchFamilies(); // लिस्ट रिफ्रेश करें
+      fetchFamilies(); // Refresh list
     } catch (err) {
       setError(err.response?.data?.error || 'परिवार बनाने में विफल।');
     }
   };
+
+  if (loading) {
+    return <div className="page-container">लोड हो रहा है...</div>;
+  }
 
   return (
     <div className="family-page">
@@ -69,6 +87,7 @@ const Family = () => {
               onChange={(e) => setFamilyName(e.target.value)}
               placeholder="जैसे: श्री कृष्ण परिवार"
               className="form-input"
+              required
             />
           </div>
           <button type="submit" className="btn btn-secondary">परिवार बनाएँ</button>
@@ -86,10 +105,26 @@ const Family = () => {
               type="text"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value)}
-              placeholder="परिवार का इन्वाइट कोड दर्ज करें"
+              placeholder="परिवार का इन्वाइट कोड"
               className="form-input"
+              required
             />
           </div>
+          
+          {/* --- NEW FIELD --- */}
+          <div className="form-group">
+            <label className="form-label" htmlFor="fam-relation">मेरी भूमिका (My Relation)</label>
+            <input
+              id="fam-relation"
+              type="text"
+              value={relation}
+              onChange={(e) => setRelation(e.target.value)}
+              placeholder="जैसे: प्रभु जी, माता जी, सदस्य"
+              className="form-input"
+              required
+            />
+          </div>
+          
           <button type="submit" className="btn btn-primary">शामिल हों</button>
         </form>
       </div>
@@ -97,7 +132,6 @@ const Family = () => {
       {/* --- मेरे परिवार की लिस्ट --- */}
       <div className="my-families-list">
         <h2>मेरे परिवार</h2>
-        {loading && <p>लोड हो रहा है...</p>}
         
         {myFamilies.length === 0 && !loading && (
           <p>आप अभी तक किसी परिवार का हिस्सा नहीं हैं।</p>

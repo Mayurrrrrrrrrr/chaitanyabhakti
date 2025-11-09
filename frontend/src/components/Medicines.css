@@ -1,64 +1,187 @@
+.medicine-page {
+  padding: 10px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.card-title {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: #3498db;
+  color: white;
+  width: 100%;
+}
+
+.btn-secondary {
+  background-color: #2ecc71;
+  color: white;
+  width: 100%;
+}
+
+.error-message {
+  color: #e74c3c;
+  background: #fadbd8;
+  border: 1px solid #e74c3c;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+/* --- Log Card Styles --- */
+.log-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 5px solid #bdc3c7; /* Default 'pending' border */
+}
+
+.log-info {
+  flex: 1;
+}
+
+.log-time {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #34495e;
+}
+
+.log-title {
+  font-size: 1.2rem;
+  margin: 4px 0;
+}
+
+.log-dosage {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin: 0;
+}
+
+.log-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-log {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  min-width: 100px;
+  text-align: center;
+}
+
+.btn-skip {
+  background-color: #f39c12;
+  color: white;
+}
+
+.btn-take {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.log-status-badge {
+  font-weight: bold;
+  padding: 8px 12px;
+  border-radius: 5px;
+  color: white;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* Status-specific styles */
+.log-card.taken {
+  border-left-color: #2ecc71; /* Green */
+  background-color: #f0fdf4;
+}
+.log-status-badge.taken {
+  background-color: #2ecc71;
+}
+
+.log-card.skipped {
+  border-left-color: #e74c3c; /* Red */
+  background-color: #fef2f2;
+}
+.log-status-badge.skipped {
+  background-color: #e74c3c;
+}
+
+
+/* --- Add Medicine Form --- */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #34495e;
+}
+
+.form-input {
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #dfe6e9;
+  border-radius: 8px;
+  background: #f4f6f8;
+}
+
 .time-slot {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
 }
+
 .time-input {
   flex: 1;
 }
+
 .btn-remove-time {
-  background: #fbe9e7;
-  color: #d9534f;
+  background: #e74c3c;
+  color: white;
   border: none;
   border-radius: 50%;
   width: 30px;
   height: 30px;
-  font-weight: 700;
+  font-weight: bold;
   cursor: pointer;
 }
+
 .btn-add-time {
   background: none;
-  border: 1px dashed var(--secondary-color);
-  color: var(--secondary-color);
+  border: 1px dashed #3498db;
+  color: #3498db;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: 5px;
   cursor: pointer;
-  font-weight: 500;
-  font-family: 'Noto Sans Devanagari', sans-serif;
-}
-
-.medicine-list h2 {
-  font-weight: 700;
-  color: var(--text-light);
-  border-bottom: 2px solid var(--border-color);
-  padding-bottom: 10px;
-  font-size: 1.2rem;
-}
-
-.medicine-card {
-  border-left: 5px solid var(--accent-color);
-}
-.med-title {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 700;
-}
-.med-dosage {
-  margin: 5px 0 15px 0;
-  font-size: 1rem;
-  color: var(--text-light);
-}
-.med-times {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.med-time-tag {
-  background-color: var(--secondary-color-light);
-  color: var(--secondary-color);
-  padding: 5px 10px;
-  border-radius: 15px;
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: bold;
 }

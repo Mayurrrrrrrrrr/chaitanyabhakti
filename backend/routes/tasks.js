@@ -6,39 +6,89 @@
 const express = require('express');
 const router = express.Router();
 
-// Get tasks assigned TO the user
+// =====================================================
+// CREATE TASK
+// =====================================================
+// Creates a task for one or more family members
+router.post('/create', async (req, res) => {
+    try {
+        const { user_id } = req.user;
+        const {
+            family_id,
+            title,
+            description,
+            due_date,
+            assigned_to_users // Array of user_ids to assign the task to
+        } = req.body;
+
+        if (!family_id || !title || !assigned_to_users || assigned_to_users.length === 0) {
+            return res.status(400).json({ error: 'Missing required fields: family_id, title, and assigned_to_users' });
+        }
+
+        // Check if creator is a member of the family (and ideally an admin, but we'll just check membership)
+        const [membership] = await req.db.query(
+            'SELECT * FROM family_members WHERE family_id = ? AND user_id = ?',
+            [family_id, user_id]
+        );
+        if (membership.length === 0) {
+            return res.status(403).json({ error: 'You are not a member of this family.' });
+        }
+
+        // 1. Create the main task
+        const [taskResult] = await req.db.query(`
+            INSERT INTO tasks (family_id, created_by, title, description, due_date)
+            VALUES (?, ?, ?, ?, ?)
+        `, [family_id, user_id, title, description || null, due_date || null]);
+
+        const taskId = taskResult.insertId;
+
+        // 2. Create assignments
+        const assignmentValues = assigned_to_users.map(assigned_id => {
+            return [taskId, assigned_id];
+        });
+
+        await req.db.query(
+            'INSERT INTO task_assignments (task_id, assigned_to_user_id) VALUES ?',
+            [assignmentValues]
+        );
+
+        res.json({ success: true, message: 'Task created and assigned', task_id: taskId });
+
+    } catch (error) {
+        console.error('Create task error:', error);
+        res.status(500).json({ error: 'Failed to create task' });
+    }
+});
+
+// =====================================================
+// GET TASKS
+// =====================================================
+
+// Get all tasks assigned to the current user
 router.get('/my-tasks', async (req, res) => {
     try {
         const { user_id } = req.user;
-        const { family_id, status } = req.query;
-        const lang = req.query.lang || 'hi';
 
-        let query = `
+        const [tasks] = await req.db.query(`
             SELECT 
-                t.*, 
-                a.name as assigned_by_name,
+                t.task_id,
+                t.title,
+                t.description,
+                t.due_date,
+                t.created_at,
                 f.family_name,
-                ${lang === 'en' ? 't.title_en' : 't.title'} as title,
-                ${lang === 'en' ? 't.description_en' : 't.description'} as description
-            FROM tasks t
-            JOIN users a ON t.assigned_by = a.user_id
-            LEFT JOIN families f ON t.family_id = f.family_id
-            WHERE t.assigned_to = ?
-        `;
-        const params = [user_id];
+                u.name as created_by_name,
+                ta.status,
+                ta.assignment_id,
+                ta.completed_at
+            FROM task_assignments ta
+            JOIN tasks t ON ta.task_id = t.task_id
+            JOIN families f ON t.family_id = f.family_id
+            JOIN users u ON t.created_by = u.user_id
+            WHERE ta.assigned_to_user_id = ?
+            ORDER BY ta.status ASC, t.due_date ASC, t.created_at DESC
+        `, [user_id]);
 
-        if (family_id) {
-            query += ' AND t.family_id = ?';
-            params.push(family_id);
-        }
-        if (status) {
-            query += ' AND t.status = ?';
-            params.push(status);
-        }
-
-        query += ' ORDER BY t.due_date ASC, t.priority DESC';
-        
-        const [tasks] = await req.db.query(query, params);
         res.json({ success: true, tasks });
 
     } catch (error) {
@@ -47,156 +97,114 @@ router.get('/my-tasks', async (req, res) => {
     }
 });
 
-// Get tasks assigned BY the user (for admins)
-router.get('/assigned-by-me', async (req, res) => {
+// Get all tasks for a specific family
+router.get('/family/:family_id', async (req, res) => {
     try {
         const { user_id } = req.user;
-        const { family_id } = req.query;
-        const lang = req.query.lang || 'hi';
+        const { family_id } = req.params;
 
-        let query = `
-            SELECT 
-                t.*, 
-                a.name as assigned_to_name,
-                f.family_name,
-                 ${lang === 'en' ? 't.title_en' : 't.title'} as title,
-                ${lang === 'en' ? 't.description_en' : 't.description'} as description
-            FROM tasks t
-            JOIN users a ON t.assigned_to = a.user_id
-            LEFT JOIN families f ON t.family_id = f.family_id
-            WHERE t.assigned_by = ?
-        `;
-        const params = [user_id];
-
-        if (family_id) {
-            query += ' AND t.family_id = ?';
-            params.push(family_id);
-        }
-        
-        const [tasks] = await req.db.query(query, params);
-        res.json({ success: true, tasks });
-
-    } catch (error) {
-        console.error('Get assigned-by-me error:', error);
-        res.status(500).json({ error: 'Failed to fetch tasks' });
-    }
-});
-
-// Create a new task (Admin only)
-router.post('/create', async (req, res) => {
-    try {
-        const { user_id } = req.user;
-        const { 
-            family_id, assigned_to, task_type, 
-            title, title_en, description, description_en, 
-            target_value, due_date, priority 
-        } = req.body;
-
-        // Check if user is admin of this family
+        // Check if user is a member of this family
         const [membership] = await req.db.query(
-            'SELECT * FROM family_members WHERE family_id = ? AND user_id = ? AND is_admin = TRUE',
+            'SELECT * FROM family_members WHERE family_id = ? AND user_id = ?',
             [family_id, user_id]
         );
         if (membership.length === 0) {
-            return res.status(403).json({ error: 'Only family admins can assign tasks' });
+            return res.status(403).json({ error: 'You are not a member of this family.' });
         }
 
-        const [result] = await req.db.query(`
-            INSERT INTO tasks (
-                family_id, assigned_to, assigned_by, task_type, 
-                title, title_en, description, description_en, 
-                target_value, due_date, priority
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            family_id, assigned_to, user_id, task_type, 
-            title, title_en || null, description || null, description_en || null, 
-            target_value || null, due_date || null, priority || 'medium'
-        ]);
+        // Get all tasks and their assignment statuses for this family
+        const [tasks] = await req.db.query(`
+            SELECT 
+                t.task_id,
+                t.title,
+                t.description,
+                t.due_date,
+                t.created_by,
+                creator.name as created_by_name,
+                GROUP_CONCAT(
+                    JSON_OBJECT(
+                        'assignment_id', ta.assignment_id,
+                        'user_id', ta.assigned_to_user_id,
+                        'name', assignee.name,
+                        'status', ta.status
+                    )
+                ) as assignments
+            FROM tasks t
+            LEFT JOIN task_assignments ta ON t.task_id = ta.task_id
+            LEFT JOIN users creator ON t.created_by = creator.user_id
+            LEFT JOIN users assignee ON ta.assigned_to_user_id = assignee.user_id
+            WHERE t.family_id = ?
+            GROUP BY t.task_id
+            ORDER BY t.created_at DESC
+        `, [family_id]);
 
-        res.json({ success: true, message: 'Task created', task_id: result.insertId });
+        // Parse the JSON string for assignments
+        const formattedTasks = tasks.map(task => ({
+            ...task,
+            assignments: task.assignments ? JSON.parse(`[${task.assignments}]`) : []
+        }));
+
+        res.json({ success: true, tasks: formattedTasks });
 
     } catch (error) {
-        console.error('Create task error:', error);
-        res.status(500).json({ error: 'Failed to create task' });
+        console.error('Get family tasks error:', error);
+        res.status(500).json({ error: 'Failed to fetch family tasks' });
     }
 });
 
-// Update task status by user
-router.put('/:task_id/status', async (req, res) => {
+
+// =====================================================
+// UPDATE/COMPLETE TASK
+// =====================================================
+
+// Mark a task assignment as complete
+router.post('/:assignment_id/complete', async (req, res) => {
     try {
         const { user_id } = req.user;
-        const { task_id } = req.params;
-        const { status } = req.body; // 'in_progress', 'completed'
+        const { assignment_id } = req.params;
 
-        if (!['in_progress', 'completed'].includes(status)) {
-            return res.status(400).json({ error: 'Invalid status' });
-        }
-
-        const completed_at = status === 'completed' ? new Date() : null;
-
-        const [result] = await req.db.query(
-            'UPDATE tasks SET status = ?, completed_at = ? WHERE task_id = ? AND assigned_to = ?',
-            [status, completed_at, task_id, user_id]
-        );
+        const [result] = await req.db.query(`
+            UPDATE task_assignments 
+            SET status = 'completed', completed_at = NOW()
+            WHERE assignment_id = ? AND assigned_to_user_id = ?
+        `, [assignment_id, user_id]);
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Task not found or not assigned to you' });
+            return res.status(404).json({ error: 'Task assignment not found or not assigned to you.' });
         }
 
-        res.json({ success: true, message: 'Task status updated' });
+        res.json({ success: true, message: 'Task marked as complete' });
 
     } catch (error) {
-        console.error('Update task status error:', error);
+        console.error('Complete task error:', error);
         res.status(500).json({ error: 'Failed to update task' });
     }
 });
 
-// Log progress on a task
-router.post('/:task_id/progress', async (req, res) => {
-    try {
-        const { user_id } = req.user;
-        const { task_id } = req.params;
-        const { progress_value, notes } = req.body;
-
-        // Check if task is assigned to user
-        const [tasks] = await req.db.query(
-            'SELECT * FROM tasks WHERE task_id = ? AND assigned_to = ?',
-            [task_id, user_id]
-        );
-        if (tasks.length === 0) {
-            return res.status(404).json({ error: 'Task not found or not assigned to you' });
-        }
-        
-        const [result] = await req.db.query(
-            'INSERT INTO task_progress (task_id, progress_value, notes) VALUES (?, ?, ?)',
-            [task_id, progress_value, notes || null]
-        );
-
-        res.json({ success: true, message: 'Progress logged', progress_id: result.insertId });
-
-    } catch (error) {
-        console.error('Log progress error:', error);
-        res.status(500).json({ error: 'Failed to log progress' });
-    }
-});
-
-// Delete a task (Admin only)
+// =====================================================
+// DELETE TASK
+// =====================================================
 router.delete('/:task_id', async (req, res) => {
     try {
         const { user_id } = req.user;
         const { task_id } = req.params;
 
-        const [result] = await req.db.query(
-            'DELETE FROM tasks WHERE task_id = ? AND assigned_by = ?',
+        // Check if user is the creator of the task
+        const [tasks] = await req.db.query(
+            'SELECT * FROM tasks WHERE task_id = ? AND created_by = ?',
             [task_id, user_id]
         );
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Task not found or you are not the assigner' });
+        if (tasks.length === 0) {
+            // Or check if user is a family admin (more complex, skipping for now)
+            return res.status(403).json({ error: 'Only the task creator can delete this task.' });
         }
 
+        // Delete task (CASCADE will handle assignments)
+        await req.db.query('DELETE FROM tasks WHERE task_id = ?', [task_id]);
+
         res.json({ success: true, message: 'Task deleted' });
-        
+
     } catch (error) {
         console.error('Delete task error:', error);
         res.status(500).json({ error: 'Failed to delete task' });
