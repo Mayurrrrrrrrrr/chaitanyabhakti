@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import './Family.css'; // हम यह CSS फ़ाइल बनाएँगे
+import { Link } from 'react-router-dom'; 
+import './Family.css';
 
 const Family = () => {
   const [myFamilies, setMyFamilies] = useState([]);
@@ -35,7 +35,7 @@ const Family = () => {
       await api.post('/families/join', { family_code: joinCode });
       setJoinCode('');
       fetchFamilies(); // लिस्ट रिफ्रेश करें
-    } catch (err) {
+    } catch (err) { // <-- यहाँ { ब्रैकेट जोड़ दिया गया है
       setError(err.response?.data?.error || 'परिवार में शामिल होने में विफल।');
     }
   };
@@ -104,12 +104,18 @@ const Family = () => {
         )}
 
         {myFamilies.map(family => (
-          <div key={family.family_id} className="family-card card">
-            <h4>{family.family_name}</h4>
-            <p><strong>मेरी भूमिका:</strong> {family.my_relation || (family.is_admin ? 'एडमिन' : 'सदस्य')}</p>
-            <p><strong>कुल सदस्य:</strong> {family.member_count}</p>
-            <p><strong>कोड:</strong> <span className="family-code">{family.family_code}</span> (यह कोड दूसरों को भेजने के लिए है)</p>
-          </div>
+          <Link to={`/family/${family.family_id}`} key={family.family_id} className="family-card-link">
+            <div className="family-card card">
+              <div className="family-card-content">
+                <h4>{family.family_name}</h4>
+                <p><strong>मेरी भूमिका:</strong> {family.my_relation || (family.is_admin ? 'एडमिन' : 'सदस्य')}</p>
+                <p><strong>कुल सदस्य:</strong> {family.member_count}</p>
+              </div>
+              <div className="family-card-arrow">
+                <span>&gt;</span>
+              </div>
+            </div>
+          </Link>
         ))}
       </div>
     </div>

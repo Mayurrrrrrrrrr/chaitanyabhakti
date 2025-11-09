@@ -1,0 +1,118 @@
+.family-header-card {
+  text-align: center;
+  border-top: 5px solid var(--primary-color);
+}
+.family-name {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 10px 0;
+}
+.family-invite-code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.2rem;
+  color: var(--secondary-color);
+  background: var(--secondary-color-light);
+  padding: 5px 12px;
+  border-radius: 8px;
+  display: inline-block;
+}
+.back-link {
+  display: block;
+  text-align: left;
+  color: var(--secondary-color);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* --- टैब्स --- */
+.tab-nav {
+  display: flex;
+  margin-bottom: 20px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 15px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  background: var(--bg-light);
+  border: none;
+  border-bottom: 3px solid var(--border-color);
+  color: var(--text-light);
+  cursor: pointer;
+}
+.tab-btn.active {
+  color: var(--secondary-color);
+  border-bottom-color: var(--secondary-color);
+}
+
+/* --- सदस्य सूची --- */
+.member-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+}
+.member-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.member-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.member-relation {
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+.admin-badge {
+  background-color: var(--accent-color);
+  color: #333;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 5px;
+}
+
+/* --- लीडरबोर्ड --- */
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px 15px;
+}
+.rank {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary-color-dark);
+  width: 25px;
+  text-align: center;
+}
+.leaderboard-item .member-photo {
+  width: 50px;
+  height: 50px;
+}
+.japa-count {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--secondary-color);
+  text-align: right;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.japa-count span {
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: block;
+  line-height: 1;
+  color: var(--text-light);
+}

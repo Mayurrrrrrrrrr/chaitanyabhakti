@@ -18,9 +18,9 @@ const BottomNav = () => {
         <span className="nav-text">परिवार</span>
       </NavLink>
       {/* यह रहा नया शास्त्र लिंक! */}
-      <NavLink to="/scriptures" className="nav-link">
+      <NavLink to="/satsang" className="nav-link">
         <span>📖</span>
-        <span className="nav-text">शास्त्र</span>
+        <span className="nav-text">सत्संग</span>
       </NavLink>
       <NavLink to="/profile" className="nav-link">
         <span>👤</span>
