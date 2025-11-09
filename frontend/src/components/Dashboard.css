@@ -1,0 +1,79 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stats-grid {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin: 20px 0;
+}
+
+.stat-card {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  width: 120px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #d9534f;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 5px;
+}
+
+.japa-button-link {
+  text-decoration: none;
+  width: 100%;
+}
+
+.japa-button {
+  width: 100%;
+  padding: 20px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: white;
+  background-color: #0275d8;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 20px 0;
+  transition: background-color 0.2s;
+}
+
+.japa-button:hover {
+  background-color: #025aa5;
+}
+
+.quick-links {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.quick-link {
+  color: #0275d8;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.logout-button {
+  margin-top: 30px;
+  background: none;
+  border: 1px solid #aaa;
+  color: #777;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+}

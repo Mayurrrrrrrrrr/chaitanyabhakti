@@ -1,0 +1,93 @@
+.japa-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  height: calc(100vh - 150px); /* Full height minus header/nav */
+  text-align: center;
+}
+
+.japa-stats {
+  width: 100%;
+}
+
+.japa-total {
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.japa-total-label {
+  display: block;
+  font-size: 1rem;
+  color: #555;
+}
+
+.japa-total-count {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #d9534f;
+}
+
+.japa-main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1;
+}
+
+.japa-bead-button {
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  border: 5px solid #d9534f;
+  background-color: #fff;
+  color: #d9534f;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transition: transform 0.1s;
+}
+
+.japa-bead-button:active {
+  transform: scale(0.95);
+}
+
+.japa-bead-count {
+  font-size: 6rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.japa-bead-label {
+  font-size: 1.2rem;
+  color: #777;
+}
+
+.japa-controls {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.japa-control-button {
+  background: #f0f2f5;
+  border: 1px solid #ddd;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  color: #333;
+  cursor: pointer;
+}
+
+.japa-settings {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  font-size: 0.9rem;
+  color: #888;
+}

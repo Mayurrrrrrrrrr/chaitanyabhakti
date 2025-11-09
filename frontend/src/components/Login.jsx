@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
-import api from '../services/api'; // Import our api helper
+import api from '../services/api'; 
+import { useAuth } from '../context/AuthContext'; // <-- CORRECTED PATH
 
-const Login = ({ setToken }) => {
+const Login = () => {
+  const { login } = useAuth(); 
+
   const [mobileNumber, setMobileNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [name, setName] = useState('');
-  const [step, setStep] = useState(1); // 1 for mobile, 2 for OTP
+  const [step, setStep] = useState(1); 
   const [error, setError] = useState('');
 
   const handleSendOtp = async () => {
     try {
       setError('');
       const response = await api.post('/auth/send-otp', { mobile_number: mobileNumber });
+      
       console.log('Test OTP:', response.data.otp); 
-      setStep(2);
+      setStep(2); 
     } catch (err) {
       setError('Failed to send OTP. Please try again.');
       console.error(err);
@@ -30,7 +34,7 @@ const Login = ({ setToken }) => {
       });
 
       if (response.data.success && response.data.token) {
-        setToken(response.data.token);
+        login(response.data.token, response.data.user);
       }
     } catch (err) {
       if (err.response && err.response.status === 400) {
@@ -51,7 +55,7 @@ const Login = ({ setToken }) => {
       <h1 style={styles.title}>Hare Krishna! 🙏</h1>
       <h2 style={styles.subtitle}>Welcome to Vaishnav Bhakti</h2>
       {error && <p style={styles.error}>{error}</p>}
-
+      
       {step === 1 && (
         <div style={styles.form}>
           <label style={styles.label}>Mobile Number</label>
@@ -67,7 +71,7 @@ const Login = ({ setToken }) => {
           </button>
         </div>
       )}
-
+      
       {step === 2 && (
         <div style={styles.form}>
           <label style={styles.label}>Enter OTP</label>
