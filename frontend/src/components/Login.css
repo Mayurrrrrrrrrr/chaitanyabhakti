@@ -1,0 +1,26 @@
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 25px;
+  box-sizing: border-box;
+  /* सुंदर बैकग्राउंड */
+  background: linear-gradient(180deg, var(--bg-color) 0%, #ffffff 100%);
+}
+
+.login-title {
+  color: var(--primary-color);
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.login-subtitle {
+  color: var(--text-light);
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-top: 0;
+  margin-bottom: 3rem;
+}

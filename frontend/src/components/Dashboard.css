@@ -2,57 +2,85 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-align: center;
+}
+
+.greeting-card {
+  width: 100%;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--primary-color-dark);
+  background-color: var(--secondary-color-light);
+  border: 1px solid var(--secondary-color);
+}
+.greeting-card p {
+  margin: 5px 0;
+}
+
+.dashboard h3 {
+  font-weight: 700;
+  color: var(--text-light);
+  margin-top: 25px;
+  margin-bottom: 10px;
+  font-size: 1.3rem;
 }
 
 .stats-grid {
   display: flex;
   justify-content: space-around;
   width: 100%;
-  margin: 20px 0;
+  margin: 10px 0;
+  gap: 15px; /* कार्ड के बीच गैप */
 }
 
 .stat-card {
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: var(--bg-light);
+  border-radius: 12px;
   padding: 20px;
   text-align: center;
-  width: 120px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  flex: 1; /* बराबर चौड़ाई */
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
 }
 
 .stat-value {
   font-size: 2.5rem;
-  font-weight: bold;
-  color: #d9534f;
+  font-weight: 700;
+  color: var(--secondary-color);
 }
 
 .stat-label {
   font-size: 0.9rem;
-  color: #555;
+  color: var(--text-light);
   margin-top: 5px;
+  font-weight: 500;
 }
 
 .japa-button-link {
   text-decoration: none;
   width: 100%;
+  margin: 25px 0;
 }
 
 .japa-button {
   width: 100%;
   padding: 20px;
-  font-size: 1.2rem;
-  font-weight: bold;
+  font-size: 1.3rem;
+  font-weight: 700;
   color: white;
-  background-color: #0275d8;
+  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
-  margin: 20px 0;
-  transition: background-color 0.2s;
+  box-shadow: 0 4px 15px rgba(255, 153, 51, 0.4);
+  transition: all 0.2s ease;
+  font-family: 'Noto Sans Devanagari', sans-serif;
 }
 
 .japa-button:hover {
-  background-color: #025aa5;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255, 153, 51, 0.5);
 }
 
 .quick-links {
@@ -63,17 +91,8 @@
 }
 
 .quick-link {
-  color: #0275d8;
+  color: var(--secondary-color);
   text-decoration: none;
-  font-weight: bold;
-}
-
-.logout-button {
-  margin-top: 30px;
-  background: none;
-  border: 1px solid #aaa;
-  color: #777;
-  padding: 8px 15px;
-  border-radius: 5px;
-  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
 }

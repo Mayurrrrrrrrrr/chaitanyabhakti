@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext'; // <-- CORRECTED PATH
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { Link } from 'react-router-dom';
-import './Dashboard.css';
+import './Dashboard.css'; 
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -23,38 +23,44 @@ const Dashboard = () => {
   }, []);
 
   if (loading) {
-    return <div>Loading your dashboard...</div>;
+    return <div className="page-container">आपका डैशबोर्ड लोड हो रहा है...</div>;
   }
 
   return (
     <div className="dashboard">
-      <h3>Today's Sadhana</h3>
+      <div className="card greeting-card">
+        <p>"हरे कृष्ण हरे कृष्ण, कृष्ण कृष्ण हरे हरे ।</p>
+        <p>हरे राम हरे राम, राम राम हरे हरे ॥"</p>
+      </div>
+
+      <h3>आज की साधना</h3>
       
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-value">{stats ? stats.total_japa_count : 0}</div>
-          <div className="stat-label">Total Malas</div>
+          <div className="stat-label">कुल माला</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{stats ? stats.current_streak : 0}</div>
-          <div className="stat-label">Day Streak</div>
+          <div className="stat-label">जप स्ट्रीक (दिन)</div>
         </div>
       </div>
 
       <Link to="/japa" className="japa-button-link">
         <button className="japa-button">
-          📿 Start/Continue Japa
+          📿 जप शुरू करें
         </button>
       </Link>
 
       <div className="quick-links">
-        <Link to="/family" className="quick-link">My Family</Link>
-        <Link to="/tasks" className="quick-link">My Tasks</Link>
-        <Link to="/scriptures" className="quick-link">Scriptures</Link>
+        <Link to="/family" className="quick-link">मेरा परिवार</Link>
+        <Link to="/tasks" className="quick-link">मेरे कार्य</Link>
+        {/* "मेरी दवाएँ" के लिए नया लिंक */}
+        <Link to="/medicines" className="quick-link">मेरी दवाएँ</Link> 
       </div>
 
-      <button onClick={logout} className="logout-button">
-        Log Out
+      <button onClick={logout} className="btn-logout">
+        लॉग आउट
       </button>
     </div>
   );

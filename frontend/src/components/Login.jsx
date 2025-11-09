@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import api from '../services/api'; 
-import { useAuth } from '../context/AuthContext'; // <-- CORRECTED PATH
+import { useAuth } from '../context/AuthContext';
+import './Login.css'; // हम इस पेज के लिए एक अलग CSS बनाएँगे
 
 const Login = () => {
   const { login } = useAuth(); 
@@ -14,12 +15,16 @@ const Login = () => {
   const handleSendOtp = async () => {
     try {
       setError('');
+      if (!mobileNumber || mobileNumber.length < 10) {
+        setError('कृपया सही मोबाइल नंबर दर्ज करें।');
+        return;
+      }
       const response = await api.post('/auth/send-otp', { mobile_number: mobileNumber });
       
       console.log('Test OTP:', response.data.otp); 
       setStep(2); 
     } catch (err) {
-      setError('Failed to send OTP. Please try again.');
+      setError('OTP भेजने में विफल। कृपया पुनः प्रयास करें।');
       console.error(err);
     }
   };
@@ -39,115 +44,75 @@ const Login = () => {
     } catch (err) {
       if (err.response && err.response.status === 400) {
         if (err.response.data.error.includes('Name required')) {
-          setError('This is a new user. Please provide your name.');
+          setError('यह एक नया नंबर है। कृपया अपना नाम दर्ज करें।');
         } else {
-          setError('Invalid or expired OTP.');
+          setError('अमान्य या समाप्त हो गया OTP।');
         }
       } else {
-        setError('Verification failed. Please try again.');
+        setError('सत्यापन विफल। कृपया पुनः प्रयास करें।');
       }
       console.error(err);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Hare Krishna! 🙏</h1>
-      <h2 style={styles.subtitle}>Welcome to Vaishnav Bhakti</h2>
-      {error && <p style={styles.error}>{error}</p>}
+    <div className="login-container">
+      {/* हम यहाँ ऐप का लोगो लगा सकते हैं */}
+      <h1 className="login-title">चैतन्य भक्ति</h1>
+      <h2 className="login-subtitle">परिवार संग, भक्ति के रंग</h2>
+      
+      {error && <p className="error-message">{error}</p>}
       
       {step === 1 && (
-        <div style={styles.form}>
-          <label style={styles.label}>Mobile Number</label>
-          <input
-            type="tel"
-            value={mobileNumber}
-            onChange={(e) => setMobileNumber(e.target.value)}
-            placeholder="+919876543210"
-            style={styles.input}
-          />
-          <button onClick={handleSendOtp} style={styles.button}>
-            Send OTP
+        <div className="form-container">
+          <div className="form-group">
+            <label className="form-label" htmlFor="mobile">मोबाइल नंबर</label>
+            <input
+              id="mobile"
+              type="tel"
+              value={mobileNumber}
+              onChange={(e) => setMobileNumber(e.target.value)}
+              placeholder="अपना १० अंकों का मोबाइल नंबर दर्ज करें"
+              className="form-input"
+            />
+          </div>
+          <button onClick={handleSendOtp} className="btn btn-primary">
+            OTP भेजें
           </button>
         </div>
       )}
       
       {step === 2 && (
-        <div style={styles.form}>
-          <label style={styles.label}>Enter OTP</label>
-          <input
-            type="text"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            placeholder="123456"
-            style={styles.input}
-          />
-          <label style={styles.label}>Your Name (if new user)</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Mayur Das"
-            style={styles.input}
-          />
-          <button onClick={handleVerifyOtp} style={styles.button}>
-            Login
+        <div className="form-container">
+          <div className="form-group">
+            <label className="form-label" htmlFor="otp">OTP दर्ज करें</label>
+            <input
+              id="otp"
+              type="text"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              placeholder="6 अंकों का OTP"
+              className="form-input"
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="name">आपका नाम (यदि नए उपयोगकर्ता हैं)</label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="जैसे: मयूर दास"
+              className="form-input"
+            />
+          </div>
+          <button onClick={handleVerifyOtp} className="btn btn-primary">
+            लॉग इन करें
           </button>
         </div>
       )}
     </div>
   );
-};
-
-// Basic styling for now
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    fontFamily: 'Arial, sans-serif',
-    backgroundColor: '#f4f4f4',
-  },
-  title: {
-    color: '#d9534f',
-    fontSize: '2.5rem',
-  },
-  subtitle: {
-    color: '#555',
-    fontSize: '1.2rem',
-    marginBottom: '2rem',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: '300px',
-  },
-  label: {
-    marginBottom: '5px',
-    color: '#333',
-  },
-  input: {
-    padding: '10px',
-    fontSize: '1rem',
-    marginBottom: '1rem',
-    border: '1px solid #ccc',
-    borderRadius: '5px',
-  },
-  button: {
-    padding: '12px',
-    fontSize: '1rem',
-    color: 'white',
-    backgroundColor: '#0275d8',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-  },
-  error: {
-    color: 'red',
-    marginBottom: '1rem',
-  }
 };
 
 export default Login;

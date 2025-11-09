@@ -1,26 +1,30 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import './BottomNav.css'; // We will create this CSS file next
+import './BottomNav.css';
 
 const BottomNav = () => {
   return (
     <nav className="bottom-nav">
       <NavLink to="/dashboard" className="nav-link">
-        {/* You can add icons here later */}
         <span>🏠</span>
-        <span className="nav-text">Home</span>
+        <span className="nav-text">होम</span>
       </NavLink>
       <NavLink to="/japa" className="nav-link">
         <span>📿</span>
-        <span className="nav-text">Japa</span>
+        <span className="nav-text">जप</span>
       </NavLink>
       <NavLink to="/family" className="nav-link">
         <span>👨‍👩‍👧‍👦</span>
-        <span className="nav-text">Family</span>
+        <span className="nav-text">परिवार</span>
+      </NavLink>
+      {/* यह रहा नया शास्त्र लिंक! */}
+      <NavLink to="/scriptures" className="nav-link">
+        <span>📖</span>
+        <span className="nav-text">शास्त्र</span>
       </NavLink>
       <NavLink to="/profile" className="nav-link">
         <span>👤</span>
-        <span className="nav-text">Profile</span>
+        <span className="nav-text">प्रोफ़ाइल</span>
       </NavLink>
     </nav>
   );

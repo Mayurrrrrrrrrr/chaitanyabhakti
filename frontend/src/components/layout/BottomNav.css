@@ -8,11 +8,12 @@
   right: 0;
   max-width: 600px;
   margin: 0 auto;
-  height: 60px;
+  height: 70px; /* थोड़ा लंबा */
   background-color: #ffffff;
-  border-top: 1px solid #e0e0e0;
-  box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
   z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom); /* iPhone notch के लिए */
 }
 
 .nav-link {
@@ -22,20 +23,27 @@
   justify-content: center;
   flex-grow: 1;
   text-decoration: none;
-  color: #888;
+  color: var(--text-light);
   font-size: 0.8rem;
+  height: 100%;
+  transition: all 0.2s ease;
 }
 
 .nav-link span {
-  font-size: 1.4rem; /* Icon size */
+  font-size: 1.6rem; /* Icon size */
+  margin-bottom: 4px;
 }
 
 .nav-link .nav-text {
-  font-size: 0.75rem; /* Text size */
+  font-size: 0.8rem; /* Text size */
+  font-weight: 500;
 }
 
 /* This is the magic for the "active" link */
 .nav-link.active {
-  color: #d9534f; /* Saffron/Red */
-  font-weight: bold;
+  color: var(--primary-color);
+  font-weight: 700;
+  /* सुंदर इफ़ेक्ट */
+  background-color: var(--bg-color);
+  border-top: 3px solid var(--primary-color);
 }

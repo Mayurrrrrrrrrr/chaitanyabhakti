@@ -1,0 +1,94 @@
+.tasks-page h2 {
+  font-weight: 700;
+  color: var(--text-light);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 10px;
+  font-size: 1.2rem;
+}
+
+.task-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  border-left: 5px solid var(--primary-color);
+}
+
+.task-card.completed {
+  border-left-color: #5cb85c; /* हरा रंग */
+  background-color: #f9f9f9;
+}
+
+.task-icon {
+  font-size: 2rem;
+  background-color: var(--bg-color);
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.task-content {
+  flex: 1;
+}
+
+.task-title {
+  margin: 0 0 5px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.task-card.completed .task-title {
+  text-decoration: line-through;
+  color: var(--text-light);
+}
+
+.task-desc {
+  font-size: 0.95rem;
+  margin: 0 0 10px 0;
+  color: var(--text-light);
+}
+
+.task-meta, .task-due {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin: 0;
+}
+
+.task-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+}
+
+.btn-task-start, .btn-task-complete {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-task-start {
+  background-color: var(--secondary-color-light);
+  color: var(--secondary-color);
+}
+.btn-task-start:hover {
+  background-color: #b3e5fc;
+}
+
+.btn-task-complete {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+.btn-task-complete:hover {
+  background-color: #c8e6c9;
+}
+
+.task-completed-badge {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #388e3c;
+}

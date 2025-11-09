@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import BottomNav from './BottomNav';
-import { useAuth } from '../../context/AuthContext'; // <-- CORRECTED PATH
+import { useAuth } from '../../context/AuthContext';
 
 const MainLayout = () => {
   const { user } = useAuth();
@@ -9,7 +9,8 @@ const MainLayout = () => {
   return (
     <div>
       <header className="app-header">
-        Hare Krishna, {user ? user.name : 'Bhakta'}!
+        {/* यहाँ सुंदर "जय श्री कृष्ण" जोड़ें */}
+        जय श्री कृष्ण, {user ? user.name : 'भक्त'}!
       </header>
       
       <main className="page-container">

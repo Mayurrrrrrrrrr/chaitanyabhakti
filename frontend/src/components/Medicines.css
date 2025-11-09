@@ -1,0 +1,64 @@
+.time-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.time-input {
+  flex: 1;
+}
+.btn-remove-time {
+  background: #fbe9e7;
+  color: #d9534f;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-add-time {
+  background: none;
+  border: 1px dashed var(--secondary-color);
+  color: var(--secondary-color);
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-family: 'Noto Sans Devanagari', sans-serif;
+}
+
+.medicine-list h2 {
+  font-weight: 700;
+  color: var(--text-light);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 10px;
+  font-size: 1.2rem;
+}
+
+.medicine-card {
+  border-left: 5px solid var(--accent-color);
+}
+.med-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.med-dosage {
+  margin: 5px 0 15px 0;
+  font-size: 1rem;
+  color: var(--text-light);
+}
+.med-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.med-time-tag {
+  background-color: var(--secondary-color-light);
+  color: var(--secondary-color);
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}

@@ -9,19 +9,32 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // 1. फ़ॉन्ट साइज़ के लिए नया स्टेट
+  const [fontSize, setFontSize] = useState(localStorage.getItem('fontSize') || 'font-large'); // 'font-large' डिफ़ॉल्ट है
+
+  useEffect(() => {
+    // 2. जब ऐप लोड हो, तो बॉडी पर फ़ॉन्ट क्लास लगाएँ
+    document.body.className = fontSize;
+  }, [fontSize]);
 
   useEffect(() => {
     const loadUser = async () => {
       if (token) {
         try {
-          // Set token in api headers for this request
           api.defaults.headers.Authorization = `Bearer ${token}`;
-          // Fetch user profile
           const response = await api.get('/user/profile');
           setUser(response.data.user);
+          
+          // 3. उपयोगकर्ता की सेव की गई फ़ॉन्ट प्राथमिकता लोड करें
+          if (response.data.user.font_size) {
+            setFontSize(response.data.user.font_size);
+            localStorage.setItem('fontSize', response.data.user.font_size);
+            document.body.className = response.data.user.font_size;
+          }
+
         } catch (error) {
           console.error('Failed to fetch user', error);
-          // Token is invalid, log out
           logout();
         }
       }
@@ -34,8 +47,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     api.defaults.headers.Authorization = `Bearer ${newToken}`;
-    
-    // If user object comes from login, use it.
     if (newUser) {
       setUser(newUser);
     }
@@ -43,13 +54,30 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('fontSize'); // लॉगआउट पर फ़ॉन्ट रीसेट करें
     setToken(null);
     setUser(null);
+    setFontSize('font-large'); // डिफ़ॉल्ट पर रीसेट करें
+    document.body.className = 'font-large';
     delete api.defaults.headers.Authorization;
+  };
+  
+  // 4. फ़ॉन्ट बदलने के लिए एक फ़ंक्शन
+  const changeFontSize = async (size) => {
+    setFontSize(size);
+    localStorage.setItem('fontSize', size);
+    document.body.className = size;
+    try {
+      // डेटाबेस में सेव करें ताकि यह याद रहे
+      await api.put('/user/preferences', { font_size: size });
+    } catch (error) {
+      console.error('Failed to save font size', error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout, loading }}>
+    // 5. Context में फ़ॉन्ट-साइज़ और उसे बदलने का फ़ंक्शन दें
+    <AuthContext.Provider value={{ token, user, login, logout, loading, fontSize, changeFontSize }}>
       {!loading && children}
     </AuthContext.Provider>
   );

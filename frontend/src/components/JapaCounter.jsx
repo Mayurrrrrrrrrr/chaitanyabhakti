@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import './JapaCounter.css'; 
 
-//
-// THIS IS THE NEW, RELIABLE, AND UNBLOCKED SOUND FILE LINK
-//
-const beadSoundUrl = 'https://cdn.pixabay.com/audio/2022/03/15/audio_1d8c1621f3.mp3';
+// NO MORE SOUND URL
 
 const JapaCounter = () => {
   const [malaCount, setMalaCount] = useState(0);
@@ -14,8 +11,8 @@ const JapaCounter = () => {
   const [loading, setLoading] = useState(true);
 
   // --- Settings States ---
-  const [playSound, setPlaySound] = useState(true);
   const [vibrate, setVibrate] = useState(true);
+  // 'playSound' state has been removed
 
   // Load today's count when the page opens
   useEffect(() => {
@@ -69,17 +66,7 @@ const JapaCounter = () => {
       }
     }
 
-    // Play bead sound
-    if (playSound) {
-      try {
-        const audio = new Audio(beadSoundUrl);
-        // We set volume to be a quiet click
-        audio.volume = 0.3; 
-        audio.play();
-      } catch (err) {
-        console.error("Audio play failed", err);
-      }
-    }
+    // --- ALL SOUND LOGIC REMOVED ---
 
     // Update bead count state
     setCurrentBeads(newBeadCount);
@@ -129,10 +116,7 @@ const JapaCounter = () => {
       </div>
       
       <div className="japa-settings">
-        <label>
-          <input type="checkbox" checked={playSound} onChange={() => setPlaySound(!playSound)} />
-          Sound
-        </label>
+        {/* "Sound" checkbox is now gone */}
         <label>
           <input type="checkbox" checked={vibrate} onChange={() => setVibrate(!vibrate)} />
           Vibrate
