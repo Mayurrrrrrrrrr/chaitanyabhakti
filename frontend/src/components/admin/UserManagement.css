@@ -1,0 +1,53 @@
+/* frontend/src/components/admin/UserManagement.css */
+.user-management {
+  padding: 20px;
+}
+
+.create-user-form {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.create-user-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.create-user-form input {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.user-list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-list th, .user-list td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.user-list th {
+  background-color: #f4f4f4;
+}
+
+.btn-deactivate {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.btn-reactivate {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.error-message { color: #e74c3c; }
+.success-message { color: #2ecc71; }

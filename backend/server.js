@@ -7,9 +7,9 @@ const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs'); // Keep for future use
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config(); // Loads .env file credentials
 
 const app = express();
@@ -52,7 +52,6 @@ pool.getConnection()
 // FILE UPLOAD CONFIGURATION
 // =====================================================
 // Create upload directories if they don't exist
-const fs = require('fs');
 ['uploads', 'uploads/images', 'uploads/audio', 'uploads/videos'].forEach(dir => {
     const dirPath = path.join(__dirname, dir);
     if (!fs.existsSync(dirPath)) {
@@ -107,210 +106,80 @@ const authenticateToken = (req, res, next) => {
         return res.status(401).json({ error: 'Access token required' });
     }
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
         if (err) {
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
-        req.user = user; // { user_id: ..., mobile_number: ... }
+        // IMPORTANT: The user payload is nested inside 'user' in your other code
+        // But your JWT might just be the user object. We'll check both.
+        // My auth routes create { user: { id: ... } }
+        // Your old auth routes create { user_id: ... }
+        // Let's standardize on the { user: { ... } } payload from my previous code.
+        
+        // If the token payload is { user_id: 1, ... }, adapt it
+        if (decoded.user_id && !decoded.user) {
+             req.user = { 
+                id: decoded.user_id, 
+                mobile_number: decoded.mobile_number,
+                is_super_admin: decoded.is_super_admin 
+            };
+        } 
+        // If the token payload is { user: { id: 1, ... } }
+        else if (decoded.user) {
+            req.user = decoded.user;
+        } 
+        // Otherwise, invalid token structure
+        else {
+             return res.status(403).json({ error: 'Invalid token payload' });
+        }
+        
         next();
     });
 };
 
 // =====================================================
-// DATABASE & UPLOAD INJECTION MIDDLEWARE
-// =====================================================
-// This middleware makes `req.db` and `req.upload` available in all routes
-const injectDb = (req, res, next) => {
-    req.db = pool;
-    req.upload = upload;
-    next();
-};
-
-// =====================================================
 // IMPORT ROUTES
 // =====================================================
+// These files must export a function: module.exports = (db, upload) => { ... }
+const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 const japaRoutes = require('./routes/japa.js');
 const familyRoutes = require('./routes/families.js');
-const taskRoutes = require('./routes/tasks.js'); // <-- THIS LINE
+const taskRoutes = require('./routes/tasks.js');
 const medicineRoutes = require('./routes/medicines.js');
 const scriptureRoutes = require('./routes/scriptures.js');
 const communityRoutes = require('./routes/community.js');
 const mediaRoutes = require('./routes/media.js');
+const userRoutes = require('./routes/user.js'); // Assuming you create this
 
 // =====================================================
 // API ROUTES
 // =====================================================
 
 // --- Public Auth Routes (No token needed) ---
-app.post('/api/auth/send-otp', injectDb, async (req, res) => {
-    // ... (Your existing send-otp code) ...
-     try {
-        const { mobile_number } = req.body;
-        if (!mobile_number) return res.status(400).json({ error: 'Mobile number required' });
-
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-        await req.db.query(
-            'INSERT INTO otp_verifications (mobile_number, otp_code, expires_at) VALUES (?, ?, ?)',
-            [mobile_number, otp, expiresAt]
-        );
-        
-        console.log(`OTP for ${mobile_number}: ${otp}`); // For testing
-        res.json({ success: true, message: 'OTP sent', otp: otp }); // Send OTP for testing
-    } catch (error) {
-        console.error('Send OTP error:', error);
-        res.status(500).json({ error: 'Failed to send OTP' });
-    }
-});
-
-app.post('/api/auth/verify-otp', injectDb, async (req, res) => {
-    // ... (Your existing verify-otp code) ...
-    try {
-        const { mobile_number, otp, name, spiritual_name } = req.body;
-
-        const [otpRecords] = await req.db.query(
-            'SELECT * FROM otp_verifications WHERE mobile_number = ? AND otp_code = ? AND expires_at > NOW() AND is_verified = FALSE ORDER BY created_at DESC LIMIT 1',
-            [mobile_number, otp]
-        );
-
-        if (otpRecords.length === 0) return res.status(400).json({ error: 'Invalid or expired OTP' });
-        await req.db.query('UPDATE otp_verifications SET is_verified = TRUE WHERE otp_id = ?', [otpRecords[0].otp_id]);
-
-        let [users] = await req.db.query('SELECT * FROM users WHERE mobile_number = ?', [mobile_number]);
-        let user;
-
-        if (users.length === 0) {
-            if (!name) return res.status(400).json({ error: 'Name required for registration' });
-
-            const [result] = await req.db.query(
-                'INSERT INTO users (mobile_number, name, spiritual_name) VALUES (?, ?, ?)',
-                [mobile_number, name, spiritual_name || null]
-            );
-            user = { user_id: result.insertId, mobile_number, name, spiritual_name, is_super_admin: false };
-            await req.db.query('INSERT INTO user_preferences (user_id) VALUES (?) ON DUPLICATE KEY UPDATE user_id = user_id', [user.user_id]);
-        } else {
-            user = users[0];
-            await req.db.query('UPDATE users SET last_login = NOW() WHERE user_id = ?', [user.user_id]);
-        }
-
-        const token = jwt.sign({ user_id: user.user_id, mobile_number: user.mobile_number }, JWT_SECRET, { expiresIn: '30d' });
-
-        res.json({
-            success: true, token,
-            user: {
-                user_id: user.user_id, name: user.name, spiritual_name: user.spiritual_name,
-                mobile_number: user.mobile_number, profile_photo: user.profile_photo, is_super_admin: user.is_super_admin
-            }
-        });
-    } catch (error) {
-        console.error('Verify OTP error:', error);
-        res.status(500).json({ error: 'Verification failed' });
-    }
-});
-
-app.post('/api/auth/referral-login', injectDb, async (req, res) => {
-    // ... (Your existing referral-login code) ...
-    try {
-        const { referral_code, name, spiritual_name } = req.body;
-        const [families] = await req.db.query('SELECT * FROM families WHERE family_code = ?', [referral_code]);
-        if (families.length === 0) return res.status(400).json({ error: 'Invalid referral code' });
-
-        const tempMobile = `+91${Date.now().toString().slice(-10)}`;
-        const [result] = await req.db.query(
-            'INSERT INTO users (mobile_number, name, spiritual_name) VALUES (?, ?, ?)',
-            [tempMobile, name, spiritual_name || null]
-        );
-        const user = { user_id: result.insertId, mobile_number: tempMobile, name, spiritual_name, is_super_admin: false };
-
-        await req.db.query(
-            'INSERT INTO family_members (family_id, user_id, is_admin) VALUES (?, ?, FALSE)',
-            [families[0].family_id, user.user_id]
-        );
-        await req.db.query('INSERT INTO user_preferences (user_id) VALUES (?) ON DUPLICATE KEY UPDATE user_id = user_id', [user.user_id]);
-
-        const token = jwt.sign({ user_id: user.user_id, mobile_number: user.mobile_number }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ success: true, token, user, joined_family: families[0] });
-    } catch (error) {
-        console.error('Referral login error:', error);
-        res.status(500).json({ error: 'Login failed' });
-    }
-});
-
+// We pass the 'pool' (db connection) to the route file.
+// The authRoutes file handles its own public/private logic.
+app.use('/api/auth', authRoutes(pool));
 
 // --- Protected API Routes (Token required) ---
-// All these routes will have `req.db`, `req.upload`, and `req.user`
-app.use('/api/user', injectDb, authenticateToken, async (req, res, next) => {
-    // Handle /api/user/profile and /api/user/preferences here
-    if (req.path === '/profile' && req.method === 'GET') {
-        try {
-            const [users] = await req.db.query(
-                'SELECT u.*, p.language, p.font_size, p.high_contrast FROM users u LEFT JOIN user_preferences p ON u.user_id = p.user_id WHERE u.user_id = ?',
-                [req.user.user_id]
-            );
-            if (users.length === 0) return res.status(404).json({ error: 'User not found' });
-            res.json({ user: users[0] });
-        } catch (error) {
-            console.error('Get profile error:', error);
-            res.status(500).json({ error: 'Failed to fetch profile' });
-        }
-    } else if (req.path === '/profile' && req.method === 'PUT') {
-        // This needs to be handled by the multer upload middleware first
-        next();
-    } else if (req.path === '/preferences' && req.method === 'PUT') {
-        try {
-            const { language, font_size, high_contrast, voice_commands, text_to_speech, notifications_enabled, daily_reminder_time, theme } = req.body;
-            const updates = [], values = [];
-            if (language) { updates.push('language = ?'); values.push(language); }
-            if (font_size) { updates.push('font_size = ?'); values.push(font_size); }
-            if (high_contrast !== undefined) { updates.push('high_contrast = ?'); values.push(high_contrast); }
-            if (voice_commands !== undefined) { updates.push('voice_commands = ?'); values.push(voice_commands); }
-            if (text_to_speech !== undefined) { updates.push('text_to_speech = ?'); values.push(text_to_speech); }
-            if (notifications_enabled !== undefined) { updates.push('notifications_enabled = ?'); values.push(notifications_enabled); }
-            if (daily_reminder_time) { updates.push('daily_reminder_time = ?'); values.push(daily_reminder_time); }
-            if (theme) { updates.push('theme = ?'); values.push(theme); }
-            if (updates.length === 0) return res.status(400).json({ error: 'No preferences to update' });
-            values.push(req.user.user_id);
-            await req.db.query(`UPDATE user_preferences SET ${updates.join(', ')} WHERE user_id = ?`, values);
-            res.json({ success: true, message: 'Preferences updated' });
-        } catch (error) {
-            console.error('Update preferences error:', error);
-            res.status(500).json({ error: 'Failed to update preferences' });
-        }
-    } else {
-        next();
-    }
-});
+// These routes are protected by `authenticateToken`
+// We pass both 'pool' and 'upload' to the routes that need them.
+app.use('/api/japa', authenticateToken, japaRoutes(pool));
+app.use('/api/families', authenticateToken, familyRoutes(pool));
+app.use('/api/tasks', authenticateToken, taskRoutes(pool));
+app.use('/api/medicines', authenticateToken, medicineRoutes(pool));
+app.use('/api/scriptures', authenticateToken, scriptureRoutes(pool));
+app.use('/api/community', authenticateToken, communityRoutes(pool, upload));
+app.use('/api/media', authenticateToken, mediaRoutes(pool, upload));
 
-// Handle profile photo upload separately
-app.put('/api/user/profile', injectDb, authenticateToken, upload.single('profile_photo'), async (req, res) => {
-    try {
-        const { name, spiritual_name, date_of_birth } = req.body;
-        const profile_photo = req.file ? `/uploads/images/${req.file.filename}` : null;
-        const updates = [], values = [];
-        if (name) { updates.push('name = ?'); values.push(name); }
-        if (spiritual_name !== undefined) { updates.push('spiritual_name = ?'); values.push(spiritual_name); }
-        if (date_of_birth) { updates.push('date_of_birth = ?'); values.push(date_of_birth); }
-        if (profile_photo) { updates.push('profile_photo = ?'); values.push(profile_photo); }
-        if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
-        values.push(req.user.user_id);
-        await req.db.query(`UPDATE users SET ${updates.join(', ')} WHERE user_id = ?`, values);
-        res.json({ success: true, message: 'Profile updated', profile_photo: profile_photo });
-    } catch (error) {
-        console.error('Update profile error:', error);
-        res.status(500).json({ error: 'Failed to update profile' });
-    }
-});
+// --- User Profile Routes (Token required) ---
+// These are special because one of them uses the 'upload' middleware
+app.use('/api/user', authenticateToken, userRoutes(pool, upload));
 
-
-// Use the imported routes
-app.use('/api/japa', injectDb, authenticateToken, japaRoutes);
-app.use('/api/families', injectDb, authenticateToken, familyRoutes);
-app.use('/api/tasks', injectDb, authenticateToken, taskRoutes); // <-- THIS LINE
-app.use('/api/medicines', injectDb, authenticateToken, medicineRoutes);
-app.use('/api/scriptures', injectDb, authenticateToken, scriptureRoutes);
-app.use('/api/community', injectDb, authenticateToken, communityRoutes);
-app.use('/api/media', injectDb, authenticateToken, mediaRoutes);
+// --- Admin Routes (Token + Admin check required) ---
+// `authenticateToken` runs first, then `adminRoutes` will use
+// the `isSuperAdmin` middleware internally.
+app.use('/api/admin', authenticateToken, adminRoutes(pool));
 
 
 // =====================================================

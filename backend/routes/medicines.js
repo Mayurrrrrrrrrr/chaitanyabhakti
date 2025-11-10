@@ -1,218 +1,144 @@
-// =====================================================
-// MEDICINE TRACKER ROUTES
-// File: routes/medicines.js
-// =====================================================
-
+//
+// FILE: backend/routes/medicines.js
+//
 const express = require('express');
 const router = express.Router();
 
-// =====================================================
-// HELPER: Generate Daily Logs
-// =====================================================
-/**
- * Checks for and creates pending medicine logs for a user for a given date.
- * This function is "idempotent" - it can be run many times but will only
- * create missing logs.
- */
-async function generateDailyLogs(db, user_id, dateString) {
+//
+// Converted to module.exports = (db) => { ... }
+module.exports = (db) => {
+
+  // GET user's active medicines
+  router.get('/', async (req, res) => {
     try {
-        // 1. Get all active medicines for the user that are within their date range
-        const [activeMedicines] = await db.query(`
-            SELECT * FROM medicines 
-            WHERE user_id = ? 
-              AND is_active = TRUE
-              AND start_date <= ?
-              AND (end_date IS NULL OR end_date >= ?)
-        `, [user_id, dateString, dateString]);
-
-        if (activeMedicines.length === 0) {
-            return; // No active medicines, nothing to log.
-        }
-
-        // 2. Get all *existing* logs for this user for today
-        const [existingLogs] = await db.query(`
-            SELECT * FROM medicine_logs
-            WHERE user_id = ? AND DATE(scheduled_time) = ?
-        `, [user_id, dateString]);
-
-        // 3. Loop through medicines and their scheduled times
-        const newLogsToCreate = [];
-
-        for (const med of activeMedicines) {
-            const times = JSON.parse(med.times || '[]'); // e.g., ["08:00", "20:00"]
-            
-            for (const time of times) {
-                // '2023-10-27T08:00:00'
-                const scheduledTime = `${dateString}T${time}:00`; 
-
-                // Check if a log for this specific medicine at this specific time *already exists*
-                const logExists = existingLogs.some(log =>
-                    log.medicine_id === med.medicine_id &&
-                    new Date(log.scheduled_time).toISOString().startsWith(`${dateString}T${time}`)
-                );
-
-                if (!logExists) {
-                    // Log doesn't exist, so prepare to create it.
-                    newLogsToCreate.push([
-                        user_id,
-                        med.medicine_id,
-                        scheduledTime,
-                        'pending', // Default status
-                        med.dosage
-                    ]);
-                }
-            }
-        }
-
-        // 4. Batch-insert all new logs in a single query
-        if (newLogsToCreate.length > 0) {
-            await db.query(
-                'INSERT INTO medicine_logs (user_id, medicine_id, scheduled_time, status, dosage_details) VALUES ?',
-                [newLogsToCreate]
-            );
-            console.log(`Created ${newLogsToCreate.length} new medicine logs for user ${user_id} on ${dateString}`);
-        }
-
+      const user_id = req.user.id; // Use req.user.id
+      const [medicines] = await db.query(
+        'SELECT * FROM medicines WHERE user_id = ? AND is_active = 1',
+        [user_id]
+      );
+      res.json(medicines);
     } catch (error) {
-        console.error('Error generating daily logs:', error);
-        // We don't throw here, as we want the main route to continue
+      console.error('Get medicines error:', error);
+      res.status(500).json({ error: 'Failed to fetch medicines' });
     }
-}
+  });
 
-
-// =====================================================
-// ROUTES
-// =====================================================
-
-// Get all medicines (the list of prescriptions)
-router.get('/', async (req, res) => {
+  // POST a new medicine
+  router.post('/', async (req, res) => {
     try {
-        const { user_id } = req.user;
-        const [medicines] = await req.db.query(
-            'SELECT * FROM medicines WHERE user_id = ? AND is_active = TRUE ORDER BY medicine_name',
-            [user_id]
-        );
-        res.json({ success: true, medicines });
-    } catch (error) {
-        console.error('Get medicines error:', error);
-        res.status(500).json({ error: 'Failed to fetch medicines' });
-    }
-});
+      const { medicine_name, dosage, frequency, times, start_date, end_date, notes, reminder_enabled } = req.body;
+      const user_id = req.user.id; // Use req.user.id
 
-// Add a new medicine prescription
-router.post('/add', async (req, res) => {
+      if (!medicine_name || !times || !start_date) {
+        return res.status(400).json({ error: 'Medicine name, times, and start date are required' });
+      }
+
+      const [result] = await db.query(
+        'INSERT INTO medicines (user_id, medicine_name, dosage, frequency, times, start_date, end_date, notes, reminder_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [user_id, medicine_name, dosage, frequency, JSON.stringify(times), start_date, end_date || null, notes, reminder_enabled ?? 1]
+      );
+      
+      res.status(201).json({ message: 'Medicine added', medicine_id: result.insertId });
+    } catch (error) {
+      console.error('Add medicine error:', error);
+      res.status(500).json({ error: 'Failed to add medicine' });
+    }
+  });
+
+  // PUT (update) a medicine
+  router.put('/:medicine_id', async (req, res) => {
     try {
-        const { user_id } = req.user;
-        const { 
-            medicine_name, dosage, frequency, 
-            times, // Expects a JSON array string: '["08:00", "20:00"]'
-            start_date, end_date, notes, reminder_enabled 
-        } = req.body;
+      const { medicine_id } = req.params;
+      const { medicine_name, dosage, frequency, times, start_date, end_date, notes, reminder_enabled, is_active } = req.body;
+      const user_id = req.user.id; // Use req.user.id
 
-        if (!medicine_name || !times || !start_date) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
+      // Build update query dynamically
+      const updates = [];
+      const values = [];
+      if (medicine_name) { updates.push('medicine_name = ?'); values.push(medicine_name); }
+      if (dosage) { updates.push('dosage = ?'); values.push(dosage); }
+      if (frequency) { updates.push('frequency = ?'); values.push(frequency); }
+      if (times) { updates.push('times = ?'); values.push(JSON.stringify(times)); }
+      if (start_date) { updates.push('start_date = ?'); values.push(start_date); }
+      if (end_date) { updates.push('end_date = ?'); values.push(end_date); }
+      if (notes) { updates.push('notes = ?'); values.push(notes); }
+      if (reminder_enabled !== undefined) { updates.push('reminder_enabled = ?'); values.push(reminder_enabled); }
+      if (is_active !== undefined) { updates.push('is_active = ?'); values.push(is_active); }
 
-        const [result] = await req.db.query(`
-            INSERT INTO medicines (
-                user_id, medicine_name, dosage, frequency, 
-                times, start_date, end_date, notes, reminder_enabled
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            user_id, medicine_name, dosage || null, frequency || null,
-            times, // Store as JSON string
-            start_date, end_date || null, notes || null, 
-            reminder_enabled === undefined ? true : !!reminder_enabled
-        ]);
-        
-        // IMPORTANT: After adding, generate logs for *today* immediately
-        const today = new Date().toISOString().split('T')[0];
-        await generateDailyLogs(req.db, user_id, today);
+      if (updates.length === 0) {
+        return res.status(400).json({ error: 'No fields to update' });
+      }
 
-        res.json({ success: true, message: 'Medicine added', medicine_id: result.insertId });
+      values.push(medicine_id);
+      values.push(user_id);
 
+      await db.query(
+        `UPDATE medicines SET ${updates.join(', ')} WHERE medicine_id = ? AND user_id = ?`,
+        values
+      );
+      
+      res.json({ message: 'Medicine updated' });
     } catch (error) {
-        console.error('Add medicine error:', error);
-        res.status(500).json({ error: 'Failed to add medicine' });
+      console.error('Update medicine error:', error);
+      res.status(500).json({ error: 'Failed to update medicine' });
     }
-});
+  });
 
-// Get logs for today (THIS IS THE KEY UPDATE)
-router.get('/logs/today', async (req, res) => {
+  // DELETE (deactivate) a medicine
+  router.delete('/:medicine_id', async (req, res) => {
     try {
-        const { user_id } = req.user;
-        const today = new Date().toISOString().split('T')[0];
-
-        // ** THIS IS THE NEW LOGIC **
-        // Run the log generator *before* fetching the logs.
-        // This ensures today's logs exist if the user opens the app for the first time.
-        await generateDailyLogs(req.db, user_id, today);
-        
-        // Now, fetch the logs we just ensured exist
-        const [logs] = await req.db.query(`
-            SELECT 
-                l.*, m.medicine_name
-            FROM medicine_logs l
-            JOIN medicines m ON l.medicine_id = m.medicine_id
-            WHERE l.user_id = ? AND DATE(l.scheduled_time) = ?
-            ORDER BY l.scheduled_time ASC
-        `, [user_id, today]);
-        
-        res.json({ success: true, logs });
-
+      const { medicine_id } = req.params;
+      const user_id = req.user.id; // Use req.user.id
+      
+      // We'll just deactivate it instead of deleting
+      await db.query(
+        'UPDATE medicines SET is_active = 0 WHERE medicine_id = ? AND user_id = ?',
+        [medicine_id, user_id]
+      );
+      
+      res.json({ message: 'Medicine deactivated' });
     } catch (error) {
-        console.error('Get medicine logs error:', error);
-        res.status(500).json({ error: 'Failed to fetch logs' });
+      console.error('Deactivate medicine error:', error);
+      res.status(500).json({ error: 'Failed to deactivate medicine' });
     }
-});
+  });
 
-// Log medicine as taken/skipped
-router.post('/logs/:log_id/update', async (req, res) => {
+  // POST /logs (Log medicine intake)
+  router.post('/logs', async (req, res) => {
     try {
-        const { user_id } = req.user;
-        const { log_id } = req.params;
-        const { status, notes } = req.body; // 'taken' or 'skipped'
+      const { medicine_id, status, scheduled_time, notes } = req.body;
+      const user_id = req.user.id; // Use req.user.id
+      const taken_at = (status === 'taken') ? new Date() : null;
 
-        if (!['taken', 'skipped'].includes(status)) {
-            return res.status(400).json({ error: 'Invalid status' });
-        }
-
-        const [result] = await req.db.query(
-            'UPDATE medicine_logs SET status = ?, taken_at = ?, notes = ? WHERE log_id = ? AND user_id = ?',
-            [status, status === 'taken' ? new Date() : null, notes || null, log_id, user_id]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Log entry not found or not yours' });
-        }
-
-        res.json({ success: true, message: 'Log updated' });
-
+      const [result] = await db.query(
+        'INSERT INTO medicine_logs (medicine_id, user_id, scheduled_time, taken_at, status, notes) VALUES (?, ?, ?, ?, ?, ?)',
+        [medicine_id, user_id, scheduled_time, taken_at, status, notes || null]
+      );
+      
+      res.status(201).json({ message: 'Medicine log created', log_id: result.insertId });
     } catch (error) {
-        console.error('Update medicine log error:', error);
-        res.status(500).json({ error: 'Failed to update log' });
+      console.error('Log medicine error:', error);
+      res.status(500).json({ error: 'Failed to log medicine intake' });
     }
-});
+  });
 
-// Deactivate a medicine
-router.put('/:medicine_id/deactivate', async (req, res) => {
+  // GET /logs (Get logs for a specific day)
+  router.get('/logs', async (req, res) => {
     try {
-        const { user_id } = req.user;
-        const { medicine_id } = req.params;
+      const user_id = req.user.id; // Use req.user.id
+      const date = req.query.date ? new Date(req.query.date) : new Date();
+      const dateString = date.toISOString().split('T')[0];
 
-        await req.db.query(
-            'UPDATE medicines SET is_active = FALSE, end_date = CURDATE() WHERE medicine_id = ? AND user_id = ?',
-            [medicine_id, user_id]
-        );
-        
-        // TODO: Disable associated reminders in the `reminders` table
-
-        res.json({ success: true, message: 'Medicine deactivated' });
-        
+      const [logs] = await db.query(
+        'SELECT l.*, m.medicine_name FROM medicine_logs l JOIN medicines m ON l.medicine_id = m.medicine_id WHERE l.user_id = ? AND DATE(l.scheduled_time) = ? ORDER BY l.scheduled_time',
+        [user_id, dateString]
+      );
+      res.json(logs);
     } catch (error) {
-        console.error('Deactivate medicine error:', error);
-        res.status(500).json({ error: 'Failed to deactivate medicine' });
+      console.error('Get medicine logs error:', error);
+      res.status(500).json({ error: 'Failed to fetch medicine logs' });
     }
-});
-
-module.exports = router;
+  });
+  
+  return router;
+};

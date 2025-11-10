@@ -1,0 +1,27 @@
+/* frontend/src/components/admin/AdminPanel.css */
+.admin-panel {
+  padding: 20px;
+}
+
+.admin-nav ul {
+  list-style: none;
+  padding: 0;
+}
+
+.admin-nav li {
+  margin-bottom: 10px;
+}
+
+.admin-nav a {
+  display: block;
+  padding: 15px;
+  background-color: #f4f4f4;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #333;
+  font-weight: bold;
+}
+
+.admin-nav a:hover {
+  background-color: #e0e0e0;
+}

@@ -1,55 +1,62 @@
-// =====================================================
-// SCRIPTURE & LEARNING ROUTES
-// File: routes/scriptures.js (CORRECTED)
-// =====================================================
-
+//
+// FILE: backend/routes/scriptures.js
+//
 const express = require('express');
 const router = express.Router();
 
-// Get all scriptures
-router.get('/', async (req, res) => {
+//
+// Converted to module.exports = (db) => { ... }
+module.exports = (db) => {
+
+  // GET all public scriptures
+  router.get('/', async (req, res) => {
     try {
-        // This query is now 100% correct for your database schema
-        const [scriptures] = await req.db.query(`
-            SELECT 
-                scripture_id,
-                title,
-                description,
-                author,
-                category, 
-                content_url,
-                cover_url 
-            FROM scriptures
-            ORDER BY scripture_id ASC
-        `);
-
-        res.json({ success: true, scriptures });
-
+      const [scriptures] = await db.query(
+        'SELECT * FROM scriptures WHERE is_public = 1'
+      );
+      res.json(scriptures);
     } catch (error) {
-        console.error('Get scriptures error:', error);
-        res.status(500).json({ error: 'Failed to fetch scriptures' });
+      console.error('Get scriptures error:', error);
+      res.status(500).json({ error: 'Failed to fetch scriptures' });
     }
-});
+  });
 
-// Get single scripture details (for future use)
-router.get('/:id', async (req, res) => {
+  // GET user's reading list
+  router.get('/my-list', async (req, res) => {
     try {
-        const { id } = req.params;
-        const [scriptures] = await req.db.query(
-            'SELECT * FROM scriptures WHERE scripture_id = ?',
-            [id]
-        );
-
-        if (scriptures.length === 0) {
-            return res.status(404).json({ error: 'Scripture not found' });
-        }
-
-        res.json({ success: true, scripture: scriptures[0] });
-
+      const user_id = req.user.id; // Use req.user.id
+      const [list] = await db.query(
+        'SELECT s.*, rl.status, rl.progress_percentage FROM scriptures s JOIN reading_list rl ON s.scripture_id = rl.scripture_id WHERE rl.user_id = ?',
+        [user_id]
+      );
+      res.json(list);
     } catch (error) {
-        console.error('Get scripture detail error:', error);
-        res.status(500).json({ error: 'Failed to fetch scripture' });
+      console.error('Get reading list error:', error);
+      res.status(500).json({ error: 'Failed to fetch reading list' });
     }
-});
+  });
 
-module.exports = router;
+  // POST (add/update) to reading list
+  router.post('/my-list', async (req, res) => {
+    try {
+      const { scripture_id, status, progress_percentage } = req.body;
+      const user_id = req.user.id; // Use req.user.id
+
+      if (!scripture_id || !status) {
+        return res.status(400).json({ error: 'Scripture ID and status are required' });
+      }
+
+      await db.query(
+        'INSERT INTO reading_list (user_id, scripture_id, status, progress_percentage) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE status = VALUES(status), progress_percentage = VALUES(progress_percentage)',
+        [user_id, scripture_id, status, progress_percentage || 0]
+      );
+      
+      res.status(201).json({ message: 'Reading list updated' });
+    } catch (error) {
+      console.error('Update reading list error:', error);
+      res.status(500).json({ error: 'Failed to update reading list' });
+    }
+  });
+
+  return router;
+};
