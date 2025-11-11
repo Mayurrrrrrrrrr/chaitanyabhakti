@@ -1,62 +1,72 @@
+// frontend/src/components/Satsang.jsx
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import './Satsang.css'; 
+import './Satsang.css'; //
 
 const Satsang = () => {
-  const [scriptures, setScriptures] = useState([]);
+  // 🛑 FIX: Initialize state with empty arrays [] to prevent .map error
+  const [videos, setVideos] = useState([]);
+  const [audios, setAudios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchScriptures();
+    const fetchMedia = async () => {
+      try {
+        setLoading(true);
+        // 🛑 FIX: Use the correct API paths from media.js
+        const videoRes = await api.get('/media/videos');
+        const audioRes = await api.get('/media/audio');
+        
+        setVideos(videoRes.data);
+        setAudios(audioRes.data);
+      } catch (err) {
+        console.error('Failed to fetch media', err);
+        setError('Failed to load media.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMedia();
   }, []);
 
-  const fetchScriptures = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/scriptures');
-      setScriptures(response.data.scriptures);
-    } catch (err) {
-      setError('सत्संग सामग्री लोड करने में विफल।');
-    }
-    setLoading(false);
-  };
+  if (loading) {
+    return <div>Loading Satsang...</div>;
+  }
+
+  if (error) {
+    return <div className="error-message">{error}</div>;
+  }
 
   return (
-    <div className="satsang-page">
-      <div className="card">
-        <h3 className="card-title">📚 सत्संग एवं शास्त्र</h3>
-        <p>भजन, कीर्तन और पवित्र ग्रंथ खोजें।</p>
-      </div>
+    <div className="satsang-container">
+      <h2>Satsang Media</h2>
 
-      {loading && <p>लोड हो रहा है...</p>}
-      {error && <p className="error-message">{error}</p>}
+      <section className="media-section">
+        <h3>Videos</h3>
+        <div className="media-grid">
+          {videos.map((video) => (
+            <a href={video.youtube_url} target="_blank" rel="noopener noreferrer" key={video.video_id} className="media-card">
+              <img src={video.thumbnail_url} alt={video.title} />
+              <h4>{video.title}</h4>
+            </a>
+          ))}
+        </div>
+      </section>
 
-      <div className="scripture-list">
-        {scriptures.map(item => (
-          <div key={item.scripture_id} className="scripture-card card">
-            <div className="scripture-image">
-              {/* This now correctly uses cover_url */}
-              <img src={item.cover_url} alt={item.title} />
+      <section className="media-section">
+        <h3>Audio</h3>
+        <div className="media-list">
+          {audios.map((audio) => (
+            <div key={audio.audio_id} className="audio-card">
+              <h4>{audio.title}</h4>
+              <audio controls src={api.defaults.baseURL + audio.file_url}>
+                Your browser does not support the audio element.
+              </audio>
             </div>
-            <div className="scripture-info">
-              {/* This now correctly uses category */}
-              <span className="scripture-type">{item.category}</span>
-              <h4 className="scripture-title">{item.title}</h4>
-              <p className="scripture-desc">{item.description}</p>
-              <p className="scripture-author">{item.author}</p>
-              <button 
-                className="btn btn-primary" 
-                disabled={!item.content_url}
-                onClick={() => item.content_url && window.open(item.content_url, '_blank')}
-              >
-                {/* This now correctly uses category */}
-                {item.category === 'book' ? 'पढ़ें' : 'सुनें'}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };

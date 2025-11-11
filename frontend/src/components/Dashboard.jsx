@@ -1,67 +1,69 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
+// frontend/src/components/Dashboard.jsx
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import './Dashboard.css'; 
+import api from '../services/api';
+import './Dashboard.css'; //
+import { useAuth } from '../context/AuthContext'; //
 
 const Dashboard = () => {
-  const { logout } = useAuth(); // <-- 'user' was removed here
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const [stats, setStats] = useState({
+    today_count: 0,
+    total_japa_count: 0,
+    current_streak: 0,
+    longest_streak: 0,
+  });
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await api.get('/japa/stats');
-        setStats(response.data.stats);
-      } catch (error) {
-        console.error('Failed to fetch stats', error);
+        // 🛑 FIX: Changed '/japa/stats' to '/japa/summary'
+        const res = await api.get('/japa/summary');
+        setStats(res.data);
+      } catch (err) {
+        console.error('Failed to fetch stats', err);
       }
-      setLoading(false);
     };
     fetchStats();
   }, []);
 
-  if (loading) {
-    return <div className="page-container">आपका डैशबोर्ड लोड हो रहा है...</div>;
-  }
-
   return (
-    <div className="dashboard">
-      <div className="card greeting-card">
-        <p>"हरे कृष्ण हरे कृष्ण, कृष्ण कृष्ण हरे हरे ।</p>
-        <p>हरे राम हरे राम, राम राम हरे हरे ॥"</p>
-      </div>
+    <div className="dashboard-container">
+      <header className="dashboard-header">
+        <h1>{`Hare Krishna, ${user?.name || 'Bhakta'}`}</h1>
+        <p>Your spiritual progress summary</p>
+      </header>
 
-      <h3>आज की साधना</h3>
-      
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-value">{stats ? stats.total_japa_count : 0}</div>
-          <div className="stat-label">कुल माला</div>
+          <h2>Today's Malas</h2>
+          <p>{stats.today_count}</p>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{stats ? stats.current_streak : 0}</div>
-          <div className="stat-label">जप स्ट्रीक (दिन)</div>
+          <h2>Total Malas</h2>
+          <p>{stats.total_japa_count}</p>
+        </div>
+        <div className="stat-card">
+          <h2>Current Streak</h2>
+          <p>{stats.current_streak} {stats.current_streak === 1 ? 'day' : 'days'}</p>
+        </div>
+        <div className="stat-card">
+          <h2>Longest Streak</h2>
+          <p>{stats.longest_streak} {stats.longest_streak === 1 ? 'day' : 'days'}</p>
         </div>
       </div>
 
-      <Link to="/japa" className="japa-button-link">
-        <button className="japa-button">
-          📿 जप शुरू करें
-        </button>
-      </Link>
-
-      <div className="quick-links">
-        <Link to="/family" className="quick-link">मेरा परिवार</Link>
-        <Link to="/tasks" className="quick-link">मेरे कार्य</Link>
-        <Link to="/medicines" className="quick-link">मेरी दवाएँ</Link> 
-        <Link to="/leaderboard" className="quick-link">🏆 लीडरबोर्ड</Link> 
+      <div className="quick-actions">
+        <Link to="/japa" className="action-btn japa-btn">
+          Start Japa
+        </Link>
+        <Link to="/family" className="action-btn family-btn">
+          My Family
+        </Link>
+        <Link to="/medicines" className="action-btn medicine-btn">
+          My Medicines
+        </Link>
       </div>
-
-      <button onClick={logout} className="btn-logout">
-        लॉग आउट
-      </button>
     </div>
   );
 };

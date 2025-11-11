@@ -1,27 +1,18 @@
-/* frontend/src/components/admin/AdminPanel.css */
-.admin-panel {
-  padding: 20px;
-}
+/* Add this to the end of frontend/src/components/admin/AdminPanel.css */
 
-.admin-nav ul {
-  list-style: none;
-  padding: 0;
-}
-
-.admin-nav li {
-  margin-bottom: 10px;
-}
-
-.admin-nav a {
-  display: block;
+.btn-logout {
+  width: 100%;
   padding: 15px;
-  background-color: #f4f4f4;
+  background-color: #e74c3c; /* Red color */
+  color: white;
+  border: none;
   border-radius: 8px;
-  text-decoration: none;
-  color: #333;
+  font-size: 1rem;
   font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
 }
 
-.admin-nav a:hover {
-  background-color: #e0e0e0;
+.btn-logout:hover {
+  background-color: #c0392b;
 }

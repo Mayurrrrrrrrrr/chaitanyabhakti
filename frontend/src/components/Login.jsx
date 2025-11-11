@@ -1,12 +1,12 @@
 // frontend/src/components/Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Import useEffect
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import './Login.css';
 
 const Login = () => {
-  const [loginMode, setLoginMode] = useState('otp'); // 'otp' or 'password'
+  const [loginMode, setLoginMode] = useState('otp');
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
@@ -14,15 +14,31 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth();
+  // Get isAuthenticated and user from useAuth
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+
+  //
+  // --- THIS IS THE MAIN FIX ---
+  // This effect will run AFTER login() successfully updates the state.
+  //
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Once authenticated, check if admin and navigate to the correct page
+      if (user && user.is_super_admin) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [isAuthenticated, user, navigate]); // Dependencies
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      // 🛑 FIX: Removed '/api' from this path
+      // Use the correct path (no /api)
       await api.post('/auth/send-otp', { mobile_number: mobileNumber });
       setShowOtpInput(true);
     } catch (err) {
@@ -36,10 +52,12 @@ const Login = () => {
     setError('');
     setLoading(true);
     try {
-      // 🛑 FIX: Removed '/api' from this path
+      // Use the correct path (no /api)
       const res = await api.post('/auth/verify-otp', { mobile_number: mobileNumber, otp });
-      login(res.data); // res.data should contain { token, user }
-      navigate('/dashboard');
+      
+      // Only call login. The useEffect will handle navigation.
+      login(res.data); 
+      
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid OTP.');
     }
@@ -51,15 +69,12 @@ const Login = () => {
     setError('');
     setLoading(true);
     try {
-      // 🛑 FIX: Removed '/api' from this path
+      // Use the correct path (no /api)
       const res = await api.post('/auth/login', { mobile_number: mobileNumber, password });
-      login(res.data); // res.data contains { token, user }
       
-      if (res.data.user.is_super_admin) {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard');
-      }
+      // Only call login. The useEffect will handle navigation.
+      login(res.data);
+
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid credentials.');
     }

@@ -1,184 +1,107 @@
-import React, { useState, useEffect } from 'react';
+// frontend/src/components/JapaCounter.jsx
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import './JapaCounter.css'; 
-
-// Key for storing offline japa counts
-const OFFLINE_JAPA_KEY = 'offline_japa_counts';
+import './JapaCounter.css'; //
+import { useAuth } from '../context/AuthContext'; //
 
 const JapaCounter = () => {
+  const { user } = useAuth();
+  const [beadCount, setBeadCount] = useState(0);
   const [malaCount, setMalaCount] = useState(0);
-  const [currentBeads, setCurrentBeads] = useState(0);
-  const [lastCountTime, setLastCountTime] = useState(Date.now());
-  const [loading, setLoading] = useState(true);
+  const [offlineQueue, setOfflineQueue] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [offlineMalas, setOfflineMalas] = useState(0);
 
-  // --- Settings States ---
-  const [vibrate, setVibrate] = useState(true);
-
-  // --- Offline Sync Logic ---
-  const syncOfflineCounts = async () => {
-    let pendingMalas = parseInt(localStorage.getItem(OFFLINE_JAPA_KEY) || '0');
-    if (pendingMalas === 0) {
-      setOfflineMalas(0);
-      return; // Nothing to sync
-    }
-
-    setIsSyncing(true);
-    setOfflineMalas(pendingMalas);
-    console.log(`Syncing ${pendingMalas} offline malas...`);
-
+  // Load counter from API or localStorage
+  const loadCounter = useCallback(async () => {
     try {
-      // We send all pending malas as a single 'add' request.
-      // We could also send them one by one in a loop.
-      await api.post('/japa/add', { 
-        mala_count: pendingMalas,
-        family_id: null 
-      });
-
-      // Sync successful, clear local storage
-      localStorage.setItem(OFFLINE_JAPA_KEY, '0');
-      setOfflineMalas(0);
-      console.log('Offline sync successful!');
-    } catch (error) {
-      console.error('Failed to sync offline malas:', error);
-      // Don't clear storage, will try again next time
-    }
-    setIsSyncing(false);
-  };
-
-  // Add a mala to the offline queue
-  const saveMalaOffline = () => {
-    let pendingMalas = parseInt(localStorage.getItem(OFFLINE_JAPA_KEY) || '0');
-    pendingMalas += 1;
-    localStorage.setItem(OFFLINE_JAPA_KEY, pendingMalas.toString());
-    setOfflineMalas(pendingMalas);
-    console.log('Saved 1 mala to offline queue.');
-  };
-
-  // --- Effects ---
-
-  // Load today's count and sync offline malas when the page opens
-  useEffect(() => {
-    const loadCounter = async () => {
-      setLoading(true);
-      try {
-        // 1. Fetch today's count from the server
-        const response = await api.get('/japa/today');
-        if (response.data.today) {
-          setMalaCount(response.data.today.mala_count);
-        }
-        
-        // 2. Try to sync any pending offline counts
-        await syncOfflineCounts();
-
-      } catch (error) {
-        console.error('Failed to fetch today\'s count', error);
-        // If this fails, we are offline. Load from local storage.
-        let pendingMalas = parseInt(localStorage.getItem(OFFLINE_JAPA_KEY) || '0');
-        setOfflineMalas(pendingMalas);
+      // 🛑 FIX: Get today's count from the summary route
+      const res = await api.get('/japa/summary');
+      setMalaCount(res.data.today_count || 0);
+      setBeadCount(0); // Always reset bead count on load
+    } catch (err) {
+      console.error("Failed to fetch today's count", err);
+      const savedMala = localStorage.getItem('malaCount');
+      if (savedMala) {
+        setMalaCount(JSON.parse(savedMala));
       }
-      setLoading(false);
-    };
-    loadCounter();
+    }
   }, []);
 
-  // --- Handlers ---
+  useEffect(() => {
+    loadCounter();
+  }, [loadCounter]);
 
-  const handleBeadClick = async () => {
-    // Debounce
-    const now = Date.now();
-    if (now - lastCountTime < 100) return;
-    setLastCountTime(now);
+  // Save to localStorage
+  useEffect(() => {
+    localStorage.setItem('malaCount', JSON.stringify(malaCount));
+  }, [malaCount]);
 
-    let newBeadCount = currentBeads + 1;
-
-    if (newBeadCount === 108) {
-      newBeadCount = 0; // Reset beads
-      if (vibrate && navigator.vibrate) navigator.vibrate([100, 50, 100]);
-      
-      // Update state immediately
-      setMalaCount(prev => prev + 1);
-
-      // Save to database (or offline)
-      await saveMalaIncrement();
-
-    } else {
-      if (vibrate && navigator.vibrate) navigator.vibrate(50);
+  // API saving logic
+  const saveToApi = useCallback(async (countToSave) => {
+    setIsSyncing(true);
+    try {
+      // 🛑 FIX: The route to save is POST /japa, not /japa/increment
+      await api.post('/japa', {
+        mala_count: countToSave,
+        japa_date: new Date().toISOString().split('T')[0],
+        family_id: null // Or manage this if you have family selection
+      });
+      setOfflineQueue(0); // Clear queue on successful sync
+    } catch (err) {
+      console.error('Failed to save mala count (API failed), saving offline.', err);
+      setOfflineQueue(prev => prev + 1);
+    } finally {
+      setIsSyncing(false);
     }
+  }, []);
 
-    setCurrentBeads(newBeadCount);
+  const handleBeadClick = () => {
+    if (beadCount + 1 === 108) {
+      const newMalaCount = malaCount + 1;
+      setMalaCount(newMalaCount);
+      setBeadCount(0);
+      saveToApi(newMalaCount); // Save the new total
+    } else {
+      setBeadCount(beadCount + 1);
+    }
+  };
+
+  const handleMalaReset = () => {
+    setBeadCount(0);
   };
   
-  const addFullMala = async () => {
-     if (vibrate && navigator.vibrate) navigator.vibrate([100, 50, 100]);
-     setMalaCount(prev => prev + 1);
-     await saveMalaIncrement();
+  const handleFullReset = () => {
+    setMalaCount(0);
+    setBeadCount(0);
+    saveToApi(0); // Save the reset
   };
-
-  // Central function to save a mala
-  const saveMalaIncrement = async () => {
-    try {
-      // We use /increment which is optimized for +1
-      await api.post('/japa/increment', { family_id: null });
-    } catch (error) {
-      console.error('Failed to save mala count (API failed), saving offline.', error);
-      // ** OFFLINE FALLBACK **
-      saveMalaOffline();
-    }
-  };
-
-  if (loading) {
-    return <div className="page-container">Loading Japa...</div>;
-  }
 
   return (
     <div className="japa-container">
-      {/* --- Offline/Syncing Indicator --- */}
-      {isSyncing && (
-        <div className="japa-sync-banner">
-          Syncing {offlineMalas} offline malas...
+      <div className="japa-display">
+        <div className="mala-count-display">
+          <span className="count">{malaCount}</span>
+          <span className="label">Malas Completed</span>
         </div>
-      )}
-      {!isSyncing && offlineMalas > 0 && (
-         <div className="japa-offline-banner">
-          {offlineMalas} malas saved offline. 
-          <button onClick={syncOfflineCounts}>Sync Now</button>
+        <div className="bead-count-display">
+          <span className="count">{beadCount}</span>
+          <span className="label">Beads</span>
         </div>
-      )}
-
-      <div className="japa-stats">
-        <div className="japa-total">
-          <span className="japa-total-label">Today's Malas</span>
-          <span className="japa-total-count">{malaCount}</span>
-        </div>
-      </div>
-
-      <div className="japa-main">
-        <button className="japa-bead-button" onClick={handleBeadClick}>
-          <div className="japa-bead-count">{currentBeads}</div>
-          <div className="japa-bead-label">Tap to count</div>
-        </button>
       </div>
 
       <div className="japa-controls">
-        <button onClick={addFullMala} className="japa-control-button">
-          +1 Mala
+        <button className="bead-button" onClick={handleBeadClick}>
+          Hare Krishna
         </button>
-        <button 
-          onClick={() => setCurrentBeads(0)} 
-          className="japa-control-button"
-        >
-          Reset Beads
-        </button>
+      </div>
+
+      <div className="reset-controls">
+        <button className="reset-btn" onClick={handleMalaReset}>Reset Beads</button>
+        <button className="reset-btn full-reset" onClick={handleFullReset}>Reset All</button>
       </div>
       
-      <div className="japa-settings">
-        <label>
-          <input type="checkbox" checked={vibrate} onChange={() => setVibrate(!vibrate)} />
-          Vibrate
-        </label>
-      </div>
+      {isSyncing && <div className="sync-status">Syncing...</div>}
+      {offlineQueue > 0 && <div className="sync-status error">Offline: {offlineQueue} malas unsynced.</div>}
     </div>
   );
 };

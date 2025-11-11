@@ -1,10 +1,10 @@
 // frontend/src/components/AdminRoute.jsx
-import React, { useContext } from 'react';
+import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; //
+import { useAuth } from '../context/AuthContext';
 
 const AdminRoute = () => {
-  const { isAuthenticated, user, loading } = useAuth(); //
+  const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
     // Wait until authentication status is loaded
@@ -17,7 +17,7 @@ const AdminRoute = () => {
   }
 
   if (!user || !user.is_super_admin) {
-    // Logged in, but NOT an admin. Redirect to dashboard.
+    // Logged in, but NOT an admin. Redirect to regular dashboard.
     return <Navigate to="/dashboard" replace />;
   }
 

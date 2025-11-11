@@ -1,89 +1,85 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import api from '../services/api';
+// frontend/src/context/AuthContext.js
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import api from '../services/api'; //
 
 // Create the context
 const AuthContext = createContext();
 
-// Create the "Provider" component
+// Create the provider component
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  
-  // 1. फ़ॉन्ट साइज़ के लिए नया स्टेट
-  const [fontSize, setFontSize] = useState(localStorage.getItem('fontSize') || 'font-large'); // 'font-large' डिफ़ॉल्ट है
+  const [loading, setLoading] = useState(true); // Start loading
 
+  // This effect runs only ONCE when the app loads
   useEffect(() => {
-    // 2. जब ऐप लोड हो, तो बॉडी पर फ़ॉन्ट क्लास लगाएँ
-    document.body.className = fontSize;
-  }, [fontSize]);
+    const loadUserFromStorage = () => {
+      try {
+        const token = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
 
-  useEffect(() => {
-    const loadUser = async () => {
-      if (token) {
-        try {
-          api.defaults.headers.Authorization = `Bearer ${token}`;
-          const response = await api.get('/user/profile');
-          setUser(response.data.user);
-          
-          // 3. उपयोगकर्ता की सेव की गई फ़ॉन्ट प्राथमिकता लोड करें
-          if (response.data.user.font_size) {
-            setFontSize(response.data.user.font_size);
-            localStorage.setItem('fontSize', response.data.user.font_size);
-            document.body.className = response.data.user.font_size;
-          }
-
-        } catch (error) {
-          console.error('Failed to fetch user', error);
-          logout();
+        if (token && storedUser) {
+          // If we have a token and user, set them in our state
+          const parsedUser = JSON.parse(storedUser);
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          setIsAuthenticated(true);
+          setUser(parsedUser);
         }
+      } catch (error) {
+        console.error("Failed to load auth state from localStorage", error);
+        // Clear bad data if it exists
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        // We are done loading, whether we found a user or not
+        setLoading(false);
       }
-      setLoading(false);
     };
-    loadUser();
-  }, [token]);
+    
+    loadUserFromStorage();
+  }, []); // Empty array means this runs only once
 
-  const login = (newToken, newUser) => {
-    localStorage.setItem('token', newToken);
-    setToken(newToken);
-    api.defaults.headers.Authorization = `Bearer ${newToken}`;
-    if (newUser) {
-      setUser(newUser);
+  // Login function
+  const login = (data) => {
+    try {
+      const { token, user } = data;
+      if (!token || !user) {
+        console.error('Login data is invalid:', data);
+        return; 
+      }
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // These state updates will cause components to re-render
+      setUser(user);
+      setIsAuthenticated(true);
+      
+    } catch (error) {
+      console.error("Failed to process login data", error);
     }
   };
 
+  // Logout function
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('fontSize'); // लॉगआउट पर फ़ॉन्ट रीसेट करें
-    setToken(null);
+    localStorage.removeItem('user');
+    delete api.defaults.headers.common['Authorization'];
+    
+    // These state updates will cause components to re-render
     setUser(null);
-    setFontSize('font-large'); // डिफ़ॉल्ट पर रीसेट करें
-    document.body.className = 'font-large';
-    delete api.defaults.headers.Authorization;
-  };
-  
-  // 4. फ़ॉन्ट बदलने के लिए एक फ़ंक्शन
-  const changeFontSize = async (size) => {
-    setFontSize(size);
-    localStorage.setItem('fontSize', size);
-    document.body.className = size;
-    try {
-      // डेटाबेस में सेव करें ताकि यह याद रहे
-      await api.put('/user/preferences', { font_size: size });
-    } catch (error) {
-      console.error('Failed to save font size', error);
-    }
+    setIsAuthenticated(false);
   };
 
   return (
-    // 5. Context में फ़ॉन्ट-साइज़ और उसे बदलने का फ़ंक्शन दें
-    <AuthContext.Provider value={{ token, user, login, logout, loading, fontSize, changeFontSize }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ isAuthenticated, user, loading, login, logout }}>
+      {children}
     </AuthContext.Provider>
   );
 };
 
-// Create a simple "hook" to use the context easily
+// Custom hook to use the auth context
 export const useAuth = () => {
   return useContext(AuthContext);
 };
