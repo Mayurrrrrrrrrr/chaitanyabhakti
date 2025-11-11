@@ -1,9 +1,6 @@
-//
-// FILE: frontend/src/context/AuthContext.js
-//
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
-import { jwtDecode } from 'jwt-decode'; // 🛑 FIX: Correctly import jwt-decode
+import { jwtDecode } from 'jwt-decode';
 
 const AuthContext = createContext(null);
 
@@ -24,7 +21,7 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
           } else {
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            // Fetch full user profile to get all data (including preferences)
+            // Fetch full user profile
             const res = await api.get('/user/profile');
             setUser(res.data.user); 
           }
@@ -39,27 +36,19 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-  const login = async (mobile_number, otp, name, spiritual_name) => {
-    // This function will be called by Login.jsx
-    // It handles the API call and sets the user state
+  // 🛑 FIX: Simplified login function that just accepts the response data
+  const login = (responseData) => {
     try {
-      const res = await api.post('/auth/verify-otp', {
-        mobile_number,
-        otp,
-        name,
-        spiritual_name
-      });
+      if (responseData.token) {
+        localStorage.setItem('token', responseData.token);
+        api.defaults.headers.common['Authorization'] = `Bearer ${responseData.token}`;
+      }
       
-      if (res.data.success) {
-        localStorage.setItem('token', res.data.token);
-        api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-        // The response from verify-otp already includes the user object
-        setUser(res.data.user); 
-        return { success: true, user: res.data.user };
+      if (responseData.user) {
+        setUser(responseData.user);
       }
     } catch (error) {
       console.error('Login failed:', error);
-      return { success: false, error: error.response?.data?.error || 'Login failed' };
     }
   };
 
@@ -69,7 +58,6 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  // This function allows other components (like Profile.jsx) to update the user context
   const updateUser = (updatedUserData) => {
     setUser(prevUser => ({
       ...prevUser,
@@ -78,7 +66,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, isAuthenticated: !!user, updateUser }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      loading, 
+      isAuthenticated: !!user, 
+      updateUser 
+    }}>
       {!loading && children}
     </AuthContext.Provider>
   );
