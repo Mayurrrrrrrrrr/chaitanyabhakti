@@ -1,61 +1,101 @@
-/* frontend/src/components/ScriptureLibrary.css */
-.scripture-library-container {
-  padding: 1rem;
-}
-.scripture-library-container h2 {
-  text-align: center;
-  color: var(--primary-color);
-  margin-bottom: 1.5rem;
-}
-.scripture-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
+/*
+ * FILE: frontend/src/components/ScriptureLibrary.css
+ */
+.library-container {
+  padding: 0 16px 80px 16px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-@media (min-width: 600px) {
-  .scripture-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.library-header {
+  text-align: center;
+  padding: 24px 0;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 16px;
+}
+
+.library-header svg {
+  color: var(--primary-color, #f39c12);
+}
+
+.library-header h1 {
+  margin: 8px 0 4px 0;
+  font-size: 1.5rem;
+}
+
+.library-header p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-light, #5f5f5f);
+}
+
+.scripture-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
 
 .scripture-card {
-  background-color: #fff;
+  background: var(--background-color, #fff);
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.scripture-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
 .scripture-cover {
   width: 100%;
-  height: 200px;
+  height: 180px;
   object-fit: cover;
-  background-color: #eee;
 }
 
 .scripture-info {
-  padding: 1rem;
+  padding: 16px;
 }
 
 .scripture-info h3 {
-  margin-top: 0;
-  color: var(--primary-color);
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
 }
 
 .scripture-info p {
-  font-size: 0.9rem;
-  color: var(--text-light);
-  flex-grow: 1;
+  margin: 0 0 16px 0;
+  font-size: 0.95rem;
+  color: var(--text-light, #5f5f5f);
+  line-height: 1.5;
 }
 
-.scripture-links {
-  margin-top: 1rem;
+/* --- PRIORITY 2: TTS Button Styling --- */
+.tts-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: var(--primary-color, #f39c12);
+  color: white;
+  border: none;
+  min-height: 48px; /* Good touch target size */
+  transition: background-color 0.2s ease;
 }
 
-.scripture-links a {
-  margin-right: 10px;
-  font-weight: bold;
-  text-decoration: none;
+.tts-button:hover {
+  background-color: #e67e22; /* Darker shade of primary */
+}
+
+.tts-button.speaking {
+  background-color: #e74c3c; /* Red for "Stop" */
+}
+
+.tts-button.speaking:hover {
+  background-color: #c0392b; /* Darker red */
 }

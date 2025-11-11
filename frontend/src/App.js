@@ -1,9 +1,7 @@
-//
-// FILE: frontend/src/App.js
-//
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext'; // New Provider
 import MainLayout from './components/layout/MainLayout';
 
 // Import Components
@@ -16,6 +14,8 @@ import Medicines from './components/Medicines';
 import Profile from './components/Profile';
 import Satsang from './components/Satsang';
 import Tasks from './components/Tasks';
+import ScriptureLibrary from './components/ScriptureLibrary';
+import Calendar from './components/Calendar'; 
 
 // Import Admin & Route Guards
 import PrivateRoute from './components/PrivateRoute'; 
@@ -24,45 +24,64 @@ import AdminPanel from './components/admin/AdminPanel';
 import UserManagement from './components/admin/UserManagement';
 import ScriptureManagement from './components/admin/ScriptureManagement';
 import EventManagement from './components/admin/EventManagement';
-import ScriptureLibrary from './components/ScriptureLibrary'; // For the user library
 
-function App() { // 🛑 Make sure this function exists
+const AppWrapper = () => {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user && user.user_id) {
+      const preferences = user.preferences || {};
+      document.body.className = '';
+      document.body.classList.add(`theme-${preferences.theme || 'light'}`);
+      document.body.classList.add(`font-${preferences.font_size || 'medium'}`);
+      if (preferences.high_contrast) {
+        document.body.classList.add('high-contrast');
+      }
+    } else {
+      document.body.className = 'theme-light font-medium';
+    }
+  }, [user]);
+
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<Login />} />
+
+      <Route element={<PrivateRoute />}>
+        <Route element={<MainLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/japa" element={<JapaCounter />} />
+          <Route path="/family" element={<Family />} />
+          <Route path="/family/:id" element={<FamilyDetail />} />
+          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/satsang" element={<Satsang />} />
+          <Route path="/library" element={<ScriptureLibrary />} />
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/medicines" element={<Medicines />} />
+          <Route path="/profile" element={<Profile />} />
+        </Route>
+      </Route>
+
+      <Route element={<AdminRoute />}>
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/admin/users" element={<UserManagement />} />
+        <Route path="/admin/scriptures" element={<ScriptureManagement />} />
+        <Route path="/admin/events" element={<EventManagement />} />
+      </Route>
+    </Routes>
+  );
+}
+
+function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Login />} />
-
-          {/* Protected User Routes */}
-          <Route element={<PrivateRoute />}>
-            <Route element={<MainLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/japa" element={<JapaCounter />} />
-              <Route path="/family" element={<Family />} />
-              <Route path="/family/:id" element={<FamilyDetail />} />
-              <Route path="/tasks" element={<Tasks />} />
-              <Route path="/satsang" element={<Satsang />} />
-              <Route path="/library" element={<ScriptureLibrary />} />
-              <Route path="/medicines" element={<Medicines />} />
-              <Route path="/profile" element={<Profile />} />
-            </Route>
-          </Route>
-
-          {/* Protected Admin Routes */}
-          <Route element={<AdminRoute />}>
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/admin/users" element={<UserManagement />} />
-            <Route path="/admin/scriptures" element={<ScriptureManagement />} />
-            <Route path="/admin/events" element={<EventManagement />} />
-          </Route>
-
-        </Routes>
-      </Router>
+      <LanguageProvider> {/* Wrap with LanguageProvider */}
+        <Router>
+          <AppWrapper />
+        </Router>
+      </LanguageProvider>
     </AuthProvider>
   );
 }
 
-// 🛑 THIS LINE IS CRITICAL
 export default App;

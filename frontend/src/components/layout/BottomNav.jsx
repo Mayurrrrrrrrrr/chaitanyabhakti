@@ -1,45 +1,39 @@
-// frontend/src/components/layout/BottomNav.jsx
+//
+// FILE: frontend/src/components/layout/BottomNav.jsx
+//
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import './BottomNav.css';
 import { 
   FiHome, 
-  FiDisc, 
+  FiRepeat, 
   FiUsers, 
-  FiCheckSquare, 
-  FiHeadphones, 
-  FiUser,
-  FiBookOpen
+  FiCalendar, // Import Calendar Icon
+  FiUser 
 } from 'react-icons/fi';
 
 const BottomNav = () => {
-  // 🛑 FIX: I have removed the 'if' condition that was hiding
-  // this component on the /japa page.
-
   return (
     <nav className="bottom-nav">
       <NavLink to="/dashboard" className="nav-item">
-        <FiHome />
+        <FiHome size={24} />
         <span>Home</span>
       </NavLink>
-      <NavLink to="/family" className="nav-item">
-        <FiUsers />
-        <span>Family</span>
-      </NavLink>
-      <NavLink to="/japa" className="nav-item japa-link">
-        <FiDisc />
+      <NavLink to="/japa" className="nav-item">
+        <FiRepeat size={24} />
         <span>Japa</span>
       </NavLink>
-      <NavLink to="/tasks" className="nav-item">
-        <FiCheckSquare />
-        <span>Tasks</span>
+      <NavLink to="/family" className="nav-item">
+        <FiUsers size={24} />
+        <span>Family</span>
       </NavLink>
-      <NavLink to="/library" className="nav-item">
-        <FiBookOpen />
-        <span>Library</span>
+      {/* --- PRIORITY 2: CALENDAR NAV ITEM --- */}
+      <NavLink to="/calendar" className="nav-item">
+        <FiCalendar size={24} />
+        <span>Calendar</span>
       </NavLink>
       <NavLink to="/profile" className="nav-item">
-        <FiUser />
+        <FiUser size={24} />
         <span>Profile</span>
       </NavLink>
     </nav>

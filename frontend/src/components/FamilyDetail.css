@@ -1,111 +1,181 @@
-/* frontend/src/components/FamilyDetail.css */
+/*
+ * FILE: frontend/src/components/FamilyDetail.css
+ */
 .family-detail-container {
-  padding-bottom: 20px;
+  padding-bottom: 80px; /* Space for bottom nav */
 }
 
 .family-header {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 1.5rem;
-  border-radius: 12px;
+  padding: 20px;
+  background: var(--background-color, #fff);
   text-align: center;
-  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
 }
 
 .family-header h2 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 4px 0;
+  font-size: 1.6rem;
 }
 
 .family-header p {
   margin: 0;
-  opacity: 0.9;
+  font-size: 0.9rem;
+  color: var(--text-light, #5f5f5f);
 }
 
-.family-members h3, .family-feed h3 {
-  border-bottom: 2px solid var(--primary-color);
-  padding-bottom: 5px;
-  margin-bottom: 1rem;
+.family-header p strong {
+  color: var(--primary-color, #f39c12);
+  cursor: pointer;
 }
 
-.member-list {
+/* Tab Navigation */
+.family-tabs {
   display: flex;
-  overflow-x: auto;
-  padding-bottom: 10px;
+  background: #fdfdfd;
+  border-bottom: 1px solid #eee;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
+.family-tabs button {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 14px 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-light, #5f5f5f);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 52px; /* Accessibility */
+}
+
+.family-tabs button.active {
+  color: var(--primary-color, #f39c12);
+  border-bottom-color: var(--primary-color, #f39c12);
+}
+
+.family-content {
+  padding: 16px;
+}
+
+/* Member Card */
 .member-card {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  min-width: 80px;
-  margin-right: 15px;
-  text-align: center;
+  background: var(--background-color, #fff);
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-bottom: 12px;
 }
 
-.member-card img {
-  width: 60px;
-  height: 60px;
+.member-avatar {
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
-  background-color: var(--border-color);
-  object-fit: cover;
-  margin-bottom: 5px;
-}
-
-.member-card strong {
-  font-size: 0.9rem;
-}
-
-.member-card span {
-  font-size: 0.8rem;
-  color: var(--text-light);
-}
-
-.new-post-form {
-  background: #fff;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.new-post-form textarea {
-  width: 100%;
-  min-height: 80px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px;
-  font-family: inherit;
-  font-size: 1rem;
-  margin-bottom: 10px;
-}
-
-.new-post-form input[type="file"] {
-  margin-bottom: 10px;
-}
-
-.post-card {
-  background: #fff;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.post-header {
+  background: #eee;
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  justify-content: center;
+  overflow: hidden;
+  margin-right: 12px;
+  flex-shrink: 0;
 }
 
-.post-header img {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  margin-right: 10px;
-}
-
-.post-image {
+.member-avatar img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.member-name {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.member-relation {
+  font-size: 0.85rem;
+  color: var(--text-light, #5f5f5f);
+}
+
+.member-admin-badge {
+  font-size: 0.75rem;
+  background: #f0eafc;
+  color: #9b59b6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+  align-self: flex-start;
+}
+
+/* Task Card */
+.fam-task-card {
+  display: flex;
+  align-items: center;
+  background: var(--background-color, #fff);
+  padding: 16px;
   border-radius: 8px;
-  margin-top: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-bottom: 12px;
+}
+
+.fam-task-card .task-icon {
+  color: var(--primary-color, #f39c12);
+  margin-right: 16px;
+  font-size: 1.5rem;
+}
+
+.task-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.task-title {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.task-assignees {
+  font-size: 0.85rem;
+  color: var(--text-light, #5f5f5f);
+}
+
+/* Rank Card */
+.rank-card {
+  display: flex;
+  align-items: center;
+  background: var(--background-color, #fff);
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.rank-position {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--primary-color, #f39c12);
+  width: 40px;
+}
+
+.rank-name {
+  flex-grow: 1;
+  font-weight: 500;
+}
+
+.rank-malas {
+  font-weight: 600;
 }

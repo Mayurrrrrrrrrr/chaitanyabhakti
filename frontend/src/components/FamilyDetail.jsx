@@ -1,163 +1,229 @@
-// frontend/src/components/FamilyDetail.jsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
+import './JapaCounter.css';
 import { useAuth } from '../context/AuthContext';
-import './FamilyDetail.css'; //
+import { useLanguage } from '../context/LanguageContext';
+import { FiMic, FiMicOff, FiRotateCcw, FiX } from 'react-icons/fi';
 
-const FamilyDetail = () => {
-  const { id: familyId } = useParams(); // Get the family ID from the URL
+// --- Speech Recognition Setup ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = false;
+}
+
+const JapaCounter = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { language, t } = useLanguage();
   
-  const [family, setFamily] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [beadCount, setBeadCount] = useState(() => {
+    const savedBeads = localStorage.getItem('beadCount');
+    return savedBeads ? JSON.parse(savedBeads) : 0;
+  });
+  const [malaCount, setMalaCount] = useState(() => {
+    const savedMala = localStorage.getItem('malaCount');
+    return savedMala ? JSON.parse(savedMala) : 0;
+  });
   
-  // States for the new post form
-  const [postContent, setPostContent] = useState('');
-  const [postImage, setPostImage] = useState(null);
-  const [isPosting, setIsPosting] = useState(false);
+  const [offlineQueue, setOfflineQueue] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // Memoized fetch function
-  const fetchFamilyData = useCallback(async () => {
-    // 🛑 FIX: Don't fetch if familyId is not set
-    if (!familyId) {
-      setLoading(false);
-      setError('Invalid Family ID.');
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      setError('');
-      // Use the correct, non-undefined ID
-      const res = await api.get(`/families/${familyId}`);
-      setFamily(res.data);
-    } catch (err) {
-      console.error('Failed to load data:', err);
-      setError('डेटा लोड करने में विफल: ' + (err.response?.data?.error || err.message));
-    } finally {
-      setLoading(false);
-    }
-  }, [familyId]); // Re-run only if familyId changes
+  // --- Voice Commands State ---
+  const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState('');
+  
+  const malaCountRef = useRef(malaCount);
+  useEffect(() => { malaCountRef.current = malaCount; }, [malaCount]);
+
+  const isListeningRef = useRef(isListening);
+  useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
+
+  // Load API count *once* on load
+  useEffect(() => {
+    api.get('/japa/summary')
+      .then(res => {
+        if (res.data.today_count !== malaCountRef.current) {
+          setMalaCount(res.data.today_count || 0);
+          setBeadCount(0);
+        }
+      })
+      .catch(err => console.error("Failed to fetch today's count", err));
+  }, []); // Empty dependency array
 
   useEffect(() => {
-    fetchFamilyData();
-  }, [fetchFamilyData]);
+    localStorage.setItem('malaCount', JSON.stringify(malaCount));
+  }, [malaCount]);
+  
+  useEffect(() => {
+    localStorage.setItem('beadCount', JSON.stringify(beadCount));
+  }, [beadCount]);
 
-  // Handle submitting a new post to the family feed
-  const handlePostSubmit = async (e) => {
-    e.preventDefault();
-    if (!postContent && !postImage) return;
+  const saveToApi = useCallback(async (countToSave) => {
+    setIsSyncing(true);
+    try {
+      await api.post('/japa', {
+        mala_count: countToSave,
+        japa_date: new Date().toISOString().split('T')[0],
+      });
+      setOfflineQueue(0); 
+    } catch (err) {
+      console.error('Failed to save mala count (API failed), saving offline.', err);
+      setOfflineQueue(prev => prev + 1);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
 
-    setIsPosting(true);
-    const formData = new FormData();
-    formData.append('family_id', familyId);
-    formData.append('content', postContent);
-    if (postImage) {
-      formData.append('image', postImage);
+  const handleBeadClick = useCallback(() => {
+    setBeadCount(prevBeadCount => {
+      const newBeadCount = prevBeadCount + 1;
+      if (newBeadCount === 108) {
+        const newMalaCount = malaCountRef.current + 1;
+        setMalaCount(newMalaCount);
+        saveToApi(newMalaCount);
+        return 0;
+      }
+      return newBeadCount;
+    });
+  }, [saveToApi]);
+
+  const handleMalaReset = () => setBeadCount(0);
+  
+  const handleFullReset = () => {
+    setMalaCount(0);
+    setBeadCount(0);
+    saveToApi(0);
+  };
+
+  // --- Voice Command Functions ---
+  useEffect(() => {
+    if (!recognition) return;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+      
+      // 🛑 FIX: Add more keywords for reliability
+      const keywords = ["hare", "krishna", "add", "next", "bead", "राम", "एक", "push", "pop"];
+      
+      if (keywords.some(k => transcript.includes(k))) {
+        // Vibrate for feedback
+        if (navigator.vibrate) navigator.vibrate(50);
+        handleBeadClick();
+      }
+    };
+
+    recognition.onerror = (event) => {
+      // 🛑 FIX: Improved error handling
+      if (event.error === 'not-allowed') {
+        setVoiceError(t('japa_voice_denied'));
+        setIsListening(false);
+      } else if (event.error === 'no-speech' || event.error === 'audio-capture') {
+        // Ignore common, recoverable errors
+      } else {
+        console.error('Speech recognition error', event.error);
+        setVoiceError(`${t('japa_voice_error')}${event.error}`);
+        setIsListening(false);
+      }
+    };
+
+    recognition.onend = () => {
+      if (isListeningRef.current) {
+        // Automatically restart if it was supposed to be on
+        try {
+          recognition.start();
+        } catch(e) {
+          console.error("Recognition restart failed", e);
+          setIsListening(false); // Stop if restart fails
+        }
+      }
+    };
+    
+    // Cleanup on unmount
+    return () => {
+      if (recognition) {
+        recognition.stop();
+      }
+    };
+  }, [handleBeadClick, t]); // Add `t` dependency
+
+  const toggleListen = (e) => {
+    e.stopPropagation();
+    if (!recognition) {
+      setVoiceError(t('japa_voice_unsupported'));
+      return;
     }
 
-    try {
-      // This route comes from community.js
-      await api.post('/community', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      setPostContent('');
-      setPostImage(null);
-      fetchFamilyData(); // Refresh the family data (which should include posts)
-    } catch (err) {
-      setError('Failed to create post.');
-    } finally {
-      setIsPosting(false);
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      try {
+        // 🛑 FIX: Set language based on app context
+        recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+        recognition.start();
+        setIsListening(true);
+        setVoiceError('');
+      } catch (err) {
+        console.error('Speech recognition start failed', err);
+        if (err.name === 'NotAllowedError') {
+          setVoiceError(t('japa_voice_denied'));
+        } else {
+          setVoiceError(err.message);
+        }
+      }
     }
   };
 
-  // 🛑 FIX: Show loading or error until `family` object exists
-  if (loading) {
-    return <div>परिवार लोड हो रहा है...</div>;
-  }
-
-  if (error) {
-    return <div className="error-message">{error}</div>;
-  }
-  
-  if (!family) {
-    return <div className="error-message">Family not found.</div>;
-  }
-
-  const amIAdmin = family.members.find(m => m.user_id === user.id)?.is_admin;
-
   return (
-    <div className="family-detail-container">
-      <header className="family-header">
-        <h2>{family.family_name}</h2>
-        <p>Invite Code: <strong>{family.family_code}</strong></p>
-        {amIAdmin && (
-          <button onClick={() => navigate(`/admin/family/${family.family_id}`)}>
-            Manage Family
+    <div className="japa-container">
+      <div className="japa-display">
+        <div className="japa-display-box">
+          <span className="count">{malaCount}</span>
+          <span className="label">{t('malas')}</span>
+        </div>
+        <div className="japa-display-box">
+          <span className="count">{beadCount}</span>
+          <span className="label">{t('japa_beads')}</span>
+        </div>
+      </div>
+
+      <div className="japa-controls-wrapper">
+        <button className="bead-button" onClick={handleBeadClick}>
+          {t('greeting')}
+        </button>
+        
+        {recognition && (
+          <button 
+            className={`voice-toggle-btn ${isListening ? 'listening' : ''}`}
+            onClick={toggleListen}
+            title={isListening ? t('japa_voice_stop') : t('japa_voice_start')}
+          >
+            {isListening ? <FiMicOff /> : <FiMic />}
+            {isListening && <div className="listening-pulse"></div>}
           </button>
         )}
-      </header>
+      </div>
 
-      {/* New Post Form */}
-      <div className="new-post-form">
-        <form onSubmit={handlePostSubmit}>
-          <textarea
-            value={postContent}
-            onChange={(e) => setPostContent(e.target.value)}
-            placeholder="Share an update with your family..."
-          />
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setPostImage(e.target.files[0])}
-          />
-          <button type="submit" disabled={isPosting}>
-            {isPosting ? 'Posting...' : 'Post'}
-          </button>
-        </form>
+      <div className="status-messages">
+        {isSyncing && <div className="sync-status">Syncing...</div>}
+        {offlineQueue > 0 && <div className="sync-status error">Offline: {offlineQueue} malas unsynced.</div>}
+        {voiceError && <div className="sync-status error">{voiceError}</div>}
+        {!recognition && <div className="sync-status">{t('japa_voice_unsupported')}</div>}
+      </div>
+
+      <div className="reset-controls">
+        <button className="reset-btn" onClick={handleMalaReset}>
+          <FiRotateCcw /> {t('japa_reset_beads')}
+        </button>
+        <button className="reset-btn full-reset" onClick={handleFullReset}>
+          <FiX /> {t('japa_reset_all')}
+        </button>
       </div>
       
-      {/* Member List */}
-      <section className="family-members">
-        <h3>Members</h3>
-        <div className="member-list">
-          {family.members.map(member => (
-            <div key={member.user_id} className="member-card">
-              <img src={api.defaults.baseURL + member.profile_photo} alt={member.name} />
-              <strong>{member.name}</strong>
-              <span>{member.relation_label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Family Feed (Assuming 'posts' are part of the family data) */}
-      <section className="family-feed">
-        <h3>Family Feed</h3>
-        {family.posts && family.posts.length > 0 ? (
-          family.posts.map(post => (
-            <div key={post.post_id} className="post-card">
-              <div className="post-header">
-                <img src={api.defaults.baseURL + post.profile_photo} alt={post.name} />
-                <strong>{post.name}</strong>
-              </div>
-              <p>{post.content}</p>
-              {post.image_url && (
-                <img src={api.defaults.baseURL + post.image_url} alt="Post content" className="post-image" />
-              )}
-            </div>
-          ))
-        ) : (
-          <p>No posts in this family yet.</p>
-        )}
-      </section>
     </div>
   );
 };
 
-export default FamilyDetail;
+export default JapaCounter;

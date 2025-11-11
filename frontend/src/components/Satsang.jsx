@@ -1,214 +1,96 @@
-// frontend/src/components/Satsang.jsx
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useEffect, useState } from 'react';
+import api, { baseURL } from '../services/api';
+import ReactPlayer from 'react-player'; // 🛑 FIX: Correct import path
 import './Satsang.css';
-import { useAuth } from '../context/AuthContext';
-import { FiTrash2, FiYoutube, FiFileText, FiImage, FiMic } from 'react-icons/fi';
+import { FiVideo, FiMusic } from 'react-icons/fi';
+import { useLanguage } from '../context/LanguageContext';
+
+// A reusable component for video items
+const VideoCard = ({ item }) => (
+  <div className="media-card video-card">
+    <div className="media-player-wrapper">
+      {/* 🛑 FIX: Use ReactPlayer to embed the video */}
+      <ReactPlayer
+        className="react-player"
+        url={item.youtube_url}
+        width="100%"
+        height="100%"
+        controls={true}
+      />
+    </div>
+    <div className="media-info">
+      <h3>{item.title}</h3>
+      <p>{item.description || 'Satsang Video'}</p>
+    </div>
+  </div>
+);
+
+// A reusable component for audio items
+const AudioCard = ({ item }) => (
+  <div className="media-card audio-card">
+    <div className="media-info">
+      <FiMusic size={24} className="media-icon" />
+      <h3>{item.title || 'Audio Recording'}</h3>
+      {/* 🛑 FIX: Prepend baseURL to the file_url */}
+      <audio controls src={`${baseURL}${item.file_url}`}>
+        Your browser does not support the audio element.
+      </audio>
+    </div>
+  </div>
+);
 
 const Satsang = () => {
-  const { user } = useAuth(); // Get user to check for admin status
-  const [posts, setPosts] = useState([]);
+  const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // State for the upload forms
-  const [uploadType, setUploadType] = useState('text'); // text, video, image, pdf
-  const [postContent, setPostContent] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [file, setFile] = useState(null);
-  
-  const [uploadError, setUploadError] = useState('');
-  const [uploadSuccess, setUploadSuccess] = useState('');
-
-  const fetchMedia = async () => {
-    try {
-      setLoading(true);
-      // 🛑 FIX: Use the new single 'satsang' route from community.js
-      const res = await api.get('/community/satsang');
-      setPosts(res.data);
-    } catch (err) {
-      console.error('Failed to fetch media', err);
-      setError('Failed to load media.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { t } = useLanguage(); // Get translation function
 
   useEffect(() => {
+    const fetchMedia = async () => {
+      try {
+        setLoading(true);
+        // Fetch public videos and audios
+        const [videosRes, audiosRes] = await Promise.all([
+          api.get('/media/videos'), // Fetches public videos
+          api.get('/media/audio')   // Fetches public audios
+        ]);
+
+        // Combine and sort by date
+        const combined = [
+          ...videosRes.data.map(v => ({ ...v, type: 'video', date: v.added_at })),
+          ...audiosRes.data.map(a => ({ ...a, type: 'audio', date: a.uploaded_at }))
+        ];
+
+        combined.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        setMedia(combined);
+      } catch (err) {
+        console.error('Failed to fetch media:', err);
+        setError('Failed to load satsang feed.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchMedia();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setUploadError('');
-    setUploadSuccess('');
-
-    const formData = new FormData();
-    formData.append('post_type', uploadType);
-    // family_id is null for global Satsang posts
-    
-    if (uploadType === 'text') {
-      formData.append('content', postContent);
-    } else if (uploadType === 'video') {
-      formData.append('content', postContent); // Use content for title
-      formData.append('video_url', videoUrl);
-    } else if (uploadType === 'pdf' || uploadType === 'image') {
-      if (!file) {
-        setUploadError('Please select a file.');
-        return;
-      }
-      formData.append('content', postContent); // Use content for title/description
-      formData.append('file', file);
-    }
-
-    try {
-      await api.post('/community', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      setUploadSuccess('Post created!');
-      // Reset forms
-      setPostContent('');
-      setVideoUrl('');
-      setFile(null);
-      fetchMedia(); // Refresh list
-    } catch (err) {
-      setUploadError(err.response?.data?.error || 'Failed to create post.');
-    }
-  };
-
-  const handleDelete = async (postId) => {
-    if (window.confirm('Are you sure you want to delete this post?')) {
-      try {
-        await api.delete(`/community/${postId}`);
-        fetchMedia(); // Refresh list
-      } catch (err) {
-        alert('Failed to delete post.');
-      }
-    }
-  };
-  
-  const renderPost = (post) => {
-    const isOwner = post.user_id === user.id;
-    const canDelete = user.is_super_admin || isOwner;
-
-    return (
-      <div className="post-card" key={post.post_id}>
-        <div className="post-header">
-          <img src={api.defaults.baseURL + post.profile_photo} alt={post.name} />
-          <strong>{post.name}</strong>
-          {canDelete && (
-            <button className="delete-btn" onClick={() => handleDelete(post.post_id)}>
-              <FiTrash2 />
-            </button>
-          )}
-        </div>
-        <p>{post.content}</p>
-        {post.post_type === 'image' && post.image_url && (
-          <img src={api.defaults.baseURL + post.image_url} alt="Post" className="post-image" />
-        )}
-        {post.post_type === 'video' && post.video_url && (
-          <a href={post.video_url} target="_blank" rel="noopener noreferrer">Watch Video <FiYoutube/></a>
-        )}
-        {post.post_type === 'pdf' && post.file_url && (
-          <a href={api.defaults.baseURL + post.file_url} target="_blank" rel="noopener noreferrer">View PDF <FiFileText/></a>
-        )}
-        {/* We can add audio type later */}
-      </div>
-    );
-  };
-
-  const renderUploadForm = () => (
-    <form onSubmit={handleSubmit} className="upload-form">
-      {uploadType === 'text' && (
-        <textarea
-          placeholder="Share a quote or thought..."
-          value={postContent}
-          onChange={(e) => setPostContent(e.target.value)}
-          required
-        />
-      )}
-      {uploadType === 'video' && (
-        <>
-          <input
-            type="text"
-            placeholder="Video Title"
-            value={postContent}
-            onChange={(e) => setPostContent(e.target.value)}
-            required
-          />
-          <input
-            type="url"
-            placeholder="YouTube URL"
-            value={videoUrl}
-            onChange={(e) => setVideoUrl(e.target.value)}
-            required
-          />
-        </>
-      )}
-      {uploadType === 'image' && (
-        <>
-          <input
-            type="text"
-            placeholder="Image description..."
-            value={postContent}
-            onChange={(e) => setPostContent(e.target.value)}
-          />
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setFile(e.target.files[0])}
-            required
-          />
-        </>
-      )}
-      {uploadType === 'pdf' && (
-        <>
-          <input
-            type="text"
-            placeholder="PDF Title"
-            value={postContent}
-            onChange={(e) => setPostContent(e.target.value)}
-            required
-          />
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => setFile(e.target.files[0])}
-            required
-          />
-        </>
-      )}
-      <button type="submit">Post to Satsang</button>
-    </form>
-  );
-
   return (
     <div className="satsang-container">
-      <h2>Satsang Feed</h2>
+      <header className="satsang-header">
+        <h1>{t('satsang')}</h1>
+        <p>{t('community_feed')}</p>
+      </header>
 
-      <div className="upload-section">
-        <h3>Share to Satsang</h3>
-        {uploadError && <p className="error-message">{uploadError}</p>}
-        {uploadSuccess && <p className="success-message">{uploadSuccess}</p>}
-        
-        <div className="upload-toggles">
-          <button onClick={() => setUploadType('text')} className={uploadType === 'text' ? 'active' : ''}><FiFileText/> Text</button>
-          <button onClick={() => setUploadType('video')} className={uploadType === 'video' ? 'active' : ''}><FiYoutube/> Video</button>
-          <button onClick={() => setUploadType('image')} className={uploadType === 'image' ? 'active' : ''}><FiImage/> Image</button>
-          <button onClick={() => setUploadType('pdf')} className={uploadType === 'pdf' ? 'active' : ''}><FiFileText/> PDF</button>
-        </div>
-        
-        {renderUploadForm()}
-      </div>
+      {loading && <div>Loading...</div>}
+      {error && <div className="error-message">{error}</div>}
 
-      {loading && <p>Loading Satsang feed...</p>}
-      {error && <p className="error-message">{error}</p>}
-      
-      <div className="feed-list">
-        {!loading && posts.length === 0 && <p>No posts in the Satsang feed yet.</p>}
-        {posts.map(renderPost)}
+      <div className="media-list">
+        {media.map((item) => (
+          item.type === 'video' 
+            ? <VideoCard key={`video-${item.video_id}`} item={item} />
+            : <AudioCard key={`audio-${item.audio_id}`} item={item} />
+        ))}
       </div>
     </div>
   );

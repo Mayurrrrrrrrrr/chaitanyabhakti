@@ -1,11 +1,12 @@
-// frontend/src/components/Dashboard.jsx
+//
+// FILE: frontend/src/components/Dashboard.jsx
+//
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import './Dashboard.css';
 import { useAuth } from '../context/AuthContext';
-// 🛑 Import task icon
-import { FiCheckSquare } from 'react-icons/fi';
+import { FiCheckSquare, FiShare2 } from 'react-icons/fi'; // Import Share icon
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -15,7 +16,6 @@ const Dashboard = () => {
     current_streak: 0,
     longest_streak: 0,
   });
-  // 🛑 New state for tasks
   const [taskSummary, setTaskSummary] = useState({ pending_count: 0 });
 
   useEffect(() => {
@@ -28,7 +28,6 @@ const Dashboard = () => {
       }
     };
     
-    // 🛑 New function to fetch task summary
     const fetchTaskSummary = async () => {
       try {
         const res = await api.get('/tasks/summary/my-pending');
@@ -39,8 +38,20 @@ const Dashboard = () => {
     };
 
     fetchStats();
-    fetchTaskSummary(); // 🛑 Call the new function
+    fetchTaskSummary();
   }, []);
+
+  // --- PRIORITY 2: WHATSAPP SHARE FUNCTION ---
+  const handleShareToWhatsApp = () => {
+    let message = `Hare Krishna, ${user?.name}! 🙏\n\nToday's Japa: ${stats.today_count} Malas\nTotal Japa: ${stats.total_japa_count} Malas\nMy current streak: ${stats.current_streak} days 🔥\n\nTrack your bhakti with me!`;
+    
+    // For senior citizens, we can use a simpler message
+    // let message = `Hare Krishna. ${stats.today_count} mala ho gayi.`;
+
+    const encodedMessage = encodeURIComponent(message);
+    // This URL works on both mobile and desktop
+    window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`);
+  };
 
   return (
     <div className="dashboard-container">
@@ -48,6 +59,11 @@ const Dashboard = () => {
         <h1>{`Hare Krishna, ${user?.name || 'Bhakta'}`}</h1>
         <p>Your spiritual progress summary</p>
       </header>
+
+      {/* --- PRIORITY 2: WHATSAPP SHARE BUTTON --- */}
+      <button className="share-btn" onClick={handleShareToWhatsApp}>
+        <FiShare2 /> Share My Progress
+      </button>
 
       <div className="stats-grid">
         <div className="stat-card">
@@ -67,7 +83,6 @@ const Dashboard = () => {
           <p>{stats.longest_streak} {stats.longest_streak === 1 ? 'day' : 'days'}</p>
         </div>
         
-        {/* 🛑 NEW TASK CARD */}
         <div className="stat-card task-card">
           <Link to="/tasks" className="task-link-wrapper">
             <FiCheckSquare size={24} />
