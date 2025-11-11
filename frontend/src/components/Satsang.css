@@ -1,81 +1,182 @@
-.satsang-page h2 {
-  font-weight: 700;
-  color: var(--text-light);
-  border-bottom: 2px solid var(--border-color);
-  padding-bottom: 10px;
-  font-size: 1.2rem;
-  margin-top: 25px;
-}
-
-/* --- शास्त्र --- */
-.scripture-list {
-  margin-top: 20px;
-}
-.scripture-card {
-  border-left: 5px solid var(--accent-color);
-  padding: 15px 20px;
-}
-.scripture-title {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text-color);
-  margin-top: 0;
-  margin-bottom: 5px;
-}
-.scripture-desc {
-  font-size: 0.95rem;
-  color: var(--text-light);
-  margin-bottom: 20px;
-}
-.scripture-buttons {
-  display: flex;
-  gap: 10px;
-}
-.scripture-buttons .btn {
-  font-size: 1rem;
-  padding: 10px 20px;
-  border-radius: 8px;
-}
-
-/* --- वीडियो --- */
-.video-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr); /* एक पंक्ति में 2 वीडियो */
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.video-card-link {
-  text-decoration: none;
-}
-
-.video-card {
+/* frontend/src/components/Satsang.css */
+.satsang-container {
   padding: 0;
-  margin: 0;
-  overflow: hidden; /* ताकि इमेज कोनों से बाहर न निकले */
-  transition: all 0.2s ease;
-}
-.video-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
 }
 
-.video-thumbnail {
-  width: 100%;
-  height: 120px;
-  object-fit: cover; /* इमेज को सही आकार में दिखाता है */
+.satsang-container h2 {
+  text-align: center;
+  color: var(--primary-color);
+}
+
+.upload-section {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.upload-section h3 {
+  margin-top: 0;
+  text-align: center;
+}
+
+.upload-toggles {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.upload-toggles button {
+  flex: 1;
+  padding: 0.75rem 0.5rem;
+  background-color: transparent;
+  color: var(--text-light);
+  border: none;
+  border-radius: 0;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.upload-toggles button.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.upload-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.upload-form input,
+.upload-form textarea {
+  margin-bottom: 0.75rem;
+}
+
+.upload-form textarea {
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.upload-form button {
+  background-color: #2ecc71;
+}
+
+/* 🛑 NEW STYLES FOR FEED POSTS */
+.feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.post-card {
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border-color);
 }
 
-.video-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-color);
-  margin: 10px 15px;
-  /* यदि शीर्षक लंबा है तो उसे छोटा करें */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;  
+.post-header img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+  object-fit: cover;
+  background-color: #eee;
+}
+
+.post-header strong {
+  font-size: 1rem;
+}
+
+.post-card p {
+  padding: 1rem;
+  margin: 0;
+  white-space: pre-wrap; /* Preserves line breaks in text posts */
+}
+
+.post-image {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+}
+
+.post-card a {
+  display: block;
+  padding: 1rem;
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.delete-btn {
+  margin-left: auto;
+  background: transparent;
+  color: var(--text-light);
+  padding: 5px;
+}
+
+.delete-btn:hover {
+  color: #e74c3c;
+}
+
+/* --- Old styles --- */
+.media-section h3 {
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 5px;
+  margin-bottom: 1rem;
+}
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.media-card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   overflow: hidden;
-  height: 42px; /* 2 लाइनों की ऊँचाई */
+  text-decoration: none;
+  color: var(--text-color);
+}
+
+.media-card img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  background-color: #eee;
+}
+
+.media-card h4 {
+  padding: 0.75rem;
+  margin: 0;
+}
+
+.audio-card {
+  background: #fff;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.audio-card h4 {
+  margin: 0 0 0.5rem 0;
+}
+
+.audio-card audio {
+  width: 100%;
 }

@@ -1,52 +1,63 @@
 // frontend/src/components/JapaCounter.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import './JapaCounter.css'; //
-import { useAuth } from '../context/AuthContext'; //
+import './JapaCounter.css';
+import { useAuth } from '../context/AuthContext';
 
 const JapaCounter = () => {
   const { user } = useAuth();
-  const [beadCount, setBeadCount] = useState(0);
-  const [malaCount, setMalaCount] = useState(0);
+  
+  // 🛑 FIX: Load initial state from localStorage
+  const [beadCount, setBeadCount] = useState(() => {
+    const savedBeads = localStorage.getItem('beadCount');
+    return savedBeads ? JSON.parse(savedBeads) : 0;
+  });
+  const [malaCount, setMalaCount] = useState(() => {
+    const savedMala = localStorage.getItem('malaCount');
+    return savedMala ? JSON.parse(savedMala) : 0;
+  });
+  
   const [offlineQueue, setOfflineQueue] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Load counter from API or localStorage
-  const loadCounter = useCallback(async () => {
-    try {
-      // 🛑 FIX: Get today's count from the summary route
-      const res = await api.get('/japa/summary');
-      setMalaCount(res.data.today_count || 0);
-      setBeadCount(0); // Always reset bead count on load
-    } catch (err) {
-      console.error("Failed to fetch today's count", err);
-      const savedMala = localStorage.getItem('malaCount');
-      if (savedMala) {
-        setMalaCount(JSON.parse(savedMala));
+  // Load API count *once* on load
+  useEffect(() => {
+    const loadApiCount = async () => {
+      try {
+        const res = await api.get('/japa/summary');
+        // Check if API count is different from local, this handles first-time load
+        if (res.data.today_count !== malaCount) {
+          setMalaCount(res.data.today_count || 0);
+          setBeadCount(0); // Reset beads if loading from API
+        }
+      } catch (err) {
+        console.error("Failed to fetch today's count", err);
+        // If API fails, we trust the localStorage version we already loaded
       }
-    }
+    };
+    loadApiCount();
+    // We only want this to run once on load, so we disable the exhaustive-deps warning
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    loadCounter();
-  }, [loadCounter]);
-
-  // Save to localStorage
+  // 🛑 FIX: Save to localStorage on *every* change
   useEffect(() => {
     localStorage.setItem('malaCount', JSON.stringify(malaCount));
   }, [malaCount]);
+  
+  useEffect(() => {
+    localStorage.setItem('beadCount', JSON.stringify(beadCount));
+  }, [beadCount]);
 
   // API saving logic
   const saveToApi = useCallback(async (countToSave) => {
     setIsSyncing(true);
     try {
-      // 🛑 FIX: The route to save is POST /japa, not /japa/increment
       await api.post('/japa', {
         mala_count: countToSave,
         japa_date: new Date().toISOString().split('T')[0],
-        family_id: null // Or manage this if you have family selection
       });
-      setOfflineQueue(0); // Clear queue on successful sync
+      setOfflineQueue(0); 
     } catch (err) {
       console.error('Failed to save mala count (API failed), saving offline.', err);
       setOfflineQueue(prev => prev + 1);

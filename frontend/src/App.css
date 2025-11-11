@@ -8,14 +8,10 @@
 .main-content {
   /* This padding ensures content doesn't hide under the
     header (if you add one) or the bottom nav bar.
-    pb-80px is a good starting point for a bottom nav.
   */
-  padding-top: 1rem;
-  padding-bottom: 80px; /* Space for BottomNav */
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding: 1rem 1rem 80px 1rem; /* 80px space for BottomNav */
   flex-grow: 1; /* Makes content fill the space */
-  max-width: 800px; /* Optional: constrain width on desktop */
-  margin: 0 auto;  /* Optional: center the content */
+  max-width: 800px; /* Constrain width on desktop */
+  margin: 0 auto;  /* Center the content */
   width: 100%;
 }

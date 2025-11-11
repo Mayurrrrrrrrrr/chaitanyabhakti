@@ -2,23 +2,19 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import './BottomNav.css';
-// You'll need to install react-icons: npm install react-icons
 import { 
   FiHome, 
   FiDisc, 
   FiUsers, 
   FiCheckSquare, 
   FiHeadphones, 
-  FiUser 
+  FiUser,
+  FiBookOpen
 } from 'react-icons/fi';
 
 const BottomNav = () => {
-  const location = useLocation();
-  
-  // Don't show nav on the JapaCounter page
-  if (location.pathname === '/japa') {
-    return null;
-  }
+  // 🛑 FIX: I have removed the 'if' condition that was hiding
+  // this component on the /japa page.
 
   return (
     <nav className="bottom-nav">
@@ -34,9 +30,13 @@ const BottomNav = () => {
         <FiDisc />
         <span>Japa</span>
       </NavLink>
-      <NavLink to="/satsang" className="nav-item">
-        <FiHeadphones />
-        <span>Satsang</span>
+      <NavLink to="/tasks" className="nav-item">
+        <FiCheckSquare />
+        <span>Tasks</span>
+      </NavLink>
+      <NavLink to="/library" className="nav-item">
+        <FiBookOpen />
+        <span>Library</span>
       </NavLink>
       <NavLink to="/profile" className="nav-item">
         <FiUser />

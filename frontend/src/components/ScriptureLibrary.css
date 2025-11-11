@@ -1,0 +1,61 @@
+/* frontend/src/components/ScriptureLibrary.css */
+.scripture-library-container {
+  padding: 1rem;
+}
+.scripture-library-container h2 {
+  text-align: center;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+}
+.scripture-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 600px) {
+  .scripture-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.scripture-card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.scripture-cover {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  background-color: #eee;
+}
+
+.scripture-info {
+  padding: 1rem;
+}
+
+.scripture-info h3 {
+  margin-top: 0;
+  color: var(--primary-color);
+}
+
+.scripture-info p {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  flex-grow: 1;
+}
+
+.scripture-links {
+  margin-top: 1rem;
+}
+
+.scripture-links a {
+  margin-right: 10px;
+  font-weight: bold;
+  text-decoration: none;
+}

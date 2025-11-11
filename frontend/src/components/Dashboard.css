@@ -1,98 +1,18 @@
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
+/* Add this to the end of frontend/src/components/Dashboard.css */
+
+.stat-card.task-card {
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
 }
 
-.greeting-card {
-  width: 100%;
-  text-align: center;
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: var(--primary-color-dark);
-  background-color: var(--secondary-color-light);
-  border: 1px solid var(--secondary-color);
-}
-.greeting-card p {
-  margin: 5px 0;
+.stat-card.task-card p {
+  color: var(--primary-color);
 }
 
-.dashboard h3 {
-  font-weight: 700;
-  color: var(--text-light);
-  margin-top: 25px;
-  margin-bottom: 10px;
-  font-size: 1.3rem;
-}
-
-.stats-grid {
-  display: flex;
-  justify-content: space-around;
-  width: 100%;
-  margin: 10px 0;
-  gap: 15px; /* कार्ड के बीच गैप */
-}
-
-.stat-card {
-  background: var(--bg-light);
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-  flex: 1; /* बराबर चौड़ाई */
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
-}
-
-.stat-value {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--secondary-color);
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  color: var(--text-light);
-  margin-top: 5px;
-  font-weight: 500;
-}
-
-.japa-button-link {
+.task-link-wrapper {
   text-decoration: none;
+  color: inherit;
+  display: block;
+  height: 100%;
   width: 100%;
-  margin: 25px 0;
-}
-
-.japa-button {
-  width: 100%;
-  padding: 20px;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: white;
-  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(255, 153, 51, 0.4);
-  transition: all 0.2s ease;
-  font-family: 'Noto Sans Devanagari', sans-serif;
-}
-
-.japa-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(255, 153, 51, 0.5);
-}
-
-.quick-links {
-  display: flex;
-  justify-content: space-around;
-  width: 100%;
-  margin-top: 20px;
-}
-
-.quick-link {
-  color: var(--secondary-color);
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 1rem;
 }

@@ -2,8 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import './Dashboard.css'; //
-import { useAuth } from '../context/AuthContext'; //
+import './Dashboard.css';
+import { useAuth } from '../context/AuthContext';
+// 🛑 Import task icon
+import { FiCheckSquare } from 'react-icons/fi';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -13,18 +15,31 @@ const Dashboard = () => {
     current_streak: 0,
     longest_streak: 0,
   });
+  // 🛑 New state for tasks
+  const [taskSummary, setTaskSummary] = useState({ pending_count: 0 });
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // 🛑 FIX: Changed '/japa/stats' to '/japa/summary'
         const res = await api.get('/japa/summary');
         setStats(res.data);
       } catch (err) {
         console.error('Failed to fetch stats', err);
       }
     };
+    
+    // 🛑 New function to fetch task summary
+    const fetchTaskSummary = async () => {
+      try {
+        const res = await api.get('/tasks/summary/my-pending');
+        setTaskSummary(res.data);
+      } catch (err) {
+        console.error('Failed to fetch task summary', err);
+      }
+    };
+
     fetchStats();
+    fetchTaskSummary(); // 🛑 Call the new function
   }, []);
 
   return (
@@ -50,6 +65,15 @@ const Dashboard = () => {
         <div className="stat-card">
           <h2>Longest Streak</h2>
           <p>{stats.longest_streak} {stats.longest_streak === 1 ? 'day' : 'days'}</p>
+        </div>
+        
+        {/* 🛑 NEW TASK CARD */}
+        <div className="stat-card task-card">
+          <Link to="/tasks" className="task-link-wrapper">
+            <FiCheckSquare size={24} />
+            <h2>Pending Tasks</h2>
+            <p>{taskSummary.pending_count}</p>
+          </Link>
         </div>
       </div>
 

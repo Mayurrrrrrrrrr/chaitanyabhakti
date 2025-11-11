@@ -1,0 +1,60 @@
+/* frontend/src/components/admin/AdminForms.css */
+.admin-page-container {
+  padding: 1rem;
+}
+
+.admin-page-container h2 {
+  text-align: center;
+  color: var(--primary-color);
+}
+
+.admin-form {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-form h3 {
+  margin-top: 0;
+  text-align: center;
+}
+
+.admin-list table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.admin-list th, .admin-list td {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.admin-list th {
+  background-color: #f9f9f9;
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.admin-list tr:last-child td {
+  border-bottom: none;
+}
+
+.btn-delete {
+  background-color: #e74c3c;
+  color: white;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+}
+.btn-delete:hover {
+  background-color: #c0392b;
+}

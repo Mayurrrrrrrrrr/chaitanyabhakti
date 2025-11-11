@@ -12,13 +12,30 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config(); // Loads .env file credentials
 
+// 🛑 APP MUST BE DEFINED FIRST
 const app = express();
 
 // =====================================================
 // MIDDLEWARE
 // =====================================================
 
-app.use(cors());
+// 🛑 FIX: Explicit CORS Configuration for mobile/IP access
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://192.168.29.35:5000' // 🛑 REPLACE with your computer's IP + frontend port
+  // Add any other IPs you use for testing
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS policy does not allow access from this origin.'));
+    }
+  }
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files statically
@@ -51,8 +68,8 @@ pool.getConnection()
 // =====================================================
 // FILE UPLOAD CONFIGURATION
 // =====================================================
-// Create upload directories if they don't exist
-['uploads', 'uploads/images', 'uploads/audio', 'uploads/videos'].forEach(dir => {
+// 🛑 UPDATED: Create 'uploads/files' directory for PDFs
+['uploads', 'uploads/images', 'uploads/audio', 'uploads/videos', 'uploads/files'].forEach(dir => {
     const dirPath = path.join(__dirname, dir);
     if (!fs.existsSync(dirPath)) {
         fs.mkdirSync(dirPath, { recursive: true });
@@ -66,6 +83,8 @@ const storage = multer.diskStorage({
             uploadDir = 'uploads/audio';
         } else if (file.mimetype.startsWith('video/')) {
             uploadDir = 'uploads/videos';
+        } else if (file.mimetype === 'application/pdf') {
+            uploadDir = 'uploads/files'; // 🛑 Save PDFs here
         }
         cb(null, uploadDir);
     },
@@ -79,15 +98,15 @@ const upload = multer({
     storage: storage,
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
     fileFilter: (req, file, cb) => {
-        // Allow common images, audio, and video
-        const allowedTypes = /jpeg|jpg|png|gif|mp3|wav|mpeg|mp4|mov|avi/;
+        // 🛑 UPDATED: Allow PDF files
+        const allowedTypes = /jpeg|jpg|png|gif|mp3|wav|mpeg|mp4|mov|avi|pdf/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
         
         if (mimetype && extname) {
             return cb(null, true);
         } else {
-            cb(new Error('Invalid file type'));
+            cb(new Error('Invalid file type: ' + file.mimetype));
         }
     }
 });
@@ -110,13 +129,7 @@ const authenticateToken = (req, res, next) => {
         if (err) {
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
-        // IMPORTANT: The user payload is nested inside 'user' in your other code
-        // But your JWT might just be the user object. We'll check both.
-        // My auth routes create { user: { id: ... } }
-        // Your old auth routes create { user_id: ... }
-        // Let's standardize on the { user: { ... } } payload from my previous code.
         
-        // If the token payload is { user_id: 1, ... }, adapt it
         if (decoded.user_id && !decoded.user) {
              req.user = { 
                 id: decoded.user_id, 
@@ -124,11 +137,9 @@ const authenticateToken = (req, res, next) => {
                 is_super_admin: decoded.is_super_admin 
             };
         } 
-        // If the token payload is { user: { id: 1, ... } }
         else if (decoded.user) {
             req.user = decoded.user;
         } 
-        // Otherwise, invalid token structure
         else {
              return res.status(403).json({ error: 'Invalid token payload' });
         }
@@ -140,7 +151,6 @@ const authenticateToken = (req, res, next) => {
 // =====================================================
 // IMPORT ROUTES
 // =====================================================
-// These files must export a function: module.exports = (db, upload) => { ... }
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const japaRoutes = require('./routes/japa.js');
@@ -150,37 +160,29 @@ const medicineRoutes = require('./routes/medicines.js');
 const scriptureRoutes = require('./routes/scriptures.js');
 const communityRoutes = require('./routes/community.js');
 const mediaRoutes = require('./routes/media.js');
-const userRoutes = require('./routes/user.js'); // Assuming you create this
+const userRoutes = require('./routes/user.js');
+const eventsRoutes = require('./routes/events.js'); // 🛑 ADDED
 
 // =====================================================
 // API ROUTES
 // =====================================================
 
 // --- Public Auth Routes (No token needed) ---
-// We pass the 'pool' (db connection) to the route file.
-// The authRoutes file handles its own public/private logic.
 app.use('/api/auth', authRoutes(pool));
 
 // --- Protected API Routes (Token required) ---
-// These routes are protected by `authenticateToken`
-// We pass both 'pool' and 'upload' to the routes that need them.
 app.use('/api/japa', authenticateToken, japaRoutes(pool));
 app.use('/api/families', authenticateToken, familyRoutes(pool));
 app.use('/api/tasks', authenticateToken, taskRoutes(pool));
 app.use('/api/medicines', authenticateToken, medicineRoutes(pool));
 app.use('/api/scriptures', authenticateToken, scriptureRoutes(pool));
 app.use('/api/community', authenticateToken, communityRoutes(pool, upload));
-app.use('/api/media', authenticateToken, mediaRoutes(pool, upload));
-
-// --- User Profile Routes (Token required) ---
-// These are special because one of them uses the 'upload' middleware
+app.use('/api/media', authenticateToken, mediaRoutes(pool, upload)); 
 app.use('/api/user', authenticateToken, userRoutes(pool, upload));
+app.use('/api/events', authenticateToken, eventsRoutes(pool)); // 🛑 ADDED
 
 // --- Admin Routes (Token + Admin check required) ---
-// `authenticateToken` runs first, then `adminRoutes` will use
-// the `isSuperAdmin` middleware internally.
-app.use('/api/admin', authenticateToken, adminRoutes(pool));
-
+app.use('/api/admin', authenticateToken, adminRoutes(pool, upload)); // 🛑 Pass upload
 
 // =====================================================
 // SERVER START

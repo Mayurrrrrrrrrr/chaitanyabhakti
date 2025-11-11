@@ -56,13 +56,14 @@ button:hover {
   opacity: 0.9;
 }
 
-input, select {
+input, select, textarea {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 1rem;
+  font-family: 'Noto Sans', sans-serif;
 }
 
 .error-message {
@@ -71,6 +72,7 @@ input, select {
   padding: 10px;
   border-radius: 8px;
   text-align: center;
+  margin: 10px 0;
 }
 
 .success-message {
@@ -79,4 +81,5 @@ input, select {
   padding: 10px;
   border-radius: 8px;
   text-align: center;
+  margin: 10px 0;
 }
