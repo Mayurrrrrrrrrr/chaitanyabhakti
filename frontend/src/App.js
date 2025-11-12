@@ -24,6 +24,7 @@ import AdminPanel from './components/admin/AdminPanel';
 import UserManagement from './components/admin/UserManagement';
 import ScriptureManagement from './components/admin/ScriptureManagement';
 import EventManagement from './components/admin/EventManagement';
+import MediaManagement from './components/admin/MediaManagement'; // <-- ADDED: Media management import
 
 const AppWrapper = () => {
   const { user } = useAuth();
@@ -62,12 +63,12 @@ const AppWrapper = () => {
         </Route>
       </Route>
 
-      <Route element={<AdminRoute />}>
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/admin/users" element={<UserManagement />} />
-        <Route path="/admin/scriptures" element={<ScriptureManagement />} />
-        <Route path="/admin/events" element={<EventManagement />} />
-      </Route>
+      {/* Admin Routes - wrapped individually with AdminRoute */}
+      <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+      <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+      <Route path="/admin/scriptures" element={<AdminRoute><ScriptureManagement /></AdminRoute>} />
+      <Route path="/admin/events" element={<AdminRoute><EventManagement /></AdminRoute>} />
+      <Route path="/admin/media" element={<AdminRoute><MediaManagement /></AdminRoute>} />
     </Routes>
   );
 }

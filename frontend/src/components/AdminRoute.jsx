@@ -1,28 +1,22 @@
-// frontend/src/components/AdminRoute.jsx
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const AdminRoute = () => {
-  const { isAuthenticated, user, loading } = useAuth();
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth(); //
+  const location = useLocation();
 
   if (loading) {
-    // Wait until authentication status is loaded
-    return <div>Loading...</div>; 
+    return <div>Loading...</div>; // Shows a loading message
   }
 
-  if (!isAuthenticated) {
-    // Not logged in, redirect to login
-    return <Navigate to="/login" replace />;
+  // Check if user exists AND has the 'admin' role
+  if (user && user.role === 'admin') { //
+    return children; // This will render your <AdminPanel />
   }
 
-  if (!user || !user.is_super_admin) {
-    // Logged in, but NOT an admin. Redirect to regular dashboard.
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // Logged in AND is an admin, show the nested route (AdminPanel, etc.)
-  return <Outlet />;
+  // If not an admin, redirect to the login page
+  return <Navigate to="/login" state={{ from: location }} replace />; //
 };
 
 export default AdminRoute;

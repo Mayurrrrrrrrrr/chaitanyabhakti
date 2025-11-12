@@ -34,47 +34,27 @@
   margin-bottom: 24px;
   overflow: hidden;
   border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 2rem;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* 🛑 FIX: Wrapper to hold the video player */
 .media-player-wrapper {
   position: relative;
-  padding-top: 56.25%; /* 16:9 Aspect Ratio */
+  width: 100%;
+  /* This creates a 16:9 aspect ratio box */
+  padding-top: 56.25%; 
+  background-color: #000;
 }
 
 .react-player {
+  /* This makes the player fill the aspect-ratio box */
   position: absolute;
   top: 0;
   left: 0;
 }
 
-.media-info {
-  padding: 16px;
-}
-
-.media-info h3 {
-  margin: 0 0 8px 0;
-  font-size: 1.2rem;
-  color: var(--secondary-color);
-}
-
-.media-info p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--text-light);
-}
-
-.audio-card .media-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.audio-card .media-icon {
-  margin-bottom: 8px;
-  color: var(--primary-color);
-}
-
-.audio-card audio {
-  width: 100%;
-  margin-top: 12px;
-}
+/* ...existing code... */

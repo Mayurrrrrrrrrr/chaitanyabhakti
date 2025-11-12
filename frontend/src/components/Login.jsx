@@ -26,7 +26,13 @@ const Login = () => {
         navigate('/dashboard');
       }
     }
-  }, [isAuthenticated, user, navigate]);
+    // ✅ FIX: 
+    // We only want this effect to run when `isAuthenticated` changes.
+    // We remove `user` from the array to break the infinite loop.
+    // We add a comment to disable the linter warning for this line.
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, navigate]); // Removed 'user' from dependencies
 
   const handleSendOtp = async (e) => {
     e.preventDefault();

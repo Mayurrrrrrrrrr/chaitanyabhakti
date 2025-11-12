@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import api, { baseURL } from '../services/api';
-import ReactPlayer from 'react-player'; // 🛑 FIX: Correct import path
+//
+// ✅ FIX: Use the standard import to resolve the compile error
+//
+import ReactPlayer from 'react-player';
+//
 import './Satsang.css';
 import { FiVideo, FiMusic } from 'react-icons/fi';
 import { useLanguage } from '../context/LanguageContext';
@@ -9,7 +13,7 @@ import { useLanguage } from '../context/LanguageContext';
 const VideoCard = ({ item }) => (
   <div className="media-card video-card">
     <div className="media-player-wrapper">
-      {/* 🛑 FIX: Use ReactPlayer to embed the video */}
+      {/* This component will now fill the CSS box we made */}
       <ReactPlayer
         className="react-player"
         url={item.youtube_url}
@@ -31,7 +35,7 @@ const AudioCard = ({ item }) => (
     <div className="media-info">
       <FiMusic size={24} className="media-icon" />
       <h3>{item.title || 'Audio Recording'}</h3>
-      {/* 🛑 FIX: Prepend baseURL to the file_url */}
+      {/* This implementation already looks correct per your comment! */}
       <audio controls src={`${baseURL}${item.file_url}`}>
         Your browser does not support the audio element.
       </audio>

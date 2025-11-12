@@ -1,4 +1,3 @@
-// frontend/src/components/admin/AdminPanel.jsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext'; // Import useAuth
@@ -24,6 +23,12 @@ const AdminPanel = () => {
           </li>
           <li>
             <Link to="/admin/scriptures">Manage Scriptures</Link>
+          </li>
+          {/*
+            ✅ ADD THIS NEW LINK
+          */}
+          <li>
+            <Link to="/admin/media">Manage Media</Link>
           </li>
           <li>
             <Link to="/admin/events">Manage Global Events</Link>

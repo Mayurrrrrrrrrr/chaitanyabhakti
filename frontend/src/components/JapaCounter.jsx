@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
 import './JapaCounter.css';
-import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { FiMic, FiMicOff, FiRotateCcw, FiX } from 'react-icons/fi';
+import { FiMic, FiMicOff, FiRotateCcw, FiX, FiTarget, FiTrendingUp } from 'react-icons/fi';
 
-// --- Speech Recognition Setup ---
+// Speech Recognition Setup
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
 if (SpeechRecognition) {
@@ -15,34 +14,51 @@ if (SpeechRecognition) {
 }
 
 const JapaCounter = () => {
-  const { user } = useAuth();
   const { language, t } = useLanguage();
   
-  // Load initial state from localStorage
   const [beadCount, setBeadCount] = useState(() => {
-    const savedBeads = localStorage.getItem('beadCount');
-    return savedBeads ? JSON.parse(savedBeads) : 0;
+    const saved = localStorage.getItem('beadCount');
+    return saved ? JSON.parse(saved) : 0;
   });
+  
   const [malaCount, setMalaCount] = useState(() => {
-    const savedMala = localStorage.getItem('malaCount');
-    return savedMala ? JSON.parse(savedMala) : 0;
+    const saved = localStorage.getItem('malaCount');
+    return saved ? JSON.parse(saved) : 0;
   });
+  
+  const [dailyGoal, setDailyGoal] = useState(() => {
+    const saved = localStorage.getItem('dailyGoal');
+    return saved ? JSON.parse(saved) : 16; // Default 16 malas
+  });
+  
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [tempGoal, setTempGoal] = useState(dailyGoal);
   
   const [offlineQueue, setOfflineQueue] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
-
-  // --- Voice Commands State ---
   const [isListening, setIsListening] = useState(false);
   const [voiceError, setVoiceError] = useState('');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [hapticEnabled, setHapticEnabled] = useState(true);
   
-  // Use refs to ensure event handlers get the latest state
   const malaCountRef = useRef(malaCount);
-  useEffect(() => { malaCountRef.current = malaCount; }, [malaCount]);
-
   const isListeningRef = useRef(isListening);
-  useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
+  
+  const bellSound = useRef(null);
+  
+  useEffect(() => {
+    malaCountRef.current = malaCount;
+  }, [malaCount]);
+  
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
+  
+  useEffect(() => {
+    bellSound.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDGH0fPTgjMHGGS36+OhTgwOUKXi8bllHAU7ldnyzn0vBSd+zPDckjwIEly17OmkUhELSpzg8sFuIwQ1jtL01Ik2Bhlit+zmoVAMEFOp5fK8aiEGPZfZ8tWAMgcsdM3w45NECRxiu+7ro1IPD1Gs5/O9ayMHPJPX8tGFNQgldcvx5pZAChVdu+npo08ODVGo4/K/bSIF');
+  }, []);
 
-  // Load API count *once* on load
+  // Load API count once
   useEffect(() => {
     api.get('/japa/summary')
       .then(res => {
@@ -52,9 +68,8 @@ const JapaCounter = () => {
         }
       })
       .catch(err => console.error("Failed to fetch today's count", err));
-  }, []); // Empty dependency array
+  }, []);
 
-  // Save to localStorage on *every* change
   useEffect(() => {
     localStorage.setItem('malaCount', JSON.stringify(malaCount));
   }, [malaCount]);
@@ -62,8 +77,11 @@ const JapaCounter = () => {
   useEffect(() => {
     localStorage.setItem('beadCount', JSON.stringify(beadCount));
   }, [beadCount]);
+  
+  useEffect(() => {
+    localStorage.setItem('dailyGoal', JSON.stringify(dailyGoal));
+  }, [dailyGoal]);
 
-  // API saving logic
   const saveToApi = useCallback(async (countToSave) => {
     setIsSyncing(true);
     try {
@@ -73,44 +91,76 @@ const JapaCounter = () => {
       });
       setOfflineQueue(0); 
     } catch (err) {
-      console.error('Failed to save mala count (API failed), saving offline.', err);
+      console.error('Failed to save mala count', err);
       setOfflineQueue(prev => prev + 1);
     } finally {
       setIsSyncing(false);
     }
   }, []);
 
-  // Main Japa counting logic
+  const playSound = () => {
+    if (soundEnabled && bellSound.current) {
+      bellSound.current.currentTime = 0;
+      bellSound.current.play().catch(e => console.log('Audio play failed:', e));
+    }
+  };
+
+  const triggerHaptic = () => {
+    if (hapticEnabled && navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+  };
+
   const handleBeadClick = useCallback(() => {
+    triggerHaptic();
+    
     setBeadCount(prevBeadCount => {
       const newBeadCount = prevBeadCount + 1;
       if (newBeadCount === 108) {
         const newMalaCount = malaCountRef.current + 1;
         setMalaCount(newMalaCount);
         saveToApi(newMalaCount);
-        return 0; // Reset bead count
+        playSound();
+        
+        // Show celebration if goal reached
+        if (newMalaCount === dailyGoal) {
+          showCelebration();
+        }
+        return 0;
       }
       return newBeadCount;
     });
-  }, [saveToApi]);
+  }, [saveToApi, dailyGoal, soundEnabled, hapticEnabled]);
+
+  const showCelebration = () => {
+    // Simple celebration alert (can be enhanced with modal)
+    if (window.confirm('🎉 Congratulations! Daily goal achieved! 🙏')) {
+      console.log('Goal celebration!');
+    }
+  };
 
   const handleMalaReset = () => setBeadCount(0);
   
   const handleFullReset = () => {
-    setMalaCount(0);
-    setBeadCount(0);
-    saveToApi(0);
+    if (window.confirm('Reset all progress for today?')) {
+      setMalaCount(0);
+      setBeadCount(0);
+      saveToApi(0);
+    }
   };
 
-  // --- Voice Command Functions ---
+  const handleGoalUpdate = () => {
+    setDailyGoal(tempGoal);
+    setShowGoalModal(false);
+  };
+
+  // Voice Recognition
   useEffect(() => {
     if (!recognition) return;
 
     recognition.onresult = (event) => {
       const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-      
-      // 🛑 FIX: Add more keywords for reliability
-      const keywords = ["hare", "krishna", "add", "next", "bead", "राम", "एक"];
+      const keywords = ["hare", "krishna", "add", "next", "bead", "राम", "एक", "मनका"];
       
       if (keywords.some(k => transcript.includes(k))) {
         handleBeadClick();
@@ -118,18 +168,14 @@ const JapaCounter = () => {
     };
 
     recognition.onerror = (event) => {
-      if (event.error === 'no-speech' || event.error === 'audio-capture') {
-        // Ignore common errors, just restart
-      } else {
-        console.error('Speech recognition error', event.error);
-        setVoiceError(`Error: ${event.error}`);
+      if (event.error === 'not-allowed') {
+        setVoiceError(t('japa_voice_denied'));
         setIsListening(false);
       }
     };
 
     recognition.onend = () => {
       if (isListeningRef.current) {
-        // Automatically restart if it stops
         try {
           recognition.start();
         } catch(e) {
@@ -139,16 +185,17 @@ const JapaCounter = () => {
       }
     };
     
-    // Cleanup on unmount
     return () => {
-      recognition.stop();
+      if (recognition) {
+        recognition.stop();
+      }
     };
-  }, [handleBeadClick]);
+  }, [handleBeadClick, t]);
 
   const toggleListen = (e) => {
-    e.stopPropagation(); // Prevent japa button from firing
+    e.stopPropagation();
     if (!recognition) {
-      setVoiceError('Voice commands not supported in this browser.');
+      setVoiceError(t('japa_voice_unsupported'));
       return;
     }
 
@@ -157,20 +204,41 @@ const JapaCounter = () => {
       setIsListening(false);
     } else {
       try {
-        // 🛑 FIX: Set language based on app context
         recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
         recognition.start();
         setIsListening(true);
         setVoiceError('');
       } catch (err) {
         console.error('Speech recognition start failed', err);
-        setVoiceError('Microphone permission denied?');
+        setVoiceError('Microphone access denied');
       }
     }
   };
 
+  const goalProgress = (malaCount / dailyGoal) * 100;
+
   return (
     <div className="japa-container">
+      {/* Goal Progress Bar */}
+      <div className="goal-section">
+        <div className="goal-header">
+          <div>
+            <h3>Daily Goal: {dailyGoal} Malas</h3>
+            <p>{malaCount} / {dailyGoal} completed ({Math.round(goalProgress)}%)</p>
+          </div>
+          <button className="btn-goal-settings" onClick={() => setShowGoalModal(true)}>
+            <FiTarget />
+          </button>
+        </div>
+        <div className="progress-bar">
+          <div 
+            className="progress-fill" 
+            style={{ width: `${Math.min(goalProgress, 100)}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Counters */}
       <div className="japa-display">
         <div className="japa-display-box">
           <span className="count">{malaCount}</span>
@@ -178,21 +246,22 @@ const JapaCounter = () => {
         </div>
         <div className="japa-display-box">
           <span className="count">{beadCount}</span>
-          <span className="label">Beads</span>
+          <span className="label">{t('japa_beads')}</span>
         </div>
       </div>
 
-      {/* --- NEW LAYOUT: Main Japa Button --- */}
+      {/* Main Counter Button */}
       <div className="japa-controls-wrapper">
         <button className="bead-button" onClick={handleBeadClick}>
           {t('greeting')}
+          <span className="bead-progress">{beadCount}/108</span>
         </button>
         
-        {/* --- NEW LAYOUT: Integrated Voice Button --- */}
         {recognition && (
           <button 
             className={`voice-toggle-btn ${isListening ? 'listening' : ''}`}
             onClick={toggleListen}
+            title={isListening ? t('japa_voice_stop') : t('japa_voice_start')}
           >
             {isListening ? <FiMicOff /> : <FiMic />}
             {isListening && <div className="listening-pulse"></div>}
@@ -200,21 +269,70 @@ const JapaCounter = () => {
         )}
       </div>
 
+      {/* Status Messages */}
       <div className="status-messages">
         {isSyncing && <div className="sync-status">Syncing...</div>}
-        {offlineQueue > 0 && <div className="sync-status error">Offline: {offlineQueue} malas unsynced.</div>}
+        {offlineQueue > 0 && <div className="sync-status error">Offline: {offlineQueue} malas unsynced</div>}
         {voiceError && <div className="sync-status error">{voiceError}</div>}
       </div>
 
-      <div className="reset-controls">
-        <button className="reset-btn" onClick={handleMalaReset}>
-          <FiRotateCcw /> Reset Beads
-        </button>
-        <button className="reset-btn full-reset" onClick={handleFullReset}>
-          <FiX /> Reset All
-        </button>
+      {/* Controls */}
+      <div className="japa-controls-panel">
+        <div className="control-row">
+          <button className="control-btn" onClick={handleMalaReset}>
+            <FiRotateCcw /> Reset Beads
+          </button>
+          <button className="control-btn danger" onClick={handleFullReset}>
+            <FiX /> Reset All
+          </button>
+        </div>
+        
+        <div className="control-row">
+          <label className="toggle-label">
+            <input 
+              type="checkbox" 
+              checked={soundEnabled}
+              onChange={(e) => setSoundEnabled(e.target.checked)}
+            />
+            <span>🔔 Sound</span>
+          </label>
+          <label className="toggle-label">
+            <input 
+              type="checkbox" 
+              checked={hapticEnabled}
+              onChange={(e) => setHapticEnabled(e.target.checked)}
+            />
+            <span>📳 Vibration</span>
+          </label>
+        </div>
       </div>
-      
+
+      {/* Goal Modal */}
+      {showGoalModal && (
+        <div className="modal-overlay" onClick={() => setShowGoalModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Set Daily Goal</h2>
+            <div className="goal-input-group">
+              <label>Malas per day:</label>
+              <input 
+                type="number" 
+                min="1" 
+                max="64"
+                value={tempGoal}
+                onChange={(e) => setTempGoal(parseInt(e.target.value) || 1)}
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn-primary" onClick={handleGoalUpdate}>
+                Save Goal
+              </button>
+              <button className="btn-secondary" onClick={() => setShowGoalModal(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
