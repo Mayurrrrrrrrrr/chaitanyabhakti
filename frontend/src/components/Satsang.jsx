@@ -13,13 +13,16 @@ import { useLanguage } from '../context/LanguageContext';
 const VideoCard = ({ item }) => (
   <div className="media-card video-card">
     <div className="media-player-wrapper">
-      {/* This component will now fill the CSS box we made */}
       <ReactPlayer
         className="react-player"
         url={item.youtube_url}
         width="100%"
         height="100%"
-        controls={true}
+        controls
+        config={{ youtube: { playerVars: { rel: 0, modestbranding: 1, controls: 1 } } }}
+        onError={() => {}}
+        onReady={() => {}}
+        onBuffer={() => {}}
       />
     </div>
     <div className="media-info">

@@ -11,7 +11,15 @@ module.exports = (db, upload) => {
   
   router.use(isSuperAdmin(db));
 
-  // ... (all other routes: POST /users, PUT /deactivate, etc.) ...
+  router.get('/users', async (req, res) => {
+    try {
+      const [rows] = await db.query('SELECT user_id, name, spiritual_name, mobile_number, is_super_admin FROM users ORDER BY user_id DESC');
+      res.json(rows);
+    } catch (err) {
+      console.error('Admin users fetch error:', err);
+      res.status(500).json({ error: 'Failed to fetch users' });
+    }
+  });
 
   /*
   -- 🛑 REPLACED: UPDATE CONTENT (Add a new scripture with files)

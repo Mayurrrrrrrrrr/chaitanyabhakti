@@ -36,3 +36,8 @@
 .nav-item span {
   margin-top: 4px;
 }
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none;
+  }
+}

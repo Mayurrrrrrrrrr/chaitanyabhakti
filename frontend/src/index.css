@@ -1,18 +1,39 @@
 /* frontend/src/index.css */
+:root {
+  --primary-color: #FF9933;
+  --secondary-color: #0b5fa5;
+  --accent-color: #1ca3ec;
+  --background-color: #ffffff;
+  --surface-color: #ffffff;
+  --text-color: #2D3436;
+  --text-light: #636E72;
+  --border-color: #e0e0e0;
+  --sidebar-width: 260px;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+  --radius-md: 12px;
+}
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--background-color);
+  color: var(--text-color);
+  font-size: 18px;
 }
-
+button, input, select, textarea {
+  font-size: 18px;
+}
+:focus-visible {
+  outline: 3px solid var(--primary-color);
+  outline-offset: 2px;
+}
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;

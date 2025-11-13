@@ -10,8 +10,7 @@ const AdminRoute = ({ children }) => {
     return <div>Loading...</div>; // Shows a loading message
   }
 
-  // Check if user exists AND has the 'admin' role
-  if (user && user.role === 'admin') { //
+  if (user && (user.is_super_admin === 1 || user.is_super_admin === true)) {
     return children; // This will render your <AdminPanel />
   }
 

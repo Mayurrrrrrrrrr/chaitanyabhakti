@@ -19,16 +19,22 @@ const app = express();
 // MIDDLEWARE
 // =====================================================
 
-// 🛑 FIX: Explicit CORS Configuration for mobile/IP access
+// Explicit CORS configuration for development
 const allowedOrigins = [
+  process.env.CLIENT_URL,
   'http://localhost:3000',
-  'http://192.168.29.35:5000' // 🛑 REPLACE with your computer's IP + frontend port
-  // Add any other IPs you use for testing
-];
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://192.168.29.35:3000',
+  'http://192.168.29.35:3001'
+].filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    const isDevLocalhost = /^http:\/\/(localhost|127\.0\.0\.1):\d{4}$/.test(origin || '');
+    const isDevLan = /^http:\/\/192\.168\.\d+\.\d+:\d+$/.test(origin || '');
+    if (!origin || allowedOrigins.includes(origin) || isDevLocalhost || isDevLan) {
       callback(null, true);
     } else {
       callback(new Error('CORS policy does not allow access from this origin.'));

@@ -6,10 +6,10 @@ import './Sidebar.css';
 import logo from '../../logo.svg'; // Assuming you have this, or use a placeholder
 import { 
   FiHome, FiRepeat, FiUsers, FiCalendar, FiUser, 
-  FiBookOpen, FiMusic, FiSettings, FiLogOut, FiActivity 
+  FiBookOpen, FiMusic, FiSettings, FiLogOut, FiActivity, FiChevronsLeft, FiChevronsRight 
 } from 'react-icons/fi';
 
-const Sidebar = () => {
+const Sidebar = ({ collapsed, onToggleCollapse }) => {
   const { user, logout } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
@@ -20,12 +20,15 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="logo-area">
           <img src={logo} alt="Logo" className="app-logo" />
           <h2>{t('app_title')}</h2>
         </div>
+        <button className="logout-btn" onClick={onToggleCollapse}>
+          {collapsed ? <FiChevronsRight /> : <FiChevronsLeft />}
+        </button>
       </div>
 
       <div className="sidebar-user">
@@ -60,6 +63,11 @@ const Sidebar = () => {
         <NavLink to="/tasks">
           <FiActivity /> {t('tasks')}
         </NavLink>
+        {user?.is_super_admin ? (
+          <NavLink to="/admin">
+            <FiUser /> Admin
+          </NavLink>
+        ) : null}
         <NavLink to="/profile">
           <FiSettings /> {t('profile')}
         </NavLink>

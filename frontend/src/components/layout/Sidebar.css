@@ -19,6 +19,10 @@
   }
 }
 
+.sidebar.collapsed {
+  width: 64px;
+}
+
 .sidebar-header {
   padding: 20px;
   border-bottom: 1px solid var(--border-color);
@@ -97,6 +101,18 @@
   margin-bottom: 4px;
   font-weight: 500;
   transition: all 0.2s;
+}
+
+.sidebar.collapsed .sidebar-nav a {
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-nav a span,
+.sidebar.collapsed .sidebar-header h2,
+.sidebar.collapsed .user-details,
+.sidebar.collapsed .language-selector,
+.sidebar.collapsed .logout-btn span {
+  display: none;
 }
 
 .sidebar-nav a:hover {

@@ -1,7 +1,7 @@
 // frontend/src/pages/Dashboard.js
 import React, { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../contexts/AuthContext';
+import { useNavigate, Link } from 'react-router-dom'; // ✅ Import Link
+import { AuthContext } from '../context/AuthContext'; // Correct path
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -37,25 +37,29 @@ const Dashboard = () => {
         </div>
 
         <div className="features-grid">
-          <div className="feature-card">
+          {/* ✅ Wrapped in Link */}
+          <Link to="/japa" className="feature-card">
             <h3>📿 Japa Tracker</h3>
             <p>Track your daily chanting</p>
-          </div>
+          </Link>
           
-          <div className="feature-card">
+          {/* ✅ Wrapped in Link */}
+          <Link to="/family" className="feature-card">
             <h3>👨‍👩‍👧‍👦 Family</h3>
             <p>Connect with your spiritual family</p>
-          </div>
+          </Link>
           
-          <div className="feature-card">
+          {/* ✅ Wrapped in Link (pointing to /library to match sidebar) */}
+          <Link to="/library" className="feature-card">
             <h3>📖 Scriptures</h3>
             <p>Read and study sacred texts</p>
-          </div>
+          </Link>
           
-          <div className="feature-card">
+          {/* ✅ Wrapped in Link */}
+          <Link to="/satsang" className="feature-card">
             <h3>🎵 Media</h3>
             <p>Listen to bhajans and lectures</p>
-          </div>
+          </Link>
         </div>
       </div>
     </div>

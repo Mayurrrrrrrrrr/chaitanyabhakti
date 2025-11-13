@@ -52,3 +52,78 @@
   padding: 2px 5px;
   border-radius: 4px;
 }
+.family-container {
+  padding: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.family-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.family-card {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  text-decoration: none;
+  color: var(--text-color);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.family-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+.family-card h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.1rem;
+  color: var(--secondary-color);
+}
+
+.family-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.family-form {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.family-form h3 {
+  margin: 0 0 10px 0;
+  color: var(--secondary-color);
+}
+
+.family-form input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.family-form button {
+  width: 100%;
+  padding: 10px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+@media (max-width: 767px) {
+  .family-container { padding-bottom: 80px; }
+}

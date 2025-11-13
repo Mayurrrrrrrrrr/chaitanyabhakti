@@ -40,4 +40,17 @@
   .mobile-nav-wrapper {
     display: none; /* Hide bottom nav on desktop */
   }
+  .content-wrapper {
+    margin-left: var(--sidebar-width);
+  }
+}
+@media (max-width: 767px) {
+  .main-content {
+    padding-bottom: 80px;
+  }
+}
+@media (min-width: 768px) {
+  .sidebar.collapsed + .content-wrapper {
+    margin-left: 64px;
+  }
 }

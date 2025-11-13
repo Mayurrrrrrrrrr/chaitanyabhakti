@@ -1,5 +1,5 @@
-// frontend/src/contexts/AuthContext.js
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+// frontend/src/context/AuthContext.js
+import React, { createContext, useState, useEffect, useCallback, useContext } from 'react'; // ✅ --- ADD useContext HERE
 import { jwtDecode } from 'jwt-decode';
 
 export const AuthContext = createContext();
@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🛑 FIX: Use useCallback to prevent function recreation on every render
+  // Use useCallback to prevent function recreation on every render
   const loadUser = useCallback(() => {
     const token = localStorage.getItem('token');
     
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []); // Empty dependency array - function never changes
 
-  // 🛑 FIX: Run only once on mount
+  // Run only once on mount
   useEffect(() => {
     loadUser();
   }, [loadUser]);
@@ -65,4 +65,10 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
+};
+
+// ✅✅✅ --- THIS IS THE FIX --- ✅✅✅
+// You must export the useAuth hook so your components can import it.
+export const useAuth = () => {
+  return useContext(AuthContext);
 };

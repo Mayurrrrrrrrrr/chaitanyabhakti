@@ -1,31 +1,48 @@
+// frontend/src/components/layout/MainLayout.jsx
 import React from 'react';
-import { Outlet } from 'react-router-dom';
-import BottomNav from './BottomNav';
+import { Outlet } from 'react-router-dom'; // ✅ IMPORT Outlet
 import Sidebar from './Sidebar';
-import { useAuth } from '../../context/AuthContext';
-import { useLanguage } from '../../context/LanguageContext'; // Use Translation
-import './MainLayout.css'; // Ensure this exists (can be empty or just basic styles)
+import BottomNav from './BottomNav';
+import { useEffect, useRef, useState } from 'react';
+import './MainLayout.css';
 
 const MainLayout = () => {
-  const { user } = useAuth();
-  const { t } = useLanguage(); // Hook for translations
-
+  const [collapsed, setCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved === 'true';
+  });
+  const idleRef = useRef(null);
+  const resetIdle = () => {
+    if (idleRef.current) clearTimeout(idleRef.current);
+    idleRef.current = setTimeout(() => {
+      setCollapsed(true);
+      localStorage.setItem('sidebarCollapsed', 'true');
+    }, 30000);
+  };
+  useEffect(() => {
+    const handler = () => resetIdle();
+    window.addEventListener('mousemove', handler);
+    window.addEventListener('keydown', handler);
+    resetIdle();
+    return () => {
+      window.removeEventListener('mousemove', handler);
+      window.removeEventListener('keydown', handler);
+      if (idleRef.current) clearTimeout(idleRef.current);
+    };
+  }, []);
+  const toggleCollapse = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem('sidebarCollapsed', String(next));
+    resetIdle();
+  };
   return (
     <div className="main-layout">
-      {/* Sidebar for Desktop */}
-      <Sidebar />
-
+      <Sidebar collapsed={collapsed} onToggleCollapse={toggleCollapse} />
       <div className="content-wrapper">
-        {/* Mobile Header */}
-        <header className="mobile-header">
-          <h3>{t('greeting')}, {user ? user.name : 'Bhakta'}!</h3>
-        </header>
-        
-        <main className="page-container">
+        <div className="main-content">
           <Outlet />
-        </main>
-
-        {/* Bottom Nav for Mobile */}
+        </div>
         <div className="mobile-nav-wrapper">
           <BottomNav />
         </div>

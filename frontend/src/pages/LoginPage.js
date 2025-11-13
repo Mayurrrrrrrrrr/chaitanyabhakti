@@ -1,7 +1,7 @@
 // frontend/src/pages/LoginPage.js
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../contexts/AuthContext';
+import { AuthContext } from '../context/AuthContext'; // Correct path
 import api from '../utils/api';
 import './LoginPage.css';
 
@@ -19,9 +19,6 @@ const LoginPage = () => {
 
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-
-  // 🛑 FIX: No useEffect that causes infinite loop
-  // All actions are triggered by user events (button clicks)
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
@@ -57,7 +54,11 @@ const LoginPage = () => {
 
       if (response.data.success) {
         login(response.data.token, response.data.user);
-        navigate('/dashboard');
+        if (response.data.user?.is_super_admin) {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (err) {
       setError(err.response?.data?.error || 'OTP verification failed');
@@ -79,7 +80,11 @@ const LoginPage = () => {
 
       if (response.data.success) {
         login(response.data.token, response.data.user);
-        navigate('/dashboard');
+        if (response.data.user?.is_super_admin) {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
@@ -130,7 +135,7 @@ const LoginPage = () => {
               <form onSubmit={handleSendOTP}>
                 <input
                   type="tel"
-                  placeholder="Mobile Number"
+                  placeholder="Enter 10-digit Mobile Number" // Updated placeholder
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value)}
                   required
@@ -188,12 +193,11 @@ const LoginPage = () => {
           <form onSubmit={handlePasswordLogin}>
             <input
               type="tel"
-              placeholder="Mobile Number"
+              placeholder="Mobile Number (e.g., +91...)" // ✅ Updated placeholder
               value={mobileNumber}
               onChange={(e) => setMobileNumber(e.target.value)}
               required
-              pattern="[0-9]{10}"
-              maxLength="10"
+              // ✅ REMOVED pattern and maxLength to allow +91 format
             />
             <input
               type="password"

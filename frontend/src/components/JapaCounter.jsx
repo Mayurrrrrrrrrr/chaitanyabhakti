@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
 import './JapaCounter.css';
 import { useLanguage } from '../context/LanguageContext';
-import { FiMic, FiMicOff, FiRotateCcw, FiX, FiTarget, FiTrendingUp } from 'react-icons/fi';
+import { FiMic, FiMicOff, FiRotateCcw, FiX, FiTarget, FiTrendingUp, FiPlus, FiSave } from 'react-icons/fi';
 
 // Speech Recognition Setup
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -216,9 +216,50 @@ const JapaCounter = () => {
   };
 
   const goalProgress = (malaCount / dailyGoal) * 100;
+  const [malaType, setMalaType] = useState('rudraksh');
+  const [selectedMantra, setSelectedMantra] = useState('Hare Krishna');
+  const [newMantra, setNewMantra] = useState('');
+  const motis = Array.from({ length: 108 }, (_, i) => i + 1);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const handleAdvanceMoti = () => {
+    setCurrentIndex(prev => (prev + 1) % motis.length);
+  };
 
   return (
     <div className="japa-container">
+      <div className="japa-circle">
+        <svg width="300" height="300">
+          {motis.map((n, i) => {
+            const angle = (2 * Math.PI * i) / motis.length;
+            const cx = 150 + 120 * Math.cos(angle);
+            const cy = 150 + 120 * Math.sin(angle);
+            const isCurrent = i === currentIndex;
+            const fill = malaType === 'rudraksh' ? '#8B4513' : malaType === 'tulsi' ? '#2ECC71' : malaType === 'moti' ? '#95A5A6' : '#F1C40F';
+            return (
+              <g key={i} className={`japa-bead ${isCurrent ? 'current' : ''}`} onClick={() => { handleBeadClick(); handleAdvanceMoti(); }}>
+                <circle cx={cx} cy={cy} r={isCurrent ? 8 : 6} fill={fill} />
+                {isCurrent && (
+                  <text x={cx} y={cy - 14} fontSize="10" textAnchor="middle" fill="#333">{n}</text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      <div className="japa-visual">
+        <svg width="280" height="280">
+          <defs>
+            <radialGradient id="malaGradient">
+              <stop offset="0%" stopColor="#FFF8DC" />
+              <stop offset="100%" stopColor="#FFE4B5" />
+            </radialGradient>
+          </defs>
+          <circle cx="140" cy="140" r="130" fill="url(#malaGradient)" opacity="0.3" />
+          <circle cx="140" cy="20" r="6" fill="#FF6B6B" stroke="#654321" strokeWidth="1" />
+          <circle cx="245" cy="80" r="6" fill="#4CAF50" stroke="#654321" strokeWidth="1" />
+        </svg>
+      </div>
+
       {/* Goal Progress Bar */}
       <div className="goal-section">
         <div className="goal-header">
@@ -267,6 +308,41 @@ const JapaCounter = () => {
             {isListening && <div className="listening-pulse"></div>}
           </button>
         )}
+      </div>
+
+      <div className="japa-controls-panel">
+        <div className="control-row">
+          <button className="control-btn" onClick={() => setMalaType('rudraksh')}>Rudraksh</button>
+          <button className="control-btn" onClick={() => setMalaType('tulsi')}>Tulsi</button>
+          <button className="control-btn" onClick={() => setMalaType('moti')}>Moti</button>
+          <button className="control-btn" onClick={() => setMalaType('haldi')}>Haldi</button>
+        </div>
+        <div className="control-row">
+          <label className="toggle-label">
+            <span>Selected Mantra: {selectedMantra}</span>
+          </label>
+        </div>
+        <div className="control-row">
+          <button className="control-btn" onClick={() => setSelectedMantra('Hare Krishna')}><FiSave /> Hare Krishna</button>
+          <button className="control-btn" onClick={() => setSelectedMantra('Om Namah Shivaya')}><FiSave /> Om Namah Shivaya</button>
+        </div>
+        <div className="control-row">
+          <input
+            type="text"
+            value={newMantra}
+            onChange={(e) => setNewMantra(e.target.value)}
+            placeholder="Add mantra"
+            style={{ flex: 2, padding: '10px', borderRadius: '8px', border: '2px solid #E0E0E0' }}
+          />
+          <button className="control-btn" onClick={() => { if (newMantra) { setSelectedMantra(newMantra); setNewMantra(''); } }}>
+            <FiPlus /> Add Mantra
+          </button>
+        </div>
+        <div className="control-row">
+          <button className="control-btn" onClick={() => { handleBeadClick(); handleAdvanceMoti(); }}>Manual Count</button>
+          <button className="control-btn" onClick={(e) => toggleListen(e)}>{isListening ? <FiMicOff /> : <FiMic />} Voice Count</button>
+          <button className="control-btn danger" onClick={handleMalaReset}><FiRotateCcw /> Reset</button>
+        </div>
       </div>
 
       {/* Status Messages */}
