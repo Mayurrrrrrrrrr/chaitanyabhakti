@@ -1,145 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
-
-:root {
-  /* --- VAISHNAV PALETTE --- */
-  --primary-color: #FF9933; /* Saffron */
-  --primary-dark: #E67E22;
-  --secondary-color: #1A237E; /* Krishna Blue */
-  --accent-color: #FFD700; /* Gold */
-  
-  /* --- NEUTRALS --- */
-  --background-color: #FFFBF2; /* Warm Cream/Off-white for spiritual feel */
-  --surface-color: #FFFFFF;
-  --text-color: #2D3436;
-  --text-light: #636E72;
-  --border-color: #F0E6D2;
-  
-  /* --- SHADOWS & RADIUS --- */
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-full: 9999px;
-
-  /* --- SIZES --- */
-  --sidebar-width: 260px;
-  --header-height: 70px;
-  --bottom-nav-height: 70px;
-}
-
-/* Dark Mode Variables (can be toggled via body class) */
-body.theme-dark {
-  --background-color: #121212;
-  --surface-color: #1E1E1E;
-  --text-color: #E0E0E0;
-  --text-light: #A0A0A0;
-  --border-color: #333333;
-}
-
-/* High Contrast Variables */
-body.high-contrast {
-  --primary-color: #000000;
-  --background-color: #FFFFFF;
-  --text-color: #000000;
-  --text-light: #000000;
-}
-
+/* frontend/src/index.css */
 * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  font-family: 'Noto Sans', 'Poppins', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--background-color);
-  color: var(--text-color);
-  transition: background-color 0.3s, color 0.3s;
-  overflow-x: hidden;
 }
 
-/* Large Font Support */
-body.font-large { font-size: 1.1rem; }
-body.font-xlarge { font-size: 1.3rem; }
-
-/* --- BEAUTIFUL CARD STYLE --- */
-.card, .stat-card, .post-card, .scripture-card, .member-card {
-  background: var(--surface-color) !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-md) !important;
-  border: 1px solid var(--border-color) !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg) !important;
-}
-
-/* --- BUTTONS --- */
-button {
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: var(--radius-full);
-  font-weight: 600;
-  font-size: 1rem;
-  box-shadow: 0 4px 10px rgba(255, 153, 51, 0.3);
-  min-height: 50px; /* Accessibility */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 153, 51, 0.4);
-}
-
-/* --- PAGE CONTAINER --- */
-.page-container {
-  padding: 20px;
-  min-height: calc(100vh - var(--bottom-nav-height));
-  /* Center content on large screens */
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Desktop Adjustments */
-@media (min-width: 768px) {
-  .page-container {
-    margin-left: var(--sidebar-width); /* Offset for sidebar */
-    padding: 30px;
-    max-width: none; 
-  }
-}
-
-/* Headings */
-h1, h2, h3, h4 {
-  color: var(--secondary-color);
-  font-family: 'Poppins', sans-serif;
-}
-
-/* --- SCROLLBAR --- */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: var(--background-color); 
-}
-::-webkit-scrollbar-thumb {
-  background: #ddd; 
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #ccc; 
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }

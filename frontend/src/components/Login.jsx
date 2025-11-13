@@ -29,7 +29,8 @@ const Login = () => {
     }
     // ✅ FIX: Add 'user' to the dependency array.
     // This ensures this effect runs *after* the user state is set
-    // and correctly navigates based on the NEW user object.
+    // from the login function and correctly navigates based on
+    // the NEW user object.
     
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user, navigate]); // <-- ADD 'user' HERE

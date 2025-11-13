@@ -1,17 +1,4 @@
 /* frontend/src/App.css */
 .App {
-  display: flex;
-  flex-direction: column;
   min-height: 100vh;
-}
-
-.main-content {
-  /* This padding ensures content doesn't hide under the
-    header (if you add one) or the bottom nav bar.
-  */
-  padding: 1rem 1rem 80px 1rem; /* 80px space for BottomNav */
-  flex-grow: 1; /* Makes content fill the space */
-  max-width: 800px; /* Constrain width on desktop */
-  margin: 0 auto;  /* Center the content */
-  width: 100%;
 }

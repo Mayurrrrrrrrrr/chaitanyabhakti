@@ -1,86 +1,68 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
+// frontend/src/contexts/AuthContext.js
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const decoded = jwtDecode(token);
-          
-          if (decoded.exp * 1000 < Date.now()) {
-            localStorage.removeItem('token');
-            setUser(null);
-          } else {
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            // Fetch full user profile
-            const res = await api.get('/user/profile');
-            setUser(res.data.user); 
-          }
-        } catch (err) {
-          console.error('Failed to load user', err);
-          localStorage.removeItem('token');
-          setUser(null);
-        }
-      }
-      setLoading(false);
-    };
-    loadUser();
+  // 🛑 FIX: Use useCallback to prevent function recreation on every render
+  const loadUser = useCallback(() => {
+    const token = localStorage.getItem('token');
     
-    // ✅ FIX: Revert the dependency array to empty.
-    // This hook should ONLY run once on initial app load.
-  }, []); // <--- THIS MUST BE AN EMPTY ARRAY
-
-  // 🛑 FIX: Simplified login function that just accepts the response data
-  const login = (responseData) => {
-    try {
-      if (responseData.token) {
-        localStorage.setItem('token', responseData.token);
-        api.defaults.headers.common['Authorization'] = `Bearer ${responseData.token}`;
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        
+        // Check if token is expired
+        if (decoded.exp * 1000 < Date.now()) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        } else {
+          const savedUser = localStorage.getItem('user');
+          if (savedUser) {
+            setUser(JSON.parse(savedUser));
+          }
+        }
+      } catch (error) {
+        console.error('Invalid token:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
       }
-      
-      if (responseData.user) {
-        setUser(responseData.user);
-      }
-    } catch (error) {
-      console.error('Login failed:', error);
     }
-  };
+    
+    setLoading(false);
+  }, []); // Empty dependency array - function never changes
 
-  const logout = () => {
+  // 🛑 FIX: Run only once on mount
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
+
+  const login = useCallback((token, userData) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+  }, []);
+
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
-    delete api.defaults.headers.common['Authorization'];
+    localStorage.removeItem('user');
     setUser(null);
-  };
+  }, []);
 
-  const updateUser = (updatedUserData) => {
-    setUser(prevUser => ({
-      ...prevUser,
-      ...updatedUserData
-    }));
-  };
+  const updateUser = useCallback((updatedUserData) => {
+    setUser(updatedUserData);
+    localStorage.setItem('user', JSON.stringify(updatedUserData));
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      logout, 
-      loading, 
-      isAuthenticated: !!user, 
-      updateUser 
-    }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
+      {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  return useContext(AuthContext);
 };
