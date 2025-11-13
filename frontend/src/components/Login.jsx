@@ -20,19 +20,19 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // We check for user existence here to be safe
       if (user && user.is_super_admin) {
         navigate('/admin');
-      } else {
+      } else if (user) { // only navigate if user is not null
         navigate('/dashboard');
       }
     }
-    // ✅ FIX: 
-    // We only want this effect to run when `isAuthenticated` changes.
-    // We remove `user` from the array to break the infinite loop.
-    // We add a comment to disable the linter warning for this line.
+    // ✅ FIX: Add 'user' to the dependency array.
+    // This ensures this effect runs *after* the user state is set
+    // and correctly navigates based on the NEW user object.
     
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, navigate]); // Removed 'user' from dependencies
+  }, [isAuthenticated, user, navigate]); // <-- ADD 'user' HERE
 
   const handleSendOtp = async (e) => {
     e.preventDefault();

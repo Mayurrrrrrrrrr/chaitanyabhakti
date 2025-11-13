@@ -15,7 +15,6 @@ export const AuthProvider = ({ children }) => {
         try {
           const decoded = jwtDecode(token);
           
-          // Check if token is expired
           if (decoded.exp * 1000 < Date.now()) {
             localStorage.removeItem('token');
             setUser(null);
@@ -34,7 +33,10 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     };
     loadUser();
-  }, []);
+    
+    // ✅ FIX: Revert the dependency array to empty.
+    // This hook should ONLY run once on initial app load.
+  }, []); // <--- THIS MUST BE AN EMPTY ARRAY
 
   // 🛑 FIX: Simplified login function that just accepts the response data
   const login = (responseData) => {
