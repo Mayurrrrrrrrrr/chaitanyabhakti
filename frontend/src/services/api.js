@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-export const baseURL = 'http://localhost:5001';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 const api = axios.create({
-  baseURL: `${baseURL}/api`,
+  baseURL: API_URL,
 });
 
 // Set up the token interceptor
