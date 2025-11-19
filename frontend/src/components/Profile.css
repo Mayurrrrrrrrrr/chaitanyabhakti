@@ -1,58 +1,210 @@
-/*
- * FILE: frontend/src/components/Profile.css
- */
-.profile-container {
-  padding: 1rem;
-  max-width: 600px;
-  margin: 0 auto;
+/* frontend/src/components/Profile.css */
+
+.profile-page {
+    padding-bottom: 100px;
+    animation: fadeIn 0.5s ease-out;
 }
 
-.profile-container h2 {
-  text-align: center;
-  color: var(--primary-color);
-  margin-bottom: 1.5rem;
+/* --- Header Card --- */
+.profile-header-card {
+    padding: 0;
+    overflow: hidden;
+    text-align: center;
+    position: relative;
+    margin-bottom: 24px;
+    border-radius: var(--radius-lg);
 }
 
-.profile-card {
-  background-color: #ffffff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+.profile-cover-bg {
+    height: 120px;
+    background: linear-gradient(135deg, var(--primary-color), #ffbb33);
+    width: 100%;
 }
 
-.profile-card p {
-  font-size: 1.1rem;
-  color: var(--text-color);
-  margin-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 1rem;
+.profile-main-info {
+    padding: 0 20px 30px;
+    position: relative;
+    margin-top: -60px; /* Pull content up over cover */
 }
 
-.profile-card p:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
+.avatar-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--surface-color);
+    border: 4px solid var(--surface-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0 auto 16px;
+    box-shadow: var(--shadow-md);
 }
 
-.profile-card strong {
-  color: var(--text-light);
-  min-width: 150px;
-  display: inline-block;
+.user-name {
+    font-size: 1.5rem;
+    color: var(--text-color);
+    margin-bottom: 4px;
 }
 
-.btn-logout {
-  width: 100%;
-  padding: 12px;
-  background-color: #e74c3c; /* Red color */
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: 20px;
+.user-spiritual-name {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    font-style: italic;
 }
 
-.btn-logout:hover {
-  background-color: #c0392b;
+.role-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(11, 95, 165, 0.1);
+    color: var(--secondary-color);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* --- Stats Row --- */
+.profile-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 16px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-number {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1.2;
+}
+
+.stat-desc {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
+/* --- Details List --- */
+.details-card {
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.card-header-row h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+.icon-btn-text {
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--primary-color);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+}
+
+.icon-btn-text:hover {
+    background: rgba(255, 153, 51, 0.1);
+}
+
+.detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.detail-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--background-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+
+.detail-content label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-bottom: 2px;
+    text-transform: uppercase;
+}
+
+.detail-content p {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+/* --- Logout Button --- */
+.btn-logout-large {
+    width: 100%;
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid #ffecec;
+    background: #fff5f5;
+    color: #e74c3c;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-logout-large:hover {
+    background: #ffe0e0;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }

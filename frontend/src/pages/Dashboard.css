@@ -1,131 +1,393 @@
-/* frontend/src/pages/Dashboard.css */
-.dashboard-container {
-  min-height: 100vh;
-  background: #f5f5f5;
+/* frontend/src/components/Dashboard.css */
+
+.dashboard-page {
+    padding-bottom: 100px;
+    animation: fadeIn 0.5s ease-out;
 }
 
-.dashboard-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 20px 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+/* --- Header Section --- */
+.dashboard-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
 }
 
-.dashboard-header h1 {
-  margin: 0;
-  font-size: 24px;
+.greeting-text h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 4px;
 }
 
-.logout-btn {
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 2px solid white;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.3s;
+.greeting-text p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
 }
 
-.logout-btn:hover {
-  background: white;
-  color: #667eea;
+.weather-widget {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-color);
+    padding: 8px 14px;
+    border-radius: 24px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--primary-dark);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
 }
 
-.dashboard-content {
-  padding: 40px;
-  max-width: 1200px;
-  margin: 0 auto;
+/* --- Main Grid Layout --- */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 20px;
 }
 
-.welcome-card {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 30px;
+/* Utility: Card Headers */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
 }
 
-.welcome-card h2 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 28px;
+.card-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.spiritual-name {
-  color: #667eea;
-  font-size: 18px;
-  margin: 5px 0;
+.view-all {
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
 }
 
-.mobile {
-  color: #666;
-  font-size: 14px;
-  margin: 5px 0;
+.view-all:hover {
+    color: var(--primary-dark);
 }
 
-.admin-badge {
-  display: inline-block;
-  padding: 6px 12px;
-  background: #ffd700;
-  color: #333;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  margin-top: 10px;
+/* --- 1. Important Messages Card (Full Width or Large) --- */
+.message-card {
+    grid-column: span 12;
+    background: #fffdf0; /* Gentle yellow tint */
+    border-left: 4px solid #f1c40f;
 }
 
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+.message-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.feature-card {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
+.message-item {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #444;
+    border: 1px solid rgba(0,0,0,0.05);
 }
 
-.feature-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+.message-item.important {
+    border-left: 4px solid #e74c3c;
+    background: #fff5f5;
+    color: #c0392b;
+    font-weight: 500;
 }
 
-.feature-card h3 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 20px;
+/* --- 2. Upcoming Festivals Card --- */
+.festival-card {
+    grid-column: span 6;
 }
 
-.feature-card p {
-  margin: 0;
-  color: #666;
-  font-size: 14px;
+.festival-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-@media (max-width: 768px) {
-  .dashboard-header {
-    padding: 15px 20px;
-  }
-  
-  .dashboard-header h1 {
-    font-size: 18px;
-  }
-  
-  .dashboard-content {
+.festival-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 0;
+}
+
+.date-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    width: 52px;
+    height: 56px;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.date-badge .month {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.date-badge .day {
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.festival-info h4 {
+    margin: 0 0 6px 0;
+    font-size: 1rem;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.festival-info .tag {
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: #eee;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.festival-info .tag-ekadashi { background: #fff3cd; color: #856404; }
+.festival-info .tag-festival { background: #d1e7dd; color: #0f5132; }
+
+/* --- 3. Leaderboard Card --- */
+.leaderboard-card {
+    grid-column: span 6;
+}
+
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.leaderboard-item:last-child {
+    border-bottom: none;
+}
+
+.rank-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--surface-color);
+    border: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* Gold Color for Rank 1 */
+.leaderboard-item:first-child .rank-badge {
+    border-color: #f1c40f;
+    color: #f39c12;
+    background: #fff9c4;
+    box-shadow: 0 2px 5px rgba(241, 196, 15, 0.3);
+}
+
+.devotee-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.devotee-name {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.mala-count {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 0.95rem;
+}
+
+/* --- 4. Blogs Card --- */
+.blog-card {
+    grid-column: span 12;
+}
+
+.blog-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.blog-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--surface-color);
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.blog-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-light);
+    box-shadow: var(--shadow-sm);
+}
+
+.blog-content {
+    flex: 1;
+    padding-right: 12px;
+}
+
+.blog-content h4 {
+    margin: 0 0 6px 0;
+    font-size: 1.05rem;
+    color: var(--text-color);
+}
+
+.blog-content p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+}
+
+.blog-date {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-top: 8px;
+    display: block;
+    font-weight: 600;
+}
+
+.read-btn {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.read-btn:hover {
+    background: var(--primary-light);
+}
+
+/* --- 5. Quick Actions Grid --- */
+.quick-actions-grid {
+    grid-column: span 12;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.action-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     padding: 20px;
-  }
-  
-  .features-grid {
-    grid-template-columns: 1fr;
-  }
+    text-decoration: none;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+}
+
+.action-card:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.action-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.action-card span:last-child {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* --- Responsive Breakpoints --- */
+
+/* Tablet & Mobile */
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .festival-card, 
+    .leaderboard-card, 
+    .blog-card, 
+    .message-card, 
+    .quick-actions-grid {
+        grid-column: auto; /* Reset grid columns */
+    }
+
+    .blog-list {
+        grid-template-columns: 1fr; /* Stack blogs */
+    }
+}
+
+/* Mobile Only */
+@media (max-width: 767px) {
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* 2x2 grid on mobile */
+    }
+    
+    .greeting-text h1 {
+        font-size: 1.3rem;
+    }
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }

@@ -1,19 +1,20 @@
-/*
- * FILE: frontend/src/components/layout/BottomNav.css
- */
+/* frontend/src/components/layout/BottomNav.css */
 .bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  height: var(--bottom-nav-height);
+  background: var(--surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); /* Safari support */
+  border-top: 1px solid rgba(0,0,0,0.05);
   display: flex;
-  justify-content: space-around; /* Distribute items evenly */
+  justify-content: space-around;
   align-items: center;
-  background-color: var(--background-color, #ffffff);
-  border-top: 1px solid #e0e0e0;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-  height: 65px; /* Accessible height */
-  padding: 5px 0;
+  z-index: 1000;
+  padding-bottom: env(safe-area-inset-bottom, 0px); /* iPhone Home Bar support */
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.04);
 }
 
 .nav-item {
@@ -22,20 +23,52 @@
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  color: var(--text-light, #888);
-  font-size: 0.8rem; /* Slightly larger for readability */
-  flex-grow: 1; /* Make items share space */
-  min-width: 60px; /* Accessible touch target */
+  color: var(--text-light);
+  flex: 1;
   height: 100%;
+  position: relative;
+  transition: color 0.3s ease;
 }
 
-.nav-item.active {
-  color: var(--primary-color, #f39c12); /* Use your app's primary color */
+.nav-item svg {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-bottom: 4px;
 }
 
 .nav-item span {
-  margin-top: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
 }
+
+/* Active State Animation */
+.nav-item.active {
+  color: var(--primary-color);
+}
+
+.nav-item.active svg {
+  transform: translateY(-4px); /* "Jump" effect */
+  fill: rgba(255, 153, 51, 0.1); /* Subtle fill tint */
+}
+
+/* Optional: Active Indicator Dot */
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 8px; /* Adjust based on padding */
+  width: 4px;
+  height: 4px;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  animation: popIn 0.3s ease;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+/* Hide on desktop */
 @media (min-width: 768px) {
   .bottom-nav {
     display: none;

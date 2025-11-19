@@ -1,13 +1,13 @@
 // frontend/src/pages/LoginPage.js
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext'; // Correct path
+import { AuthContext } from '../context/AuthContext';
 import api from '../utils/api';
 import './LoginPage.css';
 
 const LoginPage = () => {
-  const [loginMode, setLoginMode] = useState('otp'); // 'otp' or 'password'
-  const [step, setStep] = useState(1); // 1: enter mobile, 2: enter OTP/password
+  const [loginMode, setLoginMode] = useState('otp'); 
+  const [step, setStep] = useState(1); 
   const [mobileNumber, setMobileNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
@@ -20,197 +20,98 @@ const LoginPage = () => {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  // ... (Keep handleSendOTP, handleVerifyOTP, handlePasswordLogin, resetForm logic exactly as is)
   const handleSendOTP = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
+    e.preventDefault(); setError(''); setLoading(true);
     try {
       const response = await api.post('/auth/send-otp', { mobile_number: mobileNumber });
-      
-      if (response.data.success) {
-        setSentOtp(response.data.otp); // For testing - remove in production
-        setStep(2);
-      }
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to send OTP');
-    } finally {
-      setLoading(false);
-    }
+      if (response.data.success) { setSentOtp(response.data.otp); setStep(2); }
+    } catch (err) { setError(err.response?.data?.error || 'Failed to send OTP'); } finally { setLoading(false); }
   };
 
   const handleVerifyOTP = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
+    e.preventDefault(); setError(''); setLoading(true);
     try {
-      const response = await api.post('/auth/verify-otp', {
-        mobile_number: mobileNumber,
-        otp: otp,
-        name: name || undefined,
-        spiritual_name: spiritualName || undefined,
-      });
-
+      const response = await api.post('/auth/verify-otp', { mobile_number: mobileNumber, otp: otp, name: name || undefined, spiritual_name: spiritualName || undefined });
       if (response.data.success) {
         login(response.data.token, response.data.user);
-        if (response.data.user?.is_super_admin) {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
+        navigate(response.data.user?.is_super_admin ? '/admin' : '/dashboard');
       }
-    } catch (err) {
-      setError(err.response?.data?.error || 'OTP verification failed');
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.response?.data?.error || 'OTP verification failed'); } finally { setLoading(false); }
   };
 
   const handlePasswordLogin = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
+    e.preventDefault(); setError(''); setLoading(true);
     try {
-      const response = await api.post('/auth/login', {
-        mobile_number: mobileNumber,
-        password: password,
-      });
-
+      const response = await api.post('/auth/login', { mobile_number: mobileNumber, password: password });
       if (response.data.success) {
         login(response.data.token, response.data.user);
-        if (response.data.user?.is_super_admin) {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
+        navigate(response.data.user?.is_super_admin ? '/admin' : '/dashboard');
       }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.response?.data?.message || 'Login failed'); } finally { setLoading(false); }
   };
 
   const resetForm = () => {
-    setStep(1);
-    setMobileNumber('');
-    setOtp('');
-    setPassword('');
-    setName('');
-    setSpiritualName('');
-    setError('');
-    setSentOtp('');
+    setStep(1); setMobileNumber(''); setOtp(''); setPassword(''); setName(''); setSpiritualName(''); setError(''); setSentOtp('');
   };
 
   return (
     <div className="login-container">
-      <div className="login-card">
-        <h1>🕉️ Vaishnav Bhakti</h1>
-        <p className="subtitle">Welcome to your spiritual journey</p>
+      <div className="card login-card">
+        <div className="login-header">
+            <h1>🕉️</h1>
+            <h2>Vaishnav Bhakti</h2>
+            <p className="subtitle">Your spiritual companion</p>
+        </div>
 
         {error && <div className="error-message">{error}</div>}
 
-        {/* Mode Toggle */}
         <div className="mode-toggle">
-          <button
-            className={loginMode === 'otp' ? 'active' : ''}
-            onClick={() => { setLoginMode('otp'); resetForm(); }}
-          >
-            Login with OTP
-          </button>
-          <button
-            className={loginMode === 'password' ? 'active' : ''}
-            onClick={() => { setLoginMode('password'); resetForm(); }}
-          >
-            Login with Password
-          </button>
+          <button className={loginMode === 'otp' ? 'active' : ''} onClick={() => { setLoginMode('otp'); resetForm(); }}>OTP Login</button>
+          <button className={loginMode === 'password' ? 'active' : ''} onClick={() => { setLoginMode('password'); resetForm(); }}>Password</button>
         </div>
 
-        {/* OTP Login Flow */}
-        {loginMode === 'otp' && (
-          <>
-            {step === 1 ? (
-              <form onSubmit={handleSendOTP}>
-                <input
-                  type="tel"
-                  placeholder="Enter 10-digit Mobile Number" // Updated placeholder
-                  value={mobileNumber}
-                  onChange={(e) => setMobileNumber(e.target.value)}
-                  required
-                  pattern="[0-9]{10}"
-                  maxLength="10"
-                />
-                <button type="submit" disabled={loading}>
-                  {loading ? 'Sending...' : 'Send OTP'}
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyOTP}>
-                <input
-                  type="text"
-                  placeholder="Enter OTP"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  required
-                  maxLength="6"
-                />
-                
-                {sentOtp && (
-                  <div className="test-otp">
-                    Test OTP: <strong>{sentOtp}</strong>
-                  </div>
+        <div className="login-form-wrapper">
+            {loginMode === 'otp' && (
+            <>
+                {step === 1 ? (
+                <form onSubmit={handleSendOTP}>
+                    <div className="form-group">
+                        <input type="tel" className="input-field" placeholder="Mobile Number" value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value)} required />
+                    </div>
+                    <button type="submit" className="btn-primary full-width" disabled={loading}>{loading ? 'Sending...' : 'Send OTP'}</button>
+                </form>
+                ) : (
+                <form onSubmit={handleVerifyOTP}>
+                    <div className="form-group">
+                        <input type="text" className="input-field" placeholder="Enter OTP" value={otp} onChange={(e) => setOtp(e.target.value)} required maxLength="6" />
+                        {sentOtp && <div className="test-otp-hint">Test OTP: {sentOtp}</div>}
+                    </div>
+                    <div className="form-group">
+                        <input type="text" className="input-field" placeholder="Name (New User)" value={name} onChange={(e) => setName(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <input type="text" className="input-field" placeholder="Spiritual Name (Optional)" value={spiritualName} onChange={(e) => setSpiritualName(e.target.value)} />
+                    </div>
+                    <button type="submit" className="btn-primary full-width" disabled={loading}>{loading ? 'Verifying...' : 'Verify & Login'}</button>
+                    <button type="button" onClick={resetForm} className="btn-text">Change Number</button>
+                </form>
                 )}
-
-                <input
-                  type="text"
-                  placeholder="Your Name (for new users)"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-                <input
-                  type="text"
-                  placeholder="Spiritual Name (optional)"
-                  value={spiritualName}
-                  onChange={(e) => setSpiritualName(e.target.value)}
-                />
-                
-                <button type="submit" disabled={loading}>
-                  {loading ? 'Verifying...' : 'Verify & Login'}
-                </button>
-                
-                <button type="button" onClick={resetForm} className="back-btn">
-                  Back
-                </button>
-              </form>
+            </>
             )}
-          </>
-        )}
 
-        {/* Password Login Flow */}
-        {loginMode === 'password' && (
-          <form onSubmit={handlePasswordLogin}>
-            <input
-              type="tel"
-              placeholder="Mobile Number (e.g., +91...)" // ✅ Updated placeholder
-              value={mobileNumber}
-              onChange={(e) => setMobileNumber(e.target.value)}
-              required
-              // ✅ REMOVED pattern and maxLength to allow +91 format
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <button type="submit" disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
-          </form>
-        )}
+            {loginMode === 'password' && (
+            <form onSubmit={handlePasswordLogin}>
+                <div className="form-group">
+                    <input type="tel" className="input-field" placeholder="Mobile Number" value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                    <input type="password" className="input-field" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                </div>
+                <button type="submit" className="btn-primary full-width" disabled={loading}>{loading ? 'Logging in...' : 'Login'}</button>
+            </form>
+            )}
+        </div>
       </div>
     </div>
   );
