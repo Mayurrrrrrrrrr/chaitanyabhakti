@@ -81,7 +81,7 @@ function App() {
             <Route path="satsang" element={<Satsang />} />
             <Route path="tasks" element={<Tasks />} />
             <Route path="medicines" element={<Medicines />} />
-            <Route path="breathe" element={<Breathe />} />
+            <Route path="breathe/*" element={<Breathe />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="profile" element={<Profile />} />
           </Route>
