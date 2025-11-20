@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import api from '../services/api';
 import './Satsang.css';
 
 // --- Inline Icons (No external dependencies) ---
@@ -9,29 +10,37 @@ const IconVideo = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="no
 const IconVolume2 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>;
 const IconCheck = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 
-// --- Mock Data (Replace with API data later) ---
-const VIDEOS = [
-  { id: 'v1', title: 'Mangala Aarti - Iskcon Vrindavan', videoId: 'K-w1jL2q5-g', duration: '15:00', channel: 'Iskcon Vrindavan' },
-  { id: 'v2', title: 'Bhagavad Gita Class - HG Amogh Lila Prabhu', videoId: '3nQJiGqP3sU', duration: '45:20', channel: 'Iskcon Dwarka' },
-  { id: 'v3', title: 'Kirtan Mela Highlights 2024', videoId: 'tgbNymZ7vqY', duration: '10:05', channel: 'Mayapur TV' },
-  { id: 'v4', title: 'Srila Prabhupada Lecture', videoId: 'f-6qA1y2VGE', duration: '30:15', channel: 'Prabhupada Memories' },
-];
-
-const AUDIOS = [
-  { id: 'a1', title: 'Hare Krishna Maha Mantra', artist: 'Srila Prabhupada', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
-  { id: 'a2', title: 'Damodarashtakam', artist: 'Visnujana Swami', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
-  { id: 'a3', title: 'Govindam Adi Purusham', artist: 'Yamuna Devi', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
-  { id: 'a4', title: 'Jaya Radha Madhava', artist: 'Karnamrita Dasi', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3' },
-];
+const pickTitle = (item, language) => {
+  if (language === 'en') return item.title_en || item.title;
+  return item.title;
+};
 
 const Satsang = () => {
-  const [activeTab, setActiveTab] = useState('video'); // 'video' or 'audio'
-  const [currentVideo, setCurrentVideo] = useState(VIDEOS[0]);
+  const [activeTab, setActiveTab] = useState('video');
+  const [videos, setVideos] = useState([]);
+  const [audios, setAudios] = useState([]);
+  const [currentVideo, setCurrentVideo] = useState(null);
   const [currentAudio, setCurrentAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   
   const audioRef = useRef(null);
+  const [language] = useState(localStorage.getItem('appLanguage') || 'hi');
+
+  useEffect(() => {
+    let mounted = true;
+    api.get('/media/videos').then(res => {
+      if (!mounted) return;
+      const list = res.data || [];
+      setVideos(list);
+      setCurrentVideo(list[0] || null);
+    }).catch(() => {});
+    api.get('/media/audio').then(res => {
+      if (!mounted) return;
+      setAudios(res.data || []);
+    }).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
 
   // --- Audio Logic ---
   const playAudio = (audio) => {
@@ -58,7 +67,7 @@ const Satsang = () => {
   // Auto-play when track changes
   useEffect(() => {
     if (currentAudio && audioRef.current) {
-      audioRef.current.src = currentAudio.url;
+      audioRef.current.src = currentAudio.file_url;
       audioRef.current.play().catch(e => console.error("Playback failed", e));
       setIsPlaying(true);
     }
@@ -113,15 +122,15 @@ const Satsang = () => {
             <div className="card main-video-card">
               <div className="video-wrapper">
                 <iframe 
-                  src={`https://www.youtube.com/embed/${currentVideo.videoId}?autoplay=0&rel=0`} 
+                  src={`https://www.youtube.com/embed/${currentVideo.youtube_id || ''}?autoplay=0&rel=0`} 
                   title={currentVideo.title}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                   allowFullScreen
                 ></iframe>
               </div>
               <div className="video-info">
-                <h3>{currentVideo.title}</h3>
-                <p>{currentVideo.channel}</p>
+                <h3>{pickTitle(currentVideo, language)}</h3>
+                <p>{currentVideo.description || ''}</p>
               </div>
             </div>
 
@@ -129,23 +138,23 @@ const Satsang = () => {
             <div className="playlist-container">
               <h4 className="section-title">Up Next</h4>
               <div className="playlist-grid">
-                {VIDEOS.map(video => (
+                {videos.map(video => (
                   <div 
-                    key={video.id} 
-                    className={`card playlist-item ${currentVideo.id === video.id ? 'active-video' : ''}`}
+                    key={video.video_id} 
+                    className={`card playlist-item ${currentVideo && (currentVideo.video_id === video.video_id) ? 'active-video' : ''}`}
                     onClick={() => { setCurrentVideo(video); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   >
                     <div className="thumbnail-container">
                         <img 
-                            src={`https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`} 
+                            src={video.thumbnail_url || (video.youtube_id ? `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg` : '')} 
                             alt={video.title} 
                             className="video-thumb"
                         />
                         <div className="play-overlay"><IconPlay /></div>
                     </div>
                     <div className="item-details">
-                        <span className="item-title">{video.title}</span>
-                        <span className="item-subtitle">{video.duration} • {video.channel}</span>
+                        <span className="item-title">{pickTitle(video, language)}</span>
+                        <span className="item-subtitle">{video.category}</span>
                     </div>
                   </div>
                 ))}
@@ -210,14 +219,14 @@ const Satsang = () => {
             <div className="playlist-container">
                 <h4 className="section-title">Kirtan Library</h4>
                 <div className="audio-list">
-                    {AUDIOS.map(audio => (
+                    {audios.map(audio => (
                         <div 
-                            key={audio.id} 
-                            className={`card audio-item ${currentAudio?.id === audio.id ? 'playing-row' : ''}`}
+                            key={audio.audio_id} 
+                            className={`card audio-item ${currentAudio?.audio_id === audio.audio_id ? 'playing-row' : ''}`}
                             onClick={() => playAudio(audio)}
                         >
                             <div className="audio-status-icon">
-                                {currentAudio?.id === audio.id && isPlaying ? (
+                                {currentAudio?.audio_id === audio.audio_id && isPlaying ? (
                                     <div className="equalizer">
                                         <div className="bar"></div>
                                         <div className="bar"></div>
@@ -228,10 +237,10 @@ const Satsang = () => {
                                 )}
                             </div>
                             <div className="audio-details">
-                                <span className="audio-title">{audio.title}</span>
-                                <span className="audio-artist">{audio.artist}</span>
+                                <span className="audio-title">{pickTitle(audio, language)}</span>
+                                <span className="audio-artist">{audio.category}</span>
                             </div>
-                            {currentAudio?.id === audio.id && <div className="now-playing-tag">Playing</div>}
+                            {currentAudio?.audio_id === audio.audio_id && <div className="now-playing-tag">Playing</div>}
                         </div>
                     ))}
                 </div>

@@ -13,12 +13,14 @@ import ScriptureLibrary from './components/ScriptureLibrary';
 // Import other components as needed
 import JapaCounter from './components/JapaCounter';
 import Family from './components/Family';
+import FamilyDetail from './components/FamilyDetail';
 import Medicines from './components/Medicines';
 import Tasks from './components/Tasks';
 import Satsang from './components/Satsang';
 import Leaderboard from './components/Leaderboard';
 import Calendar from './components/Calendar';
 import Profile from './components/Profile';
+import Breathe from './components/Breathe';
 import AdminPanel from './components/admin/AdminPanel';
 import AdminRoute from './components/AdminRoute';
 import UserManagement from './components/admin/UserManagement';
@@ -74,10 +76,12 @@ function App() {
             <Route path="library" element={<ScriptureLibrary />} />
             <Route path="japa" element={<JapaCounter />} />
             <Route path="family" element={<Family />} />
+            <Route path="family/:family_id" element={<FamilyDetail />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="satsang" element={<Satsang />} />
             <Route path="tasks" element={<Tasks />} />
             <Route path="medicines" element={<Medicines />} />
+            <Route path="breathe" element={<Breathe />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="profile" element={<Profile />} />
           </Route>

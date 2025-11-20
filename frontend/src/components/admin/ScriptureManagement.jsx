@@ -1,5 +1,5 @@
 // frontend/src/components/admin/ScriptureManagement.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
 import './AdminForms.css';
 
@@ -7,12 +7,20 @@ const ScriptureManagement = () => {
   const [scriptures, setScriptures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   
-  // 🛑 Form state for files
+  // Form state
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Other');
   const [description, setDescription] = useState('');
   const [coverUrlLink, setCoverUrlLink] = useState('');
+  
+  // File refs to clear inputs after submit
+  const coverInputRef = useRef();
+  const pdfInputRef = useRef();
+  const audioInputRef = useRef();
+
+  // State for files
   const [coverFile, setCoverFile] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
@@ -20,9 +28,12 @@ const ScriptureManagement = () => {
   const fetchScriptures = async () => {
     try {
       setLoading(true);
+      // Get public scriptures list
+      // Backend: router.get('/') mounted at /api/scriptures
       const res = await api.get('/scriptures');
       setScriptures(res.data);
     } catch (err) {
+      console.error("Fetch scriptures error:", err);
       setError('Failed to fetch scriptures.');
     } finally {
       setLoading(false);
@@ -35,30 +46,32 @@ const ScriptureManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccessMsg('');
     
-    // 🛑 Use FormData for file uploads
+    // Backend expects multipart/form-data
     const formData = new FormData();
     formData.append('title', title);
     formData.append('category', category);
     formData.append('description', description);
-    formData.append('cover_url_link', coverUrlLink); // Send link (if any)
+    formData.append('cover_url_link', coverUrlLink); // Optional link
     
-    if (coverFile) {
-      formData.append('cover_file', coverFile);
-    }
-    if (pdfFile) {
-      formData.append('pdf_file', pdfFile);
-    }
-    if (audioFile) {
-      formData.append('audio_file', audioFile);
-    }
+    // Field names MUST match backend upload.fields configuration
+    if (coverFile) formData.append('cover_file', coverFile);
+    if (pdfFile) formData.append('pdf_file', pdfFile);
+    if (audioFile) formData.append('audio_file', audioFile);
 
     try {
+      setLoading(true);
+      // Backend: router.post('/scriptures') mounted at /api/admin
       await api.post('/admin/scriptures', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+      
+      setSuccessMsg('Scripture added successfully!');
+      
       // Reset form
       setTitle('');
       setCategory('Other');
@@ -67,18 +80,30 @@ const ScriptureManagement = () => {
       setCoverFile(null);
       setPdfFile(null);
       setAudioFile(null);
-      fetchScriptures(); // Refresh list
+      
+      // Clear file inputs visually
+      if(coverInputRef.current) coverInputRef.current.value = '';
+      if(pdfInputRef.current) pdfInputRef.current.value = '';
+      if(audioInputRef.current) audioInputRef.current.value = '';
+
+      fetchScriptures(); 
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add scripture.');
+      console.error("Add scripture error:", err);
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to add scripture.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure?')) {
+    if (window.confirm('Are you sure you want to delete this scripture?')) {
       try {
+        // Backend: router.delete('/scriptures/:id') mounted at /api/admin
         await api.delete(`/admin/scriptures/${id}`);
+        setSuccessMsg('Scripture deleted.');
         fetchScriptures();
       } catch (err) {
+        console.error("Delete scripture error:", err);
         setError(err.response?.data?.message || 'Failed to delete scripture.');
       }
     }
@@ -88,66 +113,91 @@ const ScriptureManagement = () => {
     <div className="admin-page-container">
       <h2>Manage Scriptures</h2>
       {error && <p className="error-message">{error}</p>}
+      {successMsg && <p className="success-message">{successMsg}</p>}
 
       <form onSubmit={handleSubmit} className="admin-form">
         <h3>Add New Scripture</h3>
-        <input
-          type="text"
-          placeholder="Scripture Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          <option value="Gita">Gita</option>
-          <option value="Purana">Purana</option>
-          <option value="Stotra">Stotra</option>
-          <option value="Upanishad">Upanishad</option>
-          <option value="Kirtan">Kirtan</option>
-          <option value="Other">Other</option>
-        </select>
-        <textarea
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
+        <div className="form-group">
+          <label>Title</label>
+          <input
+            type="text"
+            placeholder="Scripture Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Category</label>
+          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="Gita">Gita</option>
+            <option value="Purana">Purana</option>
+            <option value="Stotra">Stotra</option>
+            <option value="Upanishad">Upanishad</option>
+            <option value="Kirtan">Kirtan</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Description</label>
+          <textarea
+            placeholder="Short description..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
         
-        <label>Cover Image (Link)</label>
-        <input
-          type="url"
-          placeholder="OR paste Cover Image URL"
-          value={coverUrlLink}
-          onChange={(e) => setCoverUrlLink(e.target.value)}
-        />
+        <div className="form-group">
+          <label>Cover Image (Link)</label>
+          <input
+            type="url"
+            placeholder="https://example.com/image.jpg"
+            value={coverUrlLink}
+            onChange={(e) => setCoverUrlLink(e.target.value)}
+          />
+        </div>
         
-        <label>Cover Image (Upload)</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setCoverFile(e.target.files[0])}
-        />
+        <div className="form-group">
+          <label>OR Upload Cover Image</label>
+          <input
+            type="file"
+            accept="image/*"
+            ref={coverInputRef}
+            onChange={(e) => setCoverFile(e.target.files[0])}
+          />
+        </div>
         
-        <label>PDF File (Upload)</label>
-        <input
-          type="file"
-          accept="application/pdf"
-          onChange={(e) => setPdfFile(e.target.files[0])}
-        />
+        <div className="form-group">
+          <label>Upload PDF (Content)</label>
+          <input
+            type="file"
+            accept="application/pdf"
+            ref={pdfInputRef}
+            onChange={(e) => setPdfFile(e.target.files[0])}
+          />
+        </div>
         
-        <label>Audio File (Upload)</label>
-        <input
-          type="file"
-          accept="audio/*"
-          onChange={(e) => setAudioFile(e.target.files[0])}
-        />
+        <div className="form-group">
+          <label>Upload Audio (Optional)</label>
+          <input
+            type="file"
+            accept="audio/*"
+            ref={audioInputRef}
+            onChange={(e) => setAudioFile(e.target.files[0])}
+          />
+        </div>
         
-        <button type="submit">Add Scripture</button>
+        <button type="submit" className="btn-submit" disabled={loading}>
+          {loading ? 'Uploading...' : 'Add Scripture'}
+        </button>
       </form>
 
       <div className="admin-list">
         <h3>Existing Scriptures</h3>
-        {loading ? <p>Loading...</p> : (
-          <table>
+        {loading && !scriptures.length ? <p>Loading...</p> : (
+          <table className="admin-table">
             <thead>
               <tr>
                 <th>Title</th>

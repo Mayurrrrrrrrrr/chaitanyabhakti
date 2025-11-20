@@ -1,18 +1,109 @@
-/* Add this to the end of frontend/src/components/admin/AdminPanel.css */
+/* frontend/src/components/admin/AdminPanel.css */
+.admin-panel-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: 100px; /* Space for bottom nav on mobile */
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Header matching the main Dashboard gradient */
+.admin-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  padding: 32px 24px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 32px;
+  color: white;
+  box-shadow: 0 8px 24px rgba(255, 153, 51, 0.25);
+  text-align: left;
+}
+
+.admin-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.admin-header p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 1.1rem;
+}
+
+/* Grid for Admin Menu Cards */
+.admin-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.admin-card {
+  background: var(--surface-color);
+  border-radius: var(--radius-md);
+  padding: 28px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 160px;
+}
+
+.admin-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-light);
+}
+
+.admin-card h3 {
+  color: var(--primary-color);
+  margin: 0 0 10px 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.admin-card p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Logout Button Area */
+.admin-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
 
 .btn-logout {
-  width: 100%;
-  padding: 15px;
-  background-color: #e74c3c; /* Red color */
-  color: white;
+  background-color: #fee2e2; /* Soft Red */
+  color: #dc2626; /* Strong Red */
   border: none;
-  border-radius: 8px;
+  padding: 14px 40px;
+  border-radius: var(--radius-md);
   font-size: 1rem;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 10px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .btn-logout:hover {
-  background-color: #c0392b;
+  background-color: #fecaca;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -1,10 +1,11 @@
+// frontend/src/components/admin/AdminPanel.jsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; // Import useAuth
+import { useAuth } from '../../context/AuthContext'; 
 import './AdminPanel.css';
 
 const AdminPanel = () => {
-  // Get the logout function and navigate hook
+  // Destructure logout from AuthContext
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -14,33 +15,39 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="admin-panel">
-      <h1>Admin Panel</h1>
-      <nav className="admin-nav">
-        <ul>
-          <li>
-            <Link to="/admin/users">Manage Users</Link>
-          </li>
-          <li>
-            <Link to="/admin/scriptures">Manage Scriptures</Link>
-          </li>
-          {/*
-            ✅ ADD THIS NEW LINK
-          */}
-          <li>
-            <Link to="/admin/media">Manage Media</Link>
-          </li>
-          <li>
-            <Link to="/admin/events">Manage Global Events</Link>
-          </li>
-          <li>
-            {/* --- NEW LOGOUT BUTTON --- */}
-            <button onClick={handleLogout} className="btn-logout">
-              Logout
-            </button>
-          </li>
-        </ul>
+    <div className="admin-panel-container">
+      <header className="admin-header">
+        <h1>Admin Dashboard</h1>
+        <p>Welcome, Admin</p>
+      </header>
+
+      <nav className="admin-nav-grid">
+        <Link to="/admin/users" className="admin-card">
+          <h3>Manage Users</h3>
+          <p>Create, deactivate, or reactivate users.</p>
+        </Link>
+
+        <Link to="/admin/scriptures" className="admin-card">
+          <h3>Manage Scriptures</h3>
+          <p>Upload PDFs, audio, and cover images.</p>
+        </Link>
+
+        <Link to="/admin/media" className="admin-card">
+          <h3>Manage Media</h3>
+          <p>Upload Kirtans and add YouTube links.</p>
+        </Link>
+
+        <Link to="/admin/events" className="admin-card">
+          <h3>Manage Global Events</h3>
+          <p>Schedule festivals and Ekadashi notifications.</p>
+        </Link>
       </nav>
+
+      <div className="admin-actions">
+        <button onClick={handleLogout} className="btn-logout">
+          Logout
+        </button>
+      </div>
     </div>
   );
 };

@@ -1,60 +1,211 @@
 /* frontend/src/components/admin/AdminForms.css */
+
+/* Shared Layout */
 .admin-page-container {
-  padding: 1rem;
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: 100px;
+  animation: slideUp 0.4s ease-out;
 }
 
 .admin-page-container h2 {
+  font-size: 1.8rem;
+  color: var(--text-color);
+  margin-bottom: 24px;
   text-align: center;
-  color: var(--primary-color);
+  font-weight: 700;
 }
 
+/* Form Container styling similar to Cards */
 .admin-form {
-  background: #fff;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  margin-bottom: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  background: var(--surface-color);
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  margin-bottom: 40px;
 }
 
 .admin-form h3 {
   margin-top: 0;
-  text-align: center;
+  margin-bottom: 24px;
+  color: var(--primary-dark);
+  font-size: 1.3rem;
+  border-bottom: 2px solid var(--primary-light);
+  padding-bottom: 12px;
 }
 
-.admin-list table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+/* Form Elements */
+.form-group {
+  margin-bottom: 20px;
 }
 
-.admin-list th, .admin-list td {
-  padding: 12px 15px;
-  border-bottom: 1px solid var(--border-color);
-  text-align: left;
-}
-
-.admin-list th {
-  background-color: #f9f9f9;
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-secondary);
   font-size: 0.9rem;
-  color: var(--text-light);
 }
 
-.admin-list tr:last-child td {
+/* Standardizing all inputs */
+.admin-form input[type="text"],
+.admin-form input[type="url"],
+.admin-form input[type="datetime-local"],
+.admin-form input[type="file"],
+.admin-form select,
+.admin-form textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-family: inherit;
+  background-color: #FAFAFA;
+  color: var(--text-color);
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.admin-form input:focus,
+.admin-form select:focus,
+.admin-form textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+  background-color: #ffffff;
+}
+
+.admin-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 10px;
+  box-shadow: 0 4px 12px rgba(255, 153, 51, 0.2);
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 153, 51, 0.3);
+}
+
+.btn-submit:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Table Styling */
+.admin-list {
+  margin-top: 40px;
+}
+
+.admin-list h3 {
+  font-size: 1.4rem;
+  margin-bottom: 16px;
+  color: var(--text-color);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.admin-table th {
+  background-color: #F8FAFC;
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.admin-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-color);
+  vertical-align: middle;
+}
+
+.admin-table tr:last-child td {
   border-bottom: none;
 }
 
-.btn-delete {
-  background-color: #e74c3c;
-  color: white;
-  padding: 8px 12px;
-  font-size: 0.8rem;
+.admin-table tr:hover td {
+  background-color: #FAFAFA;
 }
+
+/* Delete Button in Tables */
+.btn-delete {
+  background-color: #FFF5F5;
+  color: #C53030;
+  border: 1px solid #FED7D7;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
 .btn-delete:hover {
-  background-color: #c0392b;
+  background-color: #C53030;
+  color: white;
+  border-color: #C53030;
+}
+
+/* Feedback Messages */
+.error-message, .success-message {
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.error-message {
+  background-color: #FFF5F5;
+  color: #C53030;
+  border: 1px solid #FED7D7;
+}
+
+.success-message {
+  background-color: #F0FFF4;
+  color: #2F855A;
+  border: 1px solid #C6F6D5;
+}
+
+.divider {
+  margin: 40px 0;
+  border: 0;
+  height: 1px;
+  background: var(--border-color);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }

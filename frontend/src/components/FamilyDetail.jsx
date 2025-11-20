@@ -1,229 +1,73 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import api from '../services/api';
-import './JapaCounter.css';
-import { useAuth } from '../context/AuthContext';
-import { useLanguage } from '../context/LanguageContext';
-import { FiMic, FiMicOff, FiRotateCcw, FiX } from 'react-icons/fi';
+import CommunityPost from './CommunityPost';
+import CommunityPostForm from './CommunityPostForm';
+import './FamilyDetail.css';
 
-// --- Speech Recognition Setup ---
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition = null;
-if (SpeechRecognition) {
-  recognition = new SpeechRecognition();
-  recognition.continuous = true;
-  recognition.interimResults = false;
-}
+const FamilyDetail = () => {
+  const { family_id } = useParams();
+  const [family, setFamily] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-const JapaCounter = () => {
-  const { user } = useAuth();
-  const { language, t } = useLanguage();
-  
-  const [beadCount, setBeadCount] = useState(() => {
-    const savedBeads = localStorage.getItem('beadCount');
-    return savedBeads ? JSON.parse(savedBeads) : 0;
-  });
-  const [malaCount, setMalaCount] = useState(() => {
-    const savedMala = localStorage.getItem('malaCount');
-    return savedMala ? JSON.parse(savedMala) : 0;
-  });
-  
-  const [offlineQueue, setOfflineQueue] = useState(0);
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  // --- Voice Commands State ---
-  const [isListening, setIsListening] = useState(false);
-  const [voiceError, setVoiceError] = useState('');
-  
-  const malaCountRef = useRef(malaCount);
-  useEffect(() => { malaCountRef.current = malaCount; }, [malaCount]);
-
-  const isListeningRef = useRef(isListening);
-  useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
-
-  // Load API count *once* on load
-  useEffect(() => {
-    api.get('/japa/summary')
-      .then(res => {
-        if (res.data.today_count !== malaCountRef.current) {
-          setMalaCount(res.data.today_count || 0);
-          setBeadCount(0);
-        }
-      })
-      .catch(err => console.error("Failed to fetch today's count", err));
-  }, []); // Empty dependency array
-
-  useEffect(() => {
-    localStorage.setItem('malaCount', JSON.stringify(malaCount));
-  }, [malaCount]);
-  
-  useEffect(() => {
-    localStorage.setItem('beadCount', JSON.stringify(beadCount));
-  }, [beadCount]);
-
-  const saveToApi = useCallback(async (countToSave) => {
-    setIsSyncing(true);
+  const loadData = async () => {
     try {
-      await api.post('/japa', {
-        mala_count: countToSave,
-        japa_date: new Date().toISOString().split('T')[0],
-      });
-      setOfflineQueue(0); 
-    } catch (err) {
-      console.error('Failed to save mala count (API failed), saving offline.', err);
-      setOfflineQueue(prev => prev + 1);
+      setLoading(true);
+      const [famRes, postRes] = await Promise.all([
+        api.get(`/families/${family_id}`),
+        api.get(`/community/family/${family_id}`)
+      ]);
+      setFamily(famRes.data);
+      setPosts(postRes.data || []);
+      setError('');
+    } catch (e) {
+      setError('Failed to load family details.');
     } finally {
-      setIsSyncing(false);
+      setLoading(false);
     }
-  }, []);
-
-  const handleBeadClick = useCallback(() => {
-    setBeadCount(prevBeadCount => {
-      const newBeadCount = prevBeadCount + 1;
-      if (newBeadCount === 108) {
-        const newMalaCount = malaCountRef.current + 1;
-        setMalaCount(newMalaCount);
-        saveToApi(newMalaCount);
-        return 0;
-      }
-      return newBeadCount;
-    });
-  }, [saveToApi]);
-
-  const handleMalaReset = () => setBeadCount(0);
-  
-  const handleFullReset = () => {
-    setMalaCount(0);
-    setBeadCount(0);
-    saveToApi(0);
   };
 
-  // --- Voice Command Functions ---
   useEffect(() => {
-    if (!recognition) return;
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-      
-      // 🛑 FIX: Add more keywords for reliability
-      const keywords = ["hare", "krishna", "add", "next", "bead", "राम", "एक", "push", "pop"];
-      
-      if (keywords.some(k => transcript.includes(k))) {
-        // Vibrate for feedback
-        if (navigator.vibrate) navigator.vibrate(50);
-        handleBeadClick();
-      }
-    };
-
-    recognition.onerror = (event) => {
-      // 🛑 FIX: Improved error handling
-      if (event.error === 'not-allowed') {
-        setVoiceError(t('japa_voice_denied'));
-        setIsListening(false);
-      } else if (event.error === 'no-speech' || event.error === 'audio-capture') {
-        // Ignore common, recoverable errors
-      } else {
-        console.error('Speech recognition error', event.error);
-        setVoiceError(`${t('japa_voice_error')}${event.error}`);
-        setIsListening(false);
-      }
-    };
-
-    recognition.onend = () => {
-      if (isListeningRef.current) {
-        // Automatically restart if it was supposed to be on
-        try {
-          recognition.start();
-        } catch(e) {
-          console.error("Recognition restart failed", e);
-          setIsListening(false); // Stop if restart fails
-        }
-      }
-    };
-    
-    // Cleanup on unmount
-    return () => {
-      if (recognition) {
-        recognition.stop();
-      }
-    };
-  }, [handleBeadClick, t]); // Add `t` dependency
-
-  const toggleListen = (e) => {
-    e.stopPropagation();
-    if (!recognition) {
-      setVoiceError(t('japa_voice_unsupported'));
-      return;
-    }
-
-    if (isListening) {
-      recognition.stop();
-      setIsListening(false);
-    } else {
-      try {
-        // 🛑 FIX: Set language based on app context
-        recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
-        recognition.start();
-        setIsListening(true);
-        setVoiceError('');
-      } catch (err) {
-        console.error('Speech recognition start failed', err);
-        if (err.name === 'NotAllowedError') {
-          setVoiceError(t('japa_voice_denied'));
-        } else {
-          setVoiceError(err.message);
-        }
-      }
-    }
-  };
+    loadData();
+  }, [family_id]);
 
   return (
-    <div className="japa-container">
-      <div className="japa-display">
-        <div className="japa-display-box">
-          <span className="count">{malaCount}</span>
-          <span className="label">{t('malas')}</span>
+    <div className="family-detail-page">
+      {loading && <div className="loading-pulse">Loading...</div>}
+      {error && <div className="family-error-banner">{error}</div>}
+      {family && (
+        <div className="card family-header-card">
+          <div className="family-header-left">
+            <div className="family-avatar-large">{family.family_name?.slice(0,2).toUpperCase()}</div>
+            <div>
+              <h2>{family.family_name}</h2>
+              <div className="code-pill">Code: {family.family_code}</div>
+            </div>
+          </div>
+          <div className="family-members">
+            {family.members?.map(m => (
+              <div key={m.user_id} className="member-chip">
+                <span className="member-name">{m.name}</span>
+                {m.is_admin ? <span className="member-role">Admin</span> : null}
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="japa-display-box">
-          <span className="count">{beadCount}</span>
-          <span className="label">{t('japa_beads')}</span>
-        </div>
+      )}
+
+      <div className="card">
+        <h3>Share with family</h3>
+        <CommunityPostForm family_id={family_id} onPostCreated={loadData} />
       </div>
 
-      <div className="japa-controls-wrapper">
-        <button className="bead-button" onClick={handleBeadClick}>
-          {t('greeting')}
-        </button>
-        
-        {recognition && (
-          <button 
-            className={`voice-toggle-btn ${isListening ? 'listening' : ''}`}
-            onClick={toggleListen}
-            title={isListening ? t('japa_voice_stop') : t('japa_voice_start')}
-          >
-            {isListening ? <FiMicOff /> : <FiMic />}
-            {isListening && <div className="listening-pulse"></div>}
-          </button>
-        )}
+      <div className="post-list">
+        {posts.map(p => <CommunityPost key={p.post_id} post={p} />)}
+        {posts.length === 0 && <div className="card"><p>No posts yet.</p></div>}
       </div>
-
-      <div className="status-messages">
-        {isSyncing && <div className="sync-status">Syncing...</div>}
-        {offlineQueue > 0 && <div className="sync-status error">Offline: {offlineQueue} malas unsynced.</div>}
-        {voiceError && <div className="sync-status error">{voiceError}</div>}
-        {!recognition && <div className="sync-status">{t('japa_voice_unsupported')}</div>}
-      </div>
-
-      <div className="reset-controls">
-        <button className="reset-btn" onClick={handleMalaReset}>
-          <FiRotateCcw /> {t('japa_reset_beads')}
-        </button>
-        <button className="reset-btn full-reset" onClick={handleFullReset}>
-          <FiX /> {t('japa_reset_all')}
-        </button>
-      </div>
-      
     </div>
   );
 };
 
-export default JapaCounter;
+export default FamilyDetail;

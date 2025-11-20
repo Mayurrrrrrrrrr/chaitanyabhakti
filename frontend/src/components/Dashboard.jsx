@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import api from '../services/api';
 import { fetchVaishnavaEvents } from '../utils/vaishnavaData'; 
 import './Dashboard.css';
 
@@ -19,22 +20,16 @@ const MOCK_LEADERBOARD = [
   { id: 3, name: 'Krishna Kripa', count: 50 },
 ];
 
-const MOCK_BLOGS = [
-    { id: 1, title: "The Importance of Ekadashi", summary: "Why we fast and how it purifies the soul.", date: "Nov 18" },
-    { id: 2, title: "Kirtan Standards", summary: "Guidelines for leading ecstatic kirtans.", date: "Nov 15" },
-];
-
-const MOCK_MESSAGES = [
-    { id: 1, text: "Special Darshan tomorrow at 7 AM for Govardhan Puja.", type: "important" },
-    { id: 2, text: "Srimad Bhagavatam class by HG Amogh Lila Prabhu today at 6 PM.", type: "info" }
-];
+const formatPostDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleString('en-IN', { day: 'numeric', month: 'short' });
+};
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const [upcomingFestivals, setUpcomingFestivals] = useState([]);
   const [leaderboard, setLeaderboard] = useState(MOCK_LEADERBOARD);
-  const [blogs, setBlogs] = useState(MOCK_BLOGS);
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const [satsangPosts, setSatsangPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,6 +46,10 @@ const Dashboard = () => {
             .slice(0, 2);
         
         setUpcomingFestivals(nextEvents);
+
+        // 2. Load global posts (temple updates / satsang)
+        const postsRes = await api.get('/community/satsang').catch(() => ({ data: [] }));
+        setSatsangPosts(postsRes.data || []);
 
       } catch (err) {
         console.error("Dashboard data load failed", err);
@@ -76,17 +75,21 @@ const Dashboard = () => {
 
       <div className="dashboard-grid">
           
-          {/* 1. Important Messages */}
+          {/* 1. Temple Updates / Global Posts */}
           <div className="card message-card">
             <div className="card-header">
                 <h3><IconBell /> Temple Updates</h3>
             </div>
             <div className="message-list">
-                {messages.map(msg => (
-                    <div key={msg.id} className={`message-item ${msg.type}`}>
-                        <p>{msg.text}</p>
+                {satsangPosts.slice(0,5).map(post => (
+                    <div key={post.post_id} className={`message-item ${post.post_type || 'info'}`}>
+                        <p>{post.content || post.title}</p>
+                        <span className="blog-date">{formatPostDate(post.created_at)}</span>
                     </div>
                 ))}
+                {satsangPosts.length === 0 && (
+                  <div className="message-item info"><p>No updates yet.</p></div>
+                )}
             </div>
           </div>
 
@@ -131,22 +134,23 @@ const Dashboard = () => {
              </div>
           </div>
 
-          {/* 4. Blogs / News */}
+          {/* 4. Satsang Highlights */}
           <div className="card blog-card">
              <div className="card-header">
-                <h3><IconBookOpen /> Spiritual Wisdom</h3>
+                <h3><IconBookOpen /> Satsang Highlights</h3>
              </div>
              <div className="blog-list">
-                {blogs.map(blog => (
-                    <div key={blog.id} className="blog-item">
+                {satsangPosts.slice(0,3).map(post => (
+                    <div key={post.post_id} className="blog-item">
                         <div className="blog-content">
-                            <h4>{blog.title}</h4>
-                            <p>{blog.summary}</p>
-                            <span className="blog-date">{blog.date}</span>
+                            <h4>{post.title || (post.content?.slice(0,50) + '...')}</h4>
+                            <p>{post.content?.slice(0,120)}</p>
+                            <span className="blog-date">{formatPostDate(post.created_at)}</span>
                         </div>
                         <button className="read-btn"><IconArrowRight /></button>
                     </div>
                 ))}
+                {satsangPosts.length === 0 && <div className="blog-item"><div className="blog-content"><p>No posts yet.</p></div></div>}
              </div>
           </div>
 
@@ -167,6 +171,10 @@ const Dashboard = () => {
               <Link to="/library" className="card action-card">
                   <span className="action-icon">📖</span>
                   <span>Books</span>
+              </Link>
+              <Link to="/breathe" className="card action-card">
+                  <span className="action-icon">🧘</span>
+                  <span>Breathe</span>
               </Link>
           </div>
       </div>

@@ -63,6 +63,9 @@ const Sidebar = ({ collapsed, onToggleCollapse }) => {
         <NavLink to="/tasks">
           <FiActivity /> {t('tasks')}
         </NavLink>
+        <NavLink to="/breathe">
+          <FiActivity /> Breathe
+        </NavLink>
         {user?.is_super_admin ? (
           <NavLink to="/admin">
             <FiUser /> Admin

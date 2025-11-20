@@ -22,8 +22,9 @@ const Medicines = () => {
   const fetchTodayLogs = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/medicines/logs/today');
-      setLogs(response.data.logs);
+      const today = new Date().toISOString().split('T')[0];
+      const response = await api.get(`/medicines/logs?date=${today}`);
+      setLogs(response.data);
       setError('');
     } catch (err) {
       setError('आज की दवाएँ लोड करने में विफल।');
@@ -32,13 +33,12 @@ const Medicines = () => {
   };
 
   // Mark a log as 'taken' or 'skipped'
-  const handleLogUpdate = async (log_id, status) => {
+  const handleLogUpdate = async (log, status) => {
     try {
-      await api.post(`/medicines/logs/${log_id}/update`, { status });
-      // Update the log in the local state to give instant feedback
+      await api.post(`/medicines/logs`, { medicine_id: log.medicine_id, status, scheduled_time: log.scheduled_time });
       setLogs(currentLogs =>
-        currentLogs.map(log =>
-          log.log_id === log_id ? { ...log, status: status } : log
+        currentLogs.map(l =>
+          l.log_id === log.log_id ? { ...l, status } : l
         )
       );
     } catch (err) {
@@ -126,13 +126,13 @@ const Medicines = () => {
                 <>
                   <button 
                     className="btn-log btn-skip"
-                    onClick={() => handleLogUpdate(log.log_id, 'skipped')}
+                    onClick={() => handleLogUpdate(log, 'skipped')}
                   >
                     छोड़ें (Skip)
                   </button>
                   <button 
                     className="btn-log btn-take"
-                    onClick={() => handleLogUpdate(log.log_id, 'taken')}
+                    onClick={() => handleLogUpdate(log, 'taken')}
                   >
                     लें (Take)
                   </button>

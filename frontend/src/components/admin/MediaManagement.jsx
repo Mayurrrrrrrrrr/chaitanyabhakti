@@ -1,6 +1,7 @@
+// frontend/src/components/admin/MediaManagement.jsx
 import React, { useState } from 'react';
 import api from '../../services/api';
-import './AdminForms.css'; // We'll reuse the same CSS
+import './AdminForms.css'; 
 
 const MediaManagement = () => {
   const [videoTitle, setVideoTitle] = useState('');
@@ -10,68 +11,91 @@ const MediaManagement = () => {
   const [audioTitle, setAudioTitle] = useState('');
   const [audioFile, setAudioFile] = useState(null);
   
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState({ text: '', type: '' });
+  const [loading, setLoading] = useState(false);
+
+  // Helper to reset file input
+  const fileInputRef = React.useRef();
 
   // Handle submitting a new video link
   const handleVideoSubmit = async (e) => {
     e.preventDefault();
-    setMessage('');
+    setMessage({ text: '', type: '' });
+    setLoading(true);
+    
     try {
       const videoData = {
         title: videoTitle,
         youtube_url: videoUrl,
         description: videoDescription,
-        is_public: 1, // Make it public by default
+        is_public: 1, // Default to public
+        category: 'satsang'
       };
-      await api.post('/media/video', videoData); //
-      setMessage('Video added successfully!');
+      // Backend: router.post('/video') mounted at /api/media
+      await api.post('/media/video', videoData);
+      
+      setMessage({ text: 'Video added successfully!', type: 'success' });
       setVideoTitle('');
       setVideoUrl('');
       setVideoDescription('');
     } catch (err) {
       console.error('Failed to add video:', err);
-      setMessage('Error adding video. Check console.');
+      setMessage({ text: err.response?.data?.error || 'Error adding video.', type: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
   // Handle uploading a new audio file
   const handleAudioSubmit = async (e) => {
     e.preventDefault();
-    setMessage('');
+    setMessage({ text: '', type: '' });
+    
     if (!audioFile) {
-      setMessage('Please select an audio file.');
+      setMessage({ text: 'Please select an audio file.', type: 'error' });
       return;
     }
 
+    setLoading(true);
     const formData = new FormData();
     formData.append('title', audioTitle);
-    formData.append('audio_file', audioFile); //
-    formData.append('is_public', 1); // Make it public by default
+    formData.append('audio_file', audioFile); 
+    formData.append('is_public', 1);
+    formData.append('category', 'kirtan'); // Default category
 
     try {
-      await api.post('/media/audio', formData, { //
+      // Backend: router.post('/audio') mounted at /api/media
+      await api.post('/media/audio', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      setMessage('Audio uploaded successfully!');
+      
+      setMessage({ text: 'Audio uploaded successfully!', type: 'success' });
       setAudioTitle('');
       setAudioFile(null);
-      e.target.reset(); // Clear the file input
+      if(fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       console.error('Failed to upload audio:', err);
-      setMessage('Error uploading audio. Check console.');
+      setMessage({ text: err.response?.data?.error || 'Error uploading audio.', type: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="admin-form-container">
-      <h1>Manage Satsang Media</h1>
-      {message && <p className="message">{message}</p>}
+    <div className="admin-page-container">
+      <h2>Manage Satsang Media</h2>
+      
+      {message.text && (
+        <p className={message.type === 'error' ? "error-message" : "success-message"}>
+          {message.text}
+        </p>
+      )}
 
       {/* --- Add Video Form --- */}
       <form onSubmit={handleVideoSubmit} className="admin-form">
-        <h2>Add YouTube Video</h2>
+        <h3>Add YouTube Video</h3>
         <div className="form-group">
           <label htmlFor="video-title">Video Title</label>
           <input
@@ -80,6 +104,7 @@ const MediaManagement = () => {
             value={videoTitle}
             onChange={(e) => setVideoTitle(e.target.value)}
             required
+            placeholder="e.g., Morning Satsang"
           />
         </div>
         <div className="form-group">
@@ -90,6 +115,7 @@ const MediaManagement = () => {
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
             required
+            placeholder="https://www.youtube.com/watch?v=..."
           />
         </div>
         <div className="form-group">
@@ -98,14 +124,19 @@ const MediaManagement = () => {
             id="video-desc"
             value={videoDescription}
             onChange={(e) => setVideoDescription(e.target.value)}
+            rows="3"
           />
         </div>
-        <button type="submit" className="btn-submit">Add Video</button>
+        <button type="submit" className="btn-submit" disabled={loading}>
+          {loading ? 'Processing...' : 'Add Video'}
+        </button>
       </form>
+
+      <hr className="divider" />
 
       {/* --- Upload Audio Form --- */}
       <form onSubmit={handleAudioSubmit} className="admin-form">
-        <h2>Upload Audio File</h2>
+        <h3>Upload Audio File</h3>
         <div className="form-group">
           <label htmlFor="audio-title">Audio Title</label>
           <input
@@ -114,19 +145,23 @@ const MediaManagement = () => {
             value={audioTitle}
             onChange={(e) => setAudioTitle(e.target.value)}
             required
+            placeholder="e.g., Kirtan Recording"
           />
         </div>
         <div className="form-group">
-          <label htmlFor="audio-file">Audio File (MP3, etc.)</label>
+          <label htmlFor="audio-file">Audio File (MP3)</label>
           <input
             id="audio-file"
             type="file"
             accept="audio/*"
+            ref={fileInputRef}
             onChange={(e) => setAudioFile(e.target.files[0])}
             required
           />
         </div>
-        <button type="submit" className="btn-submit">Upload Audio</button>
+        <button type="submit" className="btn-submit" disabled={loading}>
+           {loading ? 'Uploading...' : 'Upload Audio'}
+        </button>
       </form>
     </div>
   );

@@ -1,7 +1,7 @@
 // frontend/src/components/admin/UserManagement.jsx
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import './UserManagement.css';
+import './UserManagement.css'; // Ensure this CSS file exists
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -13,19 +13,22 @@ const UserManagement = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
-  // Fetch all users on component load
+  // Fetch all users
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // 🛑 FIX: Removed '/api' from this path
+      // Backend: router.get('/users') mounted at /api/admin
       const res = await api.get('/admin/users'); 
       setUsers(res.data);
+      setError('');
     } catch (err) {
+      console.error("Fetch users error:", err);
       setError('Failed to fetch users.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -39,47 +42,52 @@ const UserManagement = () => {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setError('');
-    setMessage('');
+    setSuccessMsg('');
+    
     try {
-      // 🛑 FIX: Removed '/api' from this path
+      // Backend: Requires a POST /users route in admin.js
       await api.post('/admin/users', formData);
-      setMessage(`User "${formData.name}" created successfully!`);
-      setFormData({ name: '', mobile_number: '', password: '', spiritual_name: '' }); // Reset form
-      fetchUsers(); // Refresh the list
+      setSuccessMsg(`User "${formData.name}" created successfully!`);
+      setFormData({ name: '', mobile_number: '', password: '', spiritual_name: '' }); 
+      fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create user.');
+      console.error("Create user error:", err);
+      setError(err.response?.data?.error || err.response?.data?.message || 'Failed to create user.');
     }
   };
 
   const handleDeactivate = async (userId) => {
+    if(!window.confirm("Are you sure you want to deactivate this user?")) return;
     try {
-      // 🛑 FIX: Removed '/api' from this path
+      // Backend: Requires PUT /users/:id/deactivate route in admin.js
       await api.put(`/admin/users/${userId}/deactivate`);
       fetchUsers();
+      setSuccessMsg('User status updated.');
     } catch (err) {
-      setError('Failed to deactivate user.');
+      setError(err.response?.data?.error || 'Failed to update user status.');
     }
   };
 
   const handleReactivate = async (userId) => {
     try {
-      // 🛑 FIX: Removed '/api' from this path
+       // Backend: Requires PUT /users/:id/reactivate route in admin.js
       await api.put(`/admin/users/${userId}/reactivate`);
       fetchUsers();
+      setSuccessMsg('User status updated.');
     } catch (err) {
-      setError('Failed to reactivate user.');
+      setError(err.response?.data?.error || 'Failed to update user status.');
     }
   };
 
   return (
-    <div className="user-management">
+    <div className="user-management-container">
       <h2>Manage Users</h2>
       {error && <p className="error-message">{error}</p>}
-      {message && <p className="success-message">{message}</p>}
+      {successMsg && <p className="success-message">{successMsg}</p>}
 
-      <div className="create-user-form">
+      <div className="create-user-section">
         <h3>Create New User</h3>
-        <form onSubmit={handleCreateUser}>
+        <form onSubmit={handleCreateUser} className="user-form">
           <input
             type="text"
             name="name"
@@ -111,18 +119,19 @@ const UserManagement = () => {
             onChange={handleChange}
             placeholder="Spiritual Name (Optional)"
           />
-          <button type="submit">Create User</button>
+          <button type="submit" className="btn-create">Create User</button>
         </form>
       </div>
 
-      <div className="user-list">
+      <div className="user-list-section">
         <h3>Existing Users ({users.length})</h3>
         {loading ? <p>Loading users...</p> : (
-          <table>
+          <table className="users-table">
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Mobile</th>
+                <th>Role</th>
                 <th>Status</th>
                 <th>Action</th>
               </tr>
@@ -130,18 +139,24 @@ const UserManagement = () => {
             <tbody>
               {users.map((user) => (
                 <tr key={user.user_id}>
-                  <td>{user.name} ({user.spiritual_name})</td>
-                  <td>{user.mobile_number}</td>
-                  <td>{user.is_active ? 'Active' : 'Deactivated'}</td>
                   <td>
-                    {user.is_active ? (
-                      <button className="btn-deactivate" onClick={() => handleDeactivate(user.user_id)}>
-                        Deactivate
-                      </button>
-                    ) : (
-                      <button className="btn-reactivate" onClick={() => handleReactivate(user.user_id)}>
-                        Reactivate
-                      </button>
+                    {user.name} 
+                    {user.spiritual_name && <span className="spiritual-name"> ({user.spiritual_name})</span>}
+                  </td>
+                  <td>{user.mobile_number}</td>
+                  <td>{user.is_super_admin ? 'Admin' : 'User'}</td>
+                  <td>{user.is_active === 0 ? 'Inactive' : 'Active'}</td>
+                  <td>
+                    {!user.is_super_admin && (
+                      user.is_active !== 0 ? (
+                        <button className="btn-deactivate" onClick={() => handleDeactivate(user.user_id)}>
+                          Deactivate
+                        </button>
+                      ) : (
+                        <button className="btn-reactivate" onClick={() => handleReactivate(user.user_id)}>
+                          Reactivate
+                        </button>
+                      )
                     )}
                   </td>
                 </tr>

@@ -42,6 +42,36 @@ module.exports = (db) => {
     }
   });
 
+  // PUT update an event (admin only)
+  router.put('/:event_id', isSuperAdmin(db), async (req, res) => {
+    try {
+      const { event_id } = req.params;
+      const { title, event_type, start_date, end_date, description, location } = req.body;
+
+      const updates = [];
+      const values = [];
+
+      if (title) { updates.push('title = ?'); values.push(title); }
+      if (event_type) { updates.push('event_type = ?'); values.push(event_type); }
+      if (start_date) { updates.push('start_date = ?'); values.push(start_date); }
+      if (end_date) { updates.push('end_date = ?'); values.push(end_date); }
+      if (description !== undefined) { updates.push('description = ?'); values.push(description); }
+      if (location !== undefined) { updates.push('location = ?'); values.push(location); }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ error: 'No fields to update' });
+      }
+
+      values.push(event_id);
+
+      await db.query(`UPDATE global_events SET ${updates.join(', ')} WHERE event_id = ?`, values);
+      res.json({ message: 'Event updated' });
+    } catch (error) {
+      console.error('Update event error:', error);
+      res.status(500).json({ error: 'Failed to update event' });
+    }
+  });
+
   // DELETE an event (admin only)
   router.delete('/:event_id', isSuperAdmin(db), async (req, res) => {
     try {
