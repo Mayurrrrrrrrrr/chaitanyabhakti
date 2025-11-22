@@ -11,6 +11,7 @@ const IconVolume2 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="
 const IconCheck = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 
 const pickTitle = (item, language) => {
+  if (!item) return ''; // Safety check
   if (language === 'en') return item.title_en || item.title;
   return item.title;
 };
@@ -33,12 +34,17 @@ const Satsang = () => {
       if (!mounted) return;
       const list = res.data || [];
       setVideos(list);
-      setCurrentVideo(list[0] || null);
-    }).catch(() => {});
+      // Only set currentVideo if the list has items
+      if (list.length > 0) {
+        setCurrentVideo(list[0]);
+      }
+    }).catch(err => console.error("Error fetching videos:", err));
+
     api.get('/media/audio').then(res => {
       if (!mounted) return;
       setAudios(res.data || []);
-    }).catch(() => {});
+    }).catch(err => console.error("Error fetching audio:", err));
+
     return () => { mounted = false; };
   }, []);
 
@@ -118,46 +124,56 @@ const Satsang = () => {
         {/* --- VIDEO SECTION --- */}
         {activeTab === 'video' && (
           <div className="video-section fade-in">
-            {/* Main Player */}
-            <div className="card main-video-card">
-              <div className="video-wrapper">
-                <iframe 
-                  src={`https://www.youtube.com/embed/${currentVideo.youtube_id || ''}?autoplay=0&rel=0`} 
-                  title={currentVideo.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowFullScreen
-                ></iframe>
+            {/* Main Player - Conditionally Rendered */}
+            {currentVideo ? (
+              <div className="card main-video-card">
+                <div className="video-wrapper">
+                  <iframe 
+                    src={`https://www.youtube.com/embed/${currentVideo.youtube_id || ''}?autoplay=0&rel=0`} 
+                    title={currentVideo.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen
+                  ></iframe>
+                </div>
+                <div className="video-info">
+                  <h3>{pickTitle(currentVideo, language)}</h3>
+                  <p>{currentVideo.description || ''}</p>
+                </div>
               </div>
-              <div className="video-info">
-                <h3>{pickTitle(currentVideo, language)}</h3>
-                <p>{currentVideo.description || ''}</p>
+            ) : (
+              <div className="card main-video-card" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px', background: '#f5f5f5', color: '#666'}}>
+                <p>Loading videos or no content available...</p>
               </div>
-            </div>
+            )}
 
             {/* Video Playlist */}
             <div className="playlist-container">
               <h4 className="section-title">Up Next</h4>
               <div className="playlist-grid">
-                {videos.map(video => (
-                  <div 
-                    key={video.video_id} 
-                    className={`card playlist-item ${currentVideo && (currentVideo.video_id === video.video_id) ? 'active-video' : ''}`}
-                    onClick={() => { setCurrentVideo(video); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                  >
-                    <div className="thumbnail-container">
-                        <img 
-                            src={video.thumbnail_url || (video.youtube_id ? `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg` : '')} 
-                            alt={video.title} 
-                            className="video-thumb"
-                        />
-                        <div className="play-overlay"><IconPlay /></div>
+                {videos.length > 0 ? (
+                  videos.map(video => (
+                    <div 
+                      key={video.video_id} 
+                      className={`card playlist-item ${currentVideo && (currentVideo.video_id === video.video_id) ? 'active-video' : ''}`}
+                      onClick={() => { setCurrentVideo(video); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    >
+                      <div className="thumbnail-container">
+                          <img 
+                              src={video.thumbnail_url || (video.youtube_id ? `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg` : '')} 
+                              alt={video.title} 
+                              className="video-thumb"
+                          />
+                          <div className="play-overlay"><IconPlay /></div>
+                      </div>
+                      <div className="item-details">
+                          <span className="item-title">{pickTitle(video, language)}</span>
+                          <span className="item-subtitle">{video.category}</span>
+                      </div>
                     </div>
-                    <div className="item-details">
-                        <span className="item-title">{pickTitle(video, language)}</span>
-                        <span className="item-subtitle">{video.category}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p style={{padding: '1rem', color: '#888'}}>No videos found.</p>
+                )}
               </div>
             </div>
           </div>
@@ -219,30 +235,34 @@ const Satsang = () => {
             <div className="playlist-container">
                 <h4 className="section-title">Kirtan Library</h4>
                 <div className="audio-list">
-                    {audios.map(audio => (
-                        <div 
-                            key={audio.audio_id} 
-                            className={`card audio-item ${currentAudio?.audio_id === audio.audio_id ? 'playing-row' : ''}`}
-                            onClick={() => playAudio(audio)}
-                        >
-                            <div className="audio-status-icon">
-                                {currentAudio?.audio_id === audio.audio_id && isPlaying ? (
-                                    <div className="equalizer">
-                                        <div className="bar"></div>
-                                        <div className="bar"></div>
-                                        <div className="bar"></div>
-                                    </div>
-                                ) : (
-                                    <IconVolume2 />
-                                )}
+                    {audios.length > 0 ? (
+                        audios.map(audio => (
+                            <div 
+                                key={audio.audio_id} 
+                                className={`card audio-item ${currentAudio?.audio_id === audio.audio_id ? 'playing-row' : ''}`}
+                                onClick={() => playAudio(audio)}
+                            >
+                                <div className="audio-status-icon">
+                                    {currentAudio?.audio_id === audio.audio_id && isPlaying ? (
+                                        <div className="equalizer">
+                                            <div className="bar"></div>
+                                            <div className="bar"></div>
+                                            <div className="bar"></div>
+                                        </div>
+                                    ) : (
+                                        <IconVolume2 />
+                                    )}
+                                </div>
+                                <div className="audio-details">
+                                    <span className="audio-title">{pickTitle(audio, language)}</span>
+                                    <span className="audio-artist">{audio.category}</span>
+                                </div>
+                                {currentAudio?.audio_id === audio.audio_id && <div className="now-playing-tag">Playing</div>}
                             </div>
-                            <div className="audio-details">
-                                <span className="audio-title">{pickTitle(audio, language)}</span>
-                                <span className="audio-artist">{audio.category}</span>
-                            </div>
-                            {currentAudio?.audio_id === audio.audio_id && <div className="now-playing-tag">Playing</div>}
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <p style={{padding: '1rem', color: '#888'}}>No audio tracks found.</p>
+                    )}
                 </div>
             </div>
           </div>

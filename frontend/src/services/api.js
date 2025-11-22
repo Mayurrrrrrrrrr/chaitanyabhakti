@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Use environment variable if available, otherwise default to localhost
+// Use environment variable if available, otherwise default to Render backend
 // This fixes the hardcoded IP issue (192.168.x.x) which breaks if your IP changes
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'https://chaitanyabhakti.onrender.com';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -46,19 +46,19 @@ api.interceptors.response.use(
 // API Methods wrapper
 const apiService = {
     // Auth
-    login: (credentials) => api.post('/auth/login', credentials),
-    register: (userData) => api.post('/auth/register', userData),
-    getProfile: () => api.get('/user/profile'),
+    login: (credentials) => api.post('/api/auth/login', credentials),
+    register: (userData) => api.post('/api/auth/register', userData),
+    getProfile: () => api.get('/api/user/profile'),
     
     // Tasks
-    getTasks: () => api.get('/tasks'),
-    createTask: (task) => api.post('/tasks', task),
-    updateTask: (id, data) => api.put(`/tasks/${id}`, data),
-    deleteTask: (id) => api.delete(`/tasks/${id}`),
+    getTasks: () => api.get('/api/tasks'),
+    createTask: (task) => api.post('/api/tasks', task),
+    updateTask: (id, data) => api.put(`/api/tasks/${id}`, data),
+    deleteTask: (id) => api.delete(`/api/tasks/${id}`),
 
     // Japa
-    getJapaSummary: () => api.get('/japa/summary'),
-    logJapa: (data) => api.post('/japa', data),
+    getJapaSummary: () => api.get('/api/japa/summary'),
+    logJapa: (data) => api.post('/api/japa', data),
 
     // General Axios Instance (for custom calls)
     get: api.get,

@@ -1,70 +1,81 @@
-# Getting Started with Create React App
+# Vaishnav Bhakti App - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is the React frontend for the Vaishnav Bhakti App.
 
-## Available Scripts
+## Deployment on Vercel
 
-In the project directory, you can run:
+### Prerequisites
+- Git repository with this code
+- Vercel account (free tier)
 
-### `npm start`
+### Automatic Deployment Steps
+1. Fork/clone this repository to your GitHub account
+2. Go to [Vercel Dashboard](https://vercel.com)
+3. Click "New Project"
+4. Import your GitHub repository
+5. Configure the project:
+   - Framework Preset: Create React App
+   - Root Directory: `frontend`
+   - Build Command: `npm run build`
+   - Output Directory: `build`
+6. Add environment variables:
+   - `REACT_APP_API_URL=https://vaishnav-bhakti-backend.onrender.com`
+7. Deploy!
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Manual Deployment (Alternative)
+1. Install Vercel CLI: `npm i -g vercel`
+2. Navigate to frontend directory: `cd frontend`
+3. Run: `vercel`
+4. Follow the prompts and configure:
+   - Project Name: vaishnav-bhakti-frontend
+   - Framework: Create React App
+   - Build Command: `npm run build`
+   - Output Directory: `build`
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Environment Variables
+Create a `.env` file in the frontend directory with:
+```
+REACT_APP_API_URL=https://vaishnav-bhakti-backend.onrender.com
+```
 
-### `npm test`
+### API Configuration
+The frontend is configured to proxy API requests to the backend through:
+- `/api/*` → Backend API
+- `/uploads/*` → Backend file uploads
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+This is configured in `vercel.json` for production deployment.
 
-### `npm run build`
+### Local Development
+```bash
+cd frontend
+npm install
+npm start
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Build for Production
+```bash
+cd frontend
+npm run build
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Features
+- User authentication
+- Japa counter
+- Family management
+- Task tracking
+- Medicine reminders
+- Scripture library
+- Community features
+- Media management
+- Event calendar
+- Admin panel
+- Breath exercise (breathe app)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Technologies Used
+- React 19
+- React Router DOM
+- Axios for API calls
+- JWT for authentication
+- Create React App
+- React Icons
+- React Player for media

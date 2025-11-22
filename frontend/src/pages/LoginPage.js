@@ -24,7 +24,7 @@ const LoginPage = () => {
   const handleSendOTP = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const response = await api.post('/auth/send-otp', { mobile_number: mobileNumber });
+      const response = await api.post('/api/auth/send-otp', { mobile_number: mobileNumber });
       if (response.data.success) { setSentOtp(response.data.otp); setStep(2); }
     } catch (err) { setError(err.response?.data?.error || 'Failed to send OTP'); } finally { setLoading(false); }
   };
@@ -32,7 +32,7 @@ const LoginPage = () => {
   const handleVerifyOTP = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const response = await api.post('/auth/verify-otp', { mobile_number: mobileNumber, otp: otp, name: name || undefined, spiritual_name: spiritualName || undefined });
+      const response = await api.post('/api/auth/verify-otp', { mobile_number: mobileNumber, otp: otp, name: name || undefined, spiritual_name: spiritualName || undefined });
       if (response.data.success) {
         login(response.data.token, response.data.user);
         navigate(response.data.user?.is_super_admin ? '/admin' : '/dashboard');
@@ -43,7 +43,7 @@ const LoginPage = () => {
   const handlePasswordLogin = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const response = await api.post('/auth/login', { mobile_number: mobileNumber, password: password });
+      const response = await api.post('/api/auth/login', { mobile_number: mobileNumber, password: password });
       if (response.data.success) {
         login(response.data.token, response.data.user);
         navigate(response.data.user?.is_super_admin ? '/admin' : '/dashboard');
