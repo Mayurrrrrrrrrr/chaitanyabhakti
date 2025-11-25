@@ -34,15 +34,11 @@ services:
       - key: CLIENT_URL
         value: https://chaitanyabhakti.onrender.com # Self-reference for now, or update after deploy
 
-  - type: static
+  - type: web
     name: vaishnav-bhakti-frontend
-    env: static
+    env: node
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/build
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    startCommand: cd frontend && npx serve -s build -l $PORT
     envVars:
       - key: REACT_APP_API_URL
         fromService:
