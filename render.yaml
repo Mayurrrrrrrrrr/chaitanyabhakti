@@ -41,10 +41,7 @@ services:
     startCommand: cd frontend && npx serve -s build -l $PORT
     envVars:
       - key: REACT_APP_API_URL
-        fromService:
-          type: web
-          name: vaishnav-bhakti-backend
-          property: url
+        value: https://vaishnav-bhakti-backend.onrender.com # UPDATE THIS in Dashboard after deploy
 
 databases:
   - name: vaishnav-bhakti-db
