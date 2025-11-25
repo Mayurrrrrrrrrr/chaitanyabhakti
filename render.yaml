@@ -32,7 +32,23 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CLIENT_URL
-        value: https://chaitanyabhakti.vercel.app
+        value: https://chaitanyabhakti.onrender.com # Self-reference for now, or update after deploy
+
+  - type: static
+    name: vaishnav-bhakti-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/build
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: vaishnav-bhakti-backend
+          property: url
 
 databases:
   - name: vaishnav-bhakti-db
