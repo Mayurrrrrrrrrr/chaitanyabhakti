@@ -2,7 +2,10 @@ import axios from 'axios';
 
 // Use environment variable if available, otherwise default to Render backend
 // This fixes the hardcoded IP issue (192.168.x.x) which breaks if your IP changes
-const API_URL = process.env.REACT_APP_API_URL || 'https://chaitanyabhakti.onrender.com';
+let API_URL = process.env.REACT_APP_API_URL || 'https://chaitanyabhakti.onrender.com';
+
+// Sanitize API_URL to remove trailing '/api' or '/' to prevent double paths like /api/api/...
+API_URL = API_URL.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
 const api = axios.create({
   baseURL: API_URL,
