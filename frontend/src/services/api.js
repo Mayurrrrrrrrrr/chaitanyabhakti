@@ -65,6 +65,9 @@ const apiService = {
   getJapaSummary: () => api.get('/api/japa/summary'),
   logJapa: (data) => api.post('/api/japa', data),
 
+  // Breathe
+  logBreathSession: (data) => api.post('/api/breathe', data),
+
   // General Axios Instance (for custom calls)
   get: api.get,
   post: api.post,

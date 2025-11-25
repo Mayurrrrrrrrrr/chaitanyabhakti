@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config(); 
+require('dotenv').config();
 
 // 🛑 APP MUST BE DEFINED FIRST
 const app = express();
@@ -21,33 +21,33 @@ const app = express();
 
 // Define allowed origins explicitly
 const allowedOrigins = [
-  'https://chaitanyabhakti.vercel.app',   // Your Production Frontend
-  'https://chaitanyabhakti.onrender.com', // Your Backend URL
-  'http://localhost:3000',                  // Local React
-  'http://localhost:5173',                  // Local Vite (if you switch)
-  process.env.CLIENT_URL                    // Fallback from Env Var
+    'https://chaitanyabhakti.vercel.app',   // Your Production Frontend
+    'https://chaitanyabhakti.onrender.com', // Your Backend URL
+    'http://localhost:3000',                  // Local React
+    'http://localhost:5173',                  // Local Vite (if you switch)
+    process.env.CLIENT_URL                    // Fallback from Env Var
 ].filter(Boolean); // Removes empty values
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
 
-    // Check explicit list
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+        // Check explicit list
+        if (allowedOrigins.includes(origin)) return callback(null, true);
 
-    // Check Dynamic Localhost & LAN IPs (192.168.x.x) for testing on phone
-    const isDevLocalhost = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
-    const isDevLan = /^http:\/\/192\.168\.\d+\.\d+:\d+$/.test(origin);
+        // Check Dynamic Localhost & LAN IPs (192.168.x.x) for testing on phone
+        const isDevLocalhost = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+        const isDevLan = /^http:\/\/192\.168\.\d+\.\d+:\d+$/.test(origin);
 
-    if (isDevLocalhost || isDevLan) {
-      return callback(null, true);
-    } else {
-      console.log('Blocked by CORS:', origin); // Helpful for debugging logs in Render
-      callback(new Error('CORS policy does not allow access from this origin.'));
-    }
-  },
-  credentials: true // Important for cookies/sessions if you use them
+        if (isDevLocalhost || isDevLan) {
+            return callback(null, true);
+        } else {
+            console.log('Blocked by CORS:', origin); // Helpful for debugging logs in Render
+            callback(new Error('CORS policy does not allow access from this origin.'));
+        }
+    },
+    credentials: true // Important for cookies/sessions if you use them
 }));
 
 app.use(express.json());
@@ -63,7 +63,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Ensure you put these DB_ details in Render "Environment Variables"
 const pool = mysql.createPool({
-    host: process.env.DB_HOST, 
+    host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
@@ -97,13 +97,13 @@ pool.getConnection()
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        let uploadDir = 'uploads/images'; 
+        let uploadDir = 'uploads/images';
         if (file.mimetype.startsWith('audio/')) {
             uploadDir = 'uploads/audio';
         } else if (file.mimetype.startsWith('video/')) {
             uploadDir = 'uploads/videos';
         } else if (file.mimetype === 'application/pdf') {
-            uploadDir = 'uploads/files'; 
+            uploadDir = 'uploads/files';
         }
         cb(null, uploadDir);
     },
@@ -122,7 +122,7 @@ const upload = multer({
         const allowedTypes = /jpeg|jpg|png|gif|mp3|wav|mpeg|mp4|mov|avi|pdf/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
-        
+
         if (mimetype && extname) {
             return cb(null, true);
         } else {
@@ -139,7 +139,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; 
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
         return res.status(401).json({ error: 'Access token required' });
@@ -149,22 +149,22 @@ const authenticateToken = (req, res, next) => {
         if (err) {
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
-        
+
         // Normalize the user object for consistent access in routes
         if (decoded.user_id && !decoded.user) {
-             req.user = { 
-                id: decoded.user_id, 
+            req.user = {
+                id: decoded.user_id,
                 mobile_number: decoded.mobile_number,
-                is_super_admin: decoded.is_super_admin 
+                is_super_admin: decoded.is_super_admin
             };
-        } 
+        }
         else if (decoded.user) {
             req.user = decoded.user;
-        } 
-        else {
-             return res.status(403).json({ error: 'Invalid token payload' });
         }
-        
+        else {
+            return res.status(403).json({ error: 'Invalid token payload' });
+        }
+
         next();
     });
 };
@@ -183,7 +183,8 @@ const scriptureRoutes = require('./routes/scriptures.js');
 const communityRoutes = require('./routes/community.js');
 const mediaRoutes = require('./routes/media.js');
 const userRoutes = require('./routes/user.js');
-const eventsRoutes = require('./routes/events.js'); 
+const eventsRoutes = require('./routes/events.js');
+const breatheRoutes = require('./routes/breathe.js');
 
 // =====================================================
 // API ROUTES
@@ -201,11 +202,12 @@ app.use('/api/tasks', authenticateToken, taskRoutes(pool));
 app.use('/api/medicines', authenticateToken, medicineRoutes(pool));
 app.use('/api/scriptures', authenticateToken, scriptureRoutes(pool));
 app.use('/api/community', authenticateToken, communityRoutes(pool, upload));
-app.use('/api/media', authenticateToken, mediaRoutes(pool, upload)); 
+app.use('/api/media', authenticateToken, mediaRoutes(pool, upload));
 app.use('/api/user', authenticateToken, userRoutes(pool, upload));
-app.use('/api/events', authenticateToken, eventsRoutes(pool)); 
+app.use('/api/events', authenticateToken, eventsRoutes(pool));
+app.use('/api/breathe', authenticateToken, breatheRoutes(pool));
 
-app.use('/api/admin', authenticateToken, adminRoutes(pool, upload)); 
+app.use('/api/admin', authenticateToken, adminRoutes(pool, upload));
 
 // =====================================================
 // SERVER START
