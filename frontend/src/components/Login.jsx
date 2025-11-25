@@ -14,7 +14,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState('');
-  
+
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
@@ -31,7 +31,7 @@ const Login = () => {
     // This ensures this effect runs *after* the user state is set
     // from the login function and correctly navigates based on
     // the NEW user object.
-    
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user, navigate]); // <-- ADD 'user' HERE
 
@@ -40,7 +40,7 @@ const Login = () => {
     setError('');
     setLoading(true);
     try {
-      const res = await api.post('/auth/send-otp', { mobile_number: mobileNumber });
+      const res = await api.sendOtp({ mobile_number: mobileNumber });
       setShowOtpInput(true);
       if (res.data.otp) {
         setOtpSent(res.data.otp);
@@ -58,25 +58,25 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
       // 🛑 FIX: Send correct payload
-      const payload = { 
-        mobile_number: mobileNumber, 
+      const payload = {
+        mobile_number: mobileNumber,
         otp: otp
       };
-      
+
       // Only include name if it's a new user (name field is filled)
       if (name && name.trim()) {
         payload.name = name.trim();
       }
-      
+
       console.log('Verifying OTP with payload:', payload);
-      
-      const res = await api.post('/auth/verify-otp', payload);
-      
+
+      const res = await api.verifyOtp(payload);
+
       console.log('Verify OTP Response:', res.data);
-      
+
       if (res.data.success && res.data.token) {
         login(res.data); // Pass the entire response
       } else {
@@ -96,11 +96,11 @@ const Login = () => {
     setError('');
     setLoading(true);
     try {
-      const res = await api.post('/auth/login', { 
-        mobile_number: mobileNumber, 
-        password: password 
+      const res = await api.login({
+        mobile_number: mobileNumber,
+        password: password
       });
-      
+
       if (res.data.success && res.data.token) {
         login(res.data);
       } else {
@@ -158,7 +158,7 @@ const Login = () => {
             <form onSubmit={handleVerifyOtp} className="login-form">
               <h2>Verify OTP</h2>
               <p className="otp-info">OTP sent to <strong>{mobileNumber}</strong></p>
-              
+
               {otpSent && (
                 <div className="dev-otp-display">
                   <p>🔑 Your OTP: <strong>{otpSent}</strong></p>
@@ -197,8 +197,8 @@ const Login = () => {
               <button type="submit" className="btn btn-primary" disabled={loading}>
                 {loading ? '⏳ Verifying...' : '✅ Verify & Login'}
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn btn-secondary"
                 onClick={() => {
                   setShowOtpInput(false);
@@ -243,7 +243,7 @@ const Login = () => {
         )}
 
         <div className="login-footer">
-          <button 
+          <button
             className="btn-toggle-mode"
             onClick={() => {
               setLoginMode(loginMode === 'otp' ? 'password' : 'otp');

@@ -45,26 +45,28 @@ api.interceptors.response.use(
 
 // API Methods wrapper
 const apiService = {
-    // Auth
-    login: (credentials) => api.post('/api/auth/login', credentials),
-    register: (userData) => api.post('/api/auth/register', userData),
-    getProfile: () => api.get('/api/user/profile'),
-    
-    // Tasks
-    getTasks: () => api.get('/api/tasks'),
-    createTask: (task) => api.post('/api/tasks', task),
-    updateTask: (id, data) => api.put(`/api/tasks/${id}`, data),
-    deleteTask: (id) => api.delete(`/api/tasks/${id}`),
+  // Auth
+  login: (credentials) => api.post('/api/auth/login', credentials),
+  register: (userData) => api.post('/api/auth/register', userData),
+  sendOtp: (data) => api.post('/api/auth/send-otp', data),
+  verifyOtp: (data) => api.post('/api/auth/verify-otp', data),
+  getProfile: () => api.get('/api/user/profile'),
 
-    // Japa
-    getJapaSummary: () => api.get('/api/japa/summary'),
-    logJapa: (data) => api.post('/api/japa', data),
+  // Tasks
+  getTasks: () => api.get('/api/tasks'),
+  createTask: (task) => api.post('/api/tasks', task),
+  updateTask: (id, data) => api.put(`/api/tasks/${id}`, data),
+  deleteTask: (id) => api.delete(`/api/tasks/${id}`),
 
-    // General Axios Instance (for custom calls)
-    get: api.get,
-    post: api.post,
-    put: api.put,
-    delete: api.delete,
+  // Japa
+  getJapaSummary: () => api.get('/api/japa/summary'),
+  logJapa: (data) => api.post('/api/japa', data),
+
+  // General Axios Instance (for custom calls)
+  get: api.get,
+  post: api.post,
+  put: api.put,
+  delete: api.delete,
 };
 
 export default apiService;
