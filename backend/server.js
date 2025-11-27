@@ -21,8 +21,11 @@ const app = express();
 
 // Define allowed origins explicitly
 const allowedOrigins = [
-    'https://chaitanyabhakti.vercel.app',   // Your Production Frontend
-    'https://chaitanyabhakti.onrender.com', // Your Backend URL
+    'https://chaitanyabhakti.vercel.app',   // Your Production Frontend (Vercel)
+    'https://chaitanyabhakti.onrender.com', // Your Backend URL (Render)
+    'http://140.245.9.30',                    // VPS Frontend
+    'http://haribol.yuktaa.com',
+    'https://haribol.yuktaa.com',
     'http://localhost:3000',                  // Local React
     'http://localhost:5173',                  // Local Vite (if you switch)
     process.env.CLIENT_URL                    // Fallback from Env Var
