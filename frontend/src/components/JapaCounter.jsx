@@ -83,18 +83,23 @@ const JapaCounter = () => {
 
   // Initial API Sync
   useEffect(() => {
-    api.get('/japa/summary').then(res => {
-      // Always sync with server's "today" count.
-      // This ensures that if it's a new day (server says 0), the local counter resets.
-      const serverCount = res.data.today_count;
+    api.getJapaSummary()
+      .then(res => {
+        if (!res.data) return;
 
-      if (serverCount !== malaCountRef.current) {
-        setMalaCount(serverCount);
-        // If the server count is different (e.g. reset to 0), we should likely reset the beads too 
-        // to start fresh, or sync up.
-        setBeadCount(0);
-      }
-    }).catch(err => console.error("Sync failed", err));
+        const serverTodayCount = res.data.today_count || 0;
+
+        // Sync local state with server
+        if (serverTodayCount !== malaCountRef.current) {
+          setMalaCount(serverTodayCount);
+          // If server count is different, reset beads to 0 to avoid sync issues
+          setBeadCount(0);
+        }
+      })
+      .catch(err => {
+        console.error("Sync failed", err);
+        // Fail silently, use local storage
+      });
   }, []);
 
   // --- Core Logic ---

@@ -13,14 +13,14 @@ module.exports = (db, upload) => {
     try {
       const { family_id, title, title_en, category, is_public } = req.body;
       const user_id = req.user.id; // Use req.user.id
-      
+
       if (!req.file) {
         return res.status(400).json({ error: 'Audio file is required.' });
       }
 
       const file_url = `/uploads/audio/${req.file.filename}`;
       // Note: duration and file_size would ideally be extracted using a library like 'music-metadata'
-      
+
       const [result] = await db.query(
         'INSERT INTO audio_files (user_id, family_id, title, title_en, file_url, category, is_public, file_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         [user_id, family_id || null, title, title_en || null, file_url, category || 'other', is_public || 0, req.file.size]
@@ -36,20 +36,20 @@ module.exports = (db, upload) => {
   // POST /api/media/video (Add video link)
   router.post('/video', async (req, res) => {
     try {
-      const { family_id, title, title_en, youtube_url, category, is_public, description } = req.body;
-      const user_id = req.user.id; // Use req.user.id
-      
-      if (!youtube_url) {
-        return res.status(400).json({ error: 'YouTube URL is required.' });
+      const { family_id, title, title_en, video_url, category, is_public, description } = req.body;
+      const user_id = req.user.id;
+
+      if (!video_url) {
+        return res.status(400).json({ error: 'Video URL is required.' });
       }
-      
+
       // Basic YouTube ID extraction
       let youtube_id = null;
       try {
-        const url = new URL(youtube_url);
+        const url = new URL(video_url);
         if (url.hostname === 'youtu.be') {
           youtube_id = url.pathname.slice(1);
-        } else {
+        } else if (url.hostname.includes('youtube.com')) {
           youtube_id = url.searchParams.get('v');
         }
       } catch (e) { /* ignore invalid URL, save it anyway */ }
@@ -57,8 +57,8 @@ module.exports = (db, upload) => {
       const thumbnail_url = youtube_id ? `https://img.youtube.com/vi/${youtube_id}/0.jpg` : null;
 
       const [result] = await db.query(
-        'INSERT INTO video_links (added_by, family_id, title, title_en, youtube_url, youtube_id, category, is_public, description, thumbnail_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [user_id, family_id || null, title, title_en || null, youtube_url, youtube_id, category || 'other', is_public || 1, description || null, thumbnail_url]
+        'INSERT INTO video_links (added_by, family_id, title, title_en, video_url, youtube_id, category, is_public, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [user_id, family_id || null, title, title_en || null, video_url, youtube_id, category || 'other', is_public || 1, description || null]
       );
 
       res.status(201).json({ message: 'Video link added', video_id: result.insertId });
@@ -74,7 +74,7 @@ module.exports = (db, upload) => {
       const family_id = req.query.family_id;
       let query = 'SELECT * FROM audio_files WHERE is_public = 1';
       let params = [];
-      
+
       if (family_id) {
         query += ' OR family_id = ?';
         params.push(family_id);
@@ -95,7 +95,7 @@ module.exports = (db, upload) => {
       const family_id = req.query.family_id;
       let query = 'SELECT * FROM video_links WHERE is_public = 1';
       let params = [];
-      
+
       if (family_id) {
         query += ' OR family_id = ?';
         params.push(family_id);

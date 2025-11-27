@@ -1,11 +1,12 @@
 import axios from 'axios';
 
-// Use environment variable if available, otherwise default to Render backend
-// This fixes the hardcoded IP issue (192.168.x.x) which breaks if your IP changes
-let API_URL = process.env.REACT_APP_API_URL || 'https://chaitanyabhakti.onrender.com';
+// Determine API URL based on environment
+let API_URL = process.env.REACT_APP_API_URL || 'https://haribol.yuktaa.com';
 
-// Sanitize API_URL to remove trailing '/api' or '/' to prevent double paths like /api/api/...
-API_URL = API_URL.replace(/\/api\/?$/, '').replace(/\/$/, '');
+// Sanitize API_URL (remove trailing slash)
+API_URL = API_URL.replace(/\/$/, '');
+
+console.log('Using API URL:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
@@ -67,6 +68,10 @@ const apiService = {
 
   // Breathe
   logBreathSession: (data) => api.post('/api/breathe', data),
+
+  // Media
+  getVideos: () => api.get('/api/media/videos'),
+  getAudio: () => api.get('/api/media/audio'),
 
   // General Axios Instance (for custom calls)
   get: api.get,
