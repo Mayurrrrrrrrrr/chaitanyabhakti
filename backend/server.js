@@ -1,6 +1,6 @@
 // =====================================================
 // VAISHNAV BHAKTI APP - BACKEND SERVER
-// File: server.js (Updated for Render + Vercel)
+// File: server.js
 // =====================================================
 
 const express = require('express');
@@ -21,8 +21,6 @@ const app = express();
 
 // Define allowed origins explicitly
 const allowedOrigins = [
-    'https://chaitanyabhakti.vercel.app',   // Your Production Frontend (Vercel)
-    'https://chaitanyabhakti.onrender.com', // Your Backend URL (Render)
     'http://140.245.9.30',                    // VPS Frontend
     'http://haribol.yuktaa.com',
     'https://haribol.yuktaa.com',
@@ -33,20 +31,24 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
+        // Log the origin for debugging
+        console.log('Request origin:', origin || 'NO ORIGIN HEADER');
+
+        // Allow requests with no origin (like mobile apps, curl requests, or Cloudflare proxy)
         if (!origin) return callback(null, true);
 
         // Check explicit list
         if (allowedOrigins.includes(origin)) return callback(null, true);
 
         // Check Dynamic Localhost & LAN IPs (192.168.x.x) for testing on phone
-        const isDevLocalhost = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
-        const isDevLan = /^http:\/\/192\.168\.\d+\.\d+:\d+$/.test(origin);
+        // Allow both with and without port numbers
+        const isDevLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+        const isDevLan = /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin);
 
         if (isDevLocalhost || isDevLan) {
             return callback(null, true);
         } else {
-            console.log('Blocked by CORS:', origin); // Helpful for debugging logs in Render
+            console.log('Blocked by CORS:', origin);
             callback(new Error('CORS policy does not allow access from this origin.'));
         }
     },
@@ -73,7 +75,9 @@ const pool = mysql.createPool({
     port: process.env.DB_PORT || 3306, // Added Port just in case
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 });
 
 // Test database connection
@@ -85,6 +89,16 @@ pool.getConnection()
     .catch(err => {
         console.error('❌ DATABASE CONNECTION FAILED:', err.message);
     });
+
+// Keep-alive heartbeat
+setInterval(async () => {
+    try {
+        await pool.query('SELECT 1');
+        // console.log('💓 DB Heartbeat: Alive'); // Uncomment for verbose logging
+    } catch (err) {
+        console.error('❌ DB Heartbeat Failed:', err.message);
+    }
+}, 3600000); // Check every 1 hour
 
 // =====================================================
 // FILE UPLOAD CONFIGURATION

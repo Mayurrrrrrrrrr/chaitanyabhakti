@@ -1,2 +1,14 @@
 # Environment files
 .env
+.env.*
+
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Uploads
+uploads/
