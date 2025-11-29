@@ -27,16 +27,16 @@ const formatDate = (dateString) => {
 };
 
 const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    if (date.getHours() === 0 && date.getMinutes() === 0) return null;
-    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  const date = new Date(dateString);
+  if (date.getHours() === 0 && date.getMinutes() === 0) return null;
+  return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 };
 
 const Calendar = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Edit State
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(null); // The event being edited
@@ -45,7 +45,7 @@ const Calendar = () => {
   const loadCalendar = async () => {
     try {
       setLoading(true);
-      
+
       // 1. Fetch Local DB Events (Customized)
       const localRes = await api.get('/events').catch(() => ({ data: [] }));
       const localEvents = localRes.data || [];
@@ -56,12 +56,14 @@ const Calendar = () => {
       // 3. Merge: Local events override defaults if names match (simple logic for now)
       // Or simply combine them. Here we combine, but mark local ones as 'custom'
       const localMap = new Map(localEvents.map(e => [e.title.toLowerCase(), e]));
-      
+
+
+
       const mergedEvents = [...localEvents];
-      
+
       defaultEvents.forEach(defEvent => {
         if (!localMap.has(defEvent.title.toLowerCase())) {
-            mergedEvents.push(defEvent);
+          mergedEvents.push(defEvent);
         }
       });
 
@@ -103,31 +105,31 @@ const Calendar = () => {
   const handleSaveEvent = async (e) => {
     e.preventDefault();
     try {
-        // If it has an 'id' starting with 'v-', it's a default event we are "customizing" -> Create new
-        // If it has a numeric 'event_id', it's a local event -> Update existing
-        
-        const payload = {
-            title: editData.title,
-            description: editData.description,
-            event_type: editData.event_type,
-            start_date: editData.start_date,
-            end_date: editData.start_date, // Simplifying for single day events
-            location: 'Local Temple', // Default
-        };
+      // If it has an 'id' starting with 'v-', it's a default event we are "customizing" -> Create new
+      // If it has a numeric 'event_id', it's a local event -> Update existing
 
-        if (editData.event_id) {
-            // Update existing
-            await api.put(`/events/${editData.event_id}`, payload);
-        } else {
-            // Create new (Override default)
-            await api.post('/events', payload);
-        }
-        
-        setIsEditing(false);
-        setEditData(null);
-        loadCalendar(); // Refresh
+      const payload = {
+        title: editData.title,
+        description: editData.description,
+        event_type: editData.event_type,
+        start_date: editData.start_date,
+        end_date: editData.start_date, // Simplifying for single day events
+        location: 'Local Temple', // Default
+      };
+
+      if (editData.event_id) {
+        // Update existing
+        await api.put(`/events/${editData.event_id}`, payload);
+      } else {
+        // Create new (Override default)
+        await api.post('/events', payload);
+      }
+
+      setIsEditing(false);
+      setEditData(null);
+      loadCalendar(); // Refresh
     } catch (err) {
-        alert('Failed to save event: ' + err.message);
+      alert('Failed to save event: ' + err.message);
     }
   };
 
@@ -137,11 +139,11 @@ const Calendar = () => {
     <div className="page-container calendar-page">
       <div className="page-header calendar-header-row">
         <div>
-            <h1 className="page-title">Vaishnava Calendar</h1>
-            <p className="page-subtitle">Festivals & Ekadashis</p>
+          <h1 className="page-title">Vaishnava Calendar</h1>
+          <p className="page-subtitle">Festivals & Ekadashis</p>
         </div>
         <button className="refresh-btn" onClick={loadCalendar} title="Sync Calendar">
-            <IconRefreshCw className={loading ? 'spin' : ''} />
+          <IconRefreshCw className={loading ? 'spin' : ''} />
         </button>
       </div>
 
@@ -152,38 +154,38 @@ const Calendar = () => {
           <div key={month} className="month-section fade-in">
             <h2 className="month-title sticky-month">{month}</h2>
             <div className="events-grid">
-                {eventGroups[month].map((event, idx) => (
+              {eventGroups[month].map((event, idx) => (
                 <div key={idx} className={`card event-card type-${event.event_type}`}>
-                    <div className="event-date-column">
-                        <span className="day">{new Date(event.start_date).getDate()}</span>
-                        <span className="weekday">{new Date(event.start_date).toLocaleString('en-US', {weekday: 'short'})}</span>
-                    </div>
-                    
-                    <div className="event-details">
-                        <div className="event-top-row">
-                            <span className={`tag tag-${event.event_type}`}>
-                                {event.event_type === 'ekadashi' ? 'Ekadashi' : 'Festival'}
-                            </span>
-                            {event.is_default && <span className="tag tag-default">Global</span>}
-                        </div>
-                        
-                        <h3 className="event-title">{event.title}</h3>
-                        
-                        <div className="event-meta">
-                             {formatTime(event.start_date) && (
-                                <span className="meta-item"><IconClock /> {formatTime(event.start_date)}</span>
-                             )}
-                             {event.description && (
-                                <p className="event-desc">{event.description}</p>
-                             )}
-                        </div>
+                  <div className="event-date-column">
+                    <span className="day">{new Date(event.start_date).getDate()}</span>
+                    <span className="weekday">{new Date(event.start_date).toLocaleString('en-US', { weekday: 'short' })}</span>
+                  </div>
+
+                  <div className="event-details">
+                    <div className="event-top-row">
+                      <span className={`tag tag-${event.event_type}`}>
+                        {event.event_type === 'ekadashi' ? 'Ekadashi' : 'Festival'}
+                      </span>
+                      {event.is_default && <span className="tag tag-default">Global</span>}
                     </div>
 
-                    <button className="edit-event-btn" onClick={() => handleEditClick(event)}>
-                        <IconEdit2 />
-                    </button>
+                    <h3 className="event-title">{event.title}</h3>
+
+                    <div className="event-meta">
+                      {formatTime(event.start_date) && (
+                        <span className="meta-item"><IconClock /> {formatTime(event.start_date)}</span>
+                      )}
+                      {event.description && (
+                        <p className="event-desc">{event.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <button className="edit-event-btn" onClick={() => handleEditClick(event)}>
+                    <IconEdit2 />
+                  </button>
                 </div>
-                ))}
+              ))}
             </div>
           </div>
         ))}
@@ -191,66 +193,66 @@ const Calendar = () => {
 
       {/* Edit/Customize Modal */}
       {isEditing && editData && (
-          <div className="modal-overlay">
-              <div className="card modal-card">
-                  <h3>{editData.event_id ? 'Edit Event' : 'Customize Festival'}</h3>
-                  <form onSubmit={handleSaveEvent}>
-                      <div className="form-group">
-                          <label>Title</label>
-                          <input 
-                             type="text" 
-                             className="input-field" 
-                             value={editData.title} 
-                             onChange={e => setEditData({...editData, title: e.target.value})}
-                             required
-                          />
-                      </div>
-                      <div className="form-group">
-                          <label>Date & Time</label>
-                          <input 
-                             type="datetime-local" 
-                             className="input-field" 
-                             value={editData.start_date} 
-                             onChange={e => setEditData({...editData, start_date: e.target.value})}
-                             required
-                          />
-                      </div>
-                      <div className="form-group">
-                          <label>Type</label>
-                          <select 
-                             className="input-field"
-                             value={editData.event_type} 
-                             onChange={e => setEditData({...editData, event_type: e.target.value})}
-                          >
-                              <option value="festival">Festival</option>
-                              <option value="ekadashi">Ekadashi</option>
-                              <option value="appearance">Appearance Day</option>
-                          </select>
-                      </div>
-                      <div className="form-group">
-                          <label>Description / Fasting Rules</label>
-                          <textarea 
-                             className="input-field" 
-                             rows="3"
-                             value={editData.description} 
-                             onChange={e => setEditData({...editData, description: e.target.value})}
-                          ></textarea>
-                      </div>
-                      <div className="modal-actions">
-                          <button type="button" className="btn-text" onClick={() => setIsEditing(false)}>Cancel</button>
-                          <button type="submit" className="btn-primary">Save Changes</button>
-                      </div>
-                  </form>
+        <div className="modal-overlay">
+          <div className="card modal-card">
+            <h3>{editData.event_id ? 'Edit Event' : 'Customize Festival'}</h3>
+            <form onSubmit={handleSaveEvent}>
+              <div className="form-group">
+                <label>Title</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={editData.title}
+                  onChange={e => setEditData({ ...editData, title: e.target.value })}
+                  required
+                />
               </div>
+              <div className="form-group">
+                <label>Date & Time</label>
+                <input
+                  type="datetime-local"
+                  className="input-field"
+                  value={editData.start_date}
+                  onChange={e => setEditData({ ...editData, start_date: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Type</label>
+                <select
+                  className="input-field"
+                  value={editData.event_type}
+                  onChange={e => setEditData({ ...editData, event_type: e.target.value })}
+                >
+                  <option value="festival">Festival</option>
+                  <option value="ekadashi">Ekadashi</option>
+                  <option value="appearance">Appearance Day</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Description / Fasting Rules</label>
+                <textarea
+                  className="input-field"
+                  rows="3"
+                  value={editData.description}
+                  onChange={e => setEditData({ ...editData, description: e.target.value })}
+                ></textarea>
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-text" onClick={() => setIsEditing(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Save Changes</button>
+              </div>
+            </form>
           </div>
+        </div>
       )}
-      
+
       {/* Floating Add Button */}
-      <button 
-        className="floating-add-btn" 
+      <button
+        className="floating-add-btn"
         onClick={() => {
-            setEditData({ title: '', start_date: '', event_type: 'festival', description: '' });
-            setIsEditing(true);
+          setEditData({ title: '', start_date: '', event_type: 'festival', description: '' });
+          setIsEditing(true);
         }}
       >
         <IconPlus />

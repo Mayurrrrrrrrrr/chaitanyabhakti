@@ -118,7 +118,7 @@ const JapaCounter = () => {
   const saveToApi = useCallback(async (countToSave) => {
     setIsSyncing(true);
     try {
-      await api.post('/japa', {
+      await api.logJapa({
         mala_count: countToSave,
         japa_date: new Date().toISOString().split('T')[0],
       });
