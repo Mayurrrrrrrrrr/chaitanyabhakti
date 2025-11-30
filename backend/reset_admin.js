@@ -31,6 +31,19 @@ async function resetAdmin() {
             }
         }
 
+        // 2. Check if 'is_super_admin' column exists
+        try {
+            await pool.query('SELECT is_super_admin FROM users LIMIT 1');
+        } catch (err) {
+            if (err.code === 'ER_BAD_FIELD_ERROR') {
+                console.log('⚠️  Column "is_super_admin" missing. Adding it now...');
+                await pool.query('ALTER TABLE users ADD COLUMN is_super_admin TINYINT(1) DEFAULT 0 AFTER profile_photo');
+                console.log('✅ Column "is_super_admin" added successfully.');
+            } else {
+                throw err;
+            }
+        }
+
         const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
         // Check if user exists
