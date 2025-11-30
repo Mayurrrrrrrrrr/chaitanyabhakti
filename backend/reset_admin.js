@@ -13,36 +13,39 @@ async function resetAdmin() {
         queueLimit: 0
     });
 
-    const mobileNumber = '1234567890'; // Default Admin ID
-    const plainPassword = 'admin123';  // Default Admin Password
+    const mobileNumber = '1234567890';
+    const plainPassword = 'admin123';
     const name = 'Super Admin';
 
     try {
-        // 1. Check if 'password' column exists
-        try {
-            await pool.query('SELECT password FROM users LIMIT 1');
-        } catch (err) {
-            if (err.code === 'ER_BAD_FIELD_ERROR') {
-                console.log('⚠️  Column "password" missing. Adding it now...');
-                await pool.query('ALTER TABLE users ADD COLUMN password VARCHAR(255) AFTER spiritual_name');
-                console.log('✅ Column "password" added successfully.');
-            } else {
-                throw err;
+        console.log('🔍 Checking database schema...');
+
+        // Get current columns
+        const [columns] = await pool.query('SHOW COLUMNS FROM users');
+        const existingColumns = columns.map(col => col.Field);
+
+        const requiredColumns = [
+            { name: 'spiritual_name', definition: 'VARCHAR(100)' },
+            { name: 'password', definition: 'VARCHAR(255)' },
+            { name: 'profile_photo', definition: 'VARCHAR(255)' },
+            { name: 'is_super_admin', definition: 'TINYINT(1) DEFAULT 0' },
+            { name: 'is_active', definition: 'TINYINT(1) DEFAULT 1' },
+            { name: 'current_streak', definition: 'INT DEFAULT 0' },
+            { name: 'longest_streak', definition: 'INT DEFAULT 0' },
+            { name: 'last_login', definition: 'TIMESTAMP NULL' }
+        ];
+
+        for (const col of requiredColumns) {
+            if (!existingColumns.includes(col.name)) {
+                console.log(`⚠️  Column "${col.name}" missing. Adding it...`);
+                // We don't use AFTER to avoid dependency chains if previous cols are missing
+                // MySQL adds to the end by default which is fine for functionality
+                await pool.query(`ALTER TABLE users ADD COLUMN ${col.name} ${col.definition}`);
+                console.log(`✅ Column "${col.name}" added.`);
             }
         }
 
-        // 2. Check if 'is_super_admin' column exists
-        try {
-            await pool.query('SELECT is_super_admin FROM users LIMIT 1');
-        } catch (err) {
-            if (err.code === 'ER_BAD_FIELD_ERROR') {
-                console.log('⚠️  Column "is_super_admin" missing. Adding it now...');
-                await pool.query('ALTER TABLE users ADD COLUMN is_super_admin TINYINT(1) DEFAULT 0 AFTER profile_photo');
-                console.log('✅ Column "is_super_admin" added successfully.');
-            } else {
-                throw err;
-            }
-        }
+        console.log('✅ Schema check complete.');
 
         const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
