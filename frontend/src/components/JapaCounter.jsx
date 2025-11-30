@@ -119,7 +119,7 @@ const JapaCounter = () => {
     setIsSyncing(true);
     try {
       await api.logJapa({
-        mala_count: countToSave,
+        rounds: countToSave,
         japa_date: new Date().toISOString().split('T')[0],
       });
     } catch (err) {

@@ -5,7 +5,7 @@ import { AuthProvider, AuthContext } from './context/AuthContext'; // Correct pa
 
 // Page Imports
 import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './components/Dashboard';
 
 // Layout & Component Imports
 import MainLayout from './components/layout/MainLayout';
@@ -54,23 +54,23 @@ function App() {
       <Router>
         <Routes>
           {/* Public Route */}
-          <Route 
-            path="/login" 
+          <Route
+            path="/login"
             element={
               <PublicRoute>
                 <LoginPage />
               </PublicRoute>
-            } 
+            }
           />
 
           {/* ✅ Protected User Routes */}
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={<ProtectedRoute><MainLayout /></ProtectedRoute>}
           >
             {/* Default route for "/" is /dashboard */}
             <Route index element={<Navigate to="/dashboard" replace />} />
-            
+
             {/* All component pages are children of MainLayout */}
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="library" element={<ScriptureLibrary />} />
@@ -86,27 +86,27 @@ function App() {
             <Route path="profile" element={<Profile />} />
           </Route>
 
-          <Route 
-            path="/admin" 
-            element={<ProtectedRoute><AdminRoute><AdminPanel /></AdminRoute></ProtectedRoute>} 
+          <Route
+            path="/admin"
+            element={<ProtectedRoute><AdminRoute><AdminPanel /></AdminRoute></ProtectedRoute>}
           />
-          <Route 
-            path="/admin/users" 
-            element={<ProtectedRoute><AdminRoute><UserManagement /></AdminRoute></ProtectedRoute>} 
+          <Route
+            path="/admin/users"
+            element={<ProtectedRoute><AdminRoute><UserManagement /></AdminRoute></ProtectedRoute>}
           />
-          <Route 
-            path="/admin/scriptures" 
-            element={<ProtectedRoute><AdminRoute><ScriptureManagement /></AdminRoute></ProtectedRoute>} 
+          <Route
+            path="/admin/scriptures"
+            element={<ProtectedRoute><AdminRoute><ScriptureManagement /></AdminRoute></ProtectedRoute>}
           />
-          <Route 
-            path="/admin/media" 
-            element={<ProtectedRoute><AdminRoute><MediaManagement /></AdminRoute></ProtectedRoute>} 
+          <Route
+            path="/admin/media"
+            element={<ProtectedRoute><AdminRoute><MediaManagement /></AdminRoute></ProtectedRoute>}
           />
-          <Route 
-            path="/admin/events" 
-            element={<ProtectedRoute><AdminRoute><EventManagement /></AdminRoute></ProtectedRoute>} 
+          <Route
+            path="/admin/events"
+            element={<ProtectedRoute><AdminRoute><EventManagement /></AdminRoute></ProtectedRoute>}
           />
-          
+
           {/* Catch all - redirect to login if not found */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

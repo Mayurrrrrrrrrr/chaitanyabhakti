@@ -24,12 +24,12 @@ module.exports = (db) => {
       const user_id = req.user.id;
 
       const [today] = await db.query(
-        'SELECT COALESCE(SUM(mala_count), 0) as today_count FROM japa_records WHERE user_id = ? AND japa_date = CURDATE()',
+        'SELECT COALESCE(SUM(rounds), 0) as today_count FROM japa_records WHERE user_id = ? AND japa_date = CURDATE()',
         [user_id]
       );
 
       const [userStats] = await db.query(
-        'SELECT total_japa_count, current_streak, longest_streak FROM users WHERE user_id = ?',
+        'SELECT current_streak, longest_streak FROM users WHERE user_id = ?',
         [user_id]
       );
 
@@ -37,7 +37,6 @@ module.exports = (db) => {
 
       res.json({
         today_count: today[0].today_count || 0,
-        total_japa_count: stats.total_japa_count || 0,
         current_streak: stats.current_streak || 0,
         longest_streak: stats.longest_streak || 0
       });
@@ -81,23 +80,23 @@ module.exports = (db) => {
   // POST (add/update) japa for today WITH STREAK LOGIC
   router.post('/', async (req, res) => {
     try {
-      const { mala_count, family_id, japa_date } = req.body;
+      const { rounds, family_id, japa_date } = req.body;
       const user_id = req.user.id;
       const date = japa_date ? new Date(japa_date) : new Date();
       const dateString = date.toISOString().split('T')[0];
 
-      if (mala_count == null) return res.status(400).json({ error: 'mala_count is required' });
+      if (rounds == null) return res.status(400).json({ error: 'rounds is required' });
 
       // 1. Insert/Update Japa Record
       await db.query(
-        `INSERT INTO japa_records (user_id, family_id, mala_count, japa_date) 
+        `INSERT INTO japa_records (user_id, family_id, rounds, japa_date) 
          VALUES (?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE mala_count = ?`,
-        [user_id, family_id || null, mala_count, dateString, mala_count]
+         ON DUPLICATE KEY UPDATE rounds = ?`,
+        [user_id, family_id || null, rounds, dateString, rounds]
       );
 
       // 2. Calculate and Update Streaks (Logic in JS instead of complex SQL triggers)
-      if (mala_count > 0) {
+      if (rounds > 0) {
         const [userStats] = await db.query(
           'SELECT current_streak, longest_streak FROM users WHERE user_id = ?',
           [user_id]
@@ -106,7 +105,7 @@ module.exports = (db) => {
 
         // Check previous day's record
         const [lastJapa] = await db.query(
-          'SELECT japa_date FROM japa_records WHERE user_id = ? AND japa_date < ? AND mala_count > 0 ORDER BY japa_date DESC LIMIT 1',
+          'SELECT japa_date FROM japa_records WHERE user_id = ? AND japa_date < ? AND rounds > 0 ORDER BY japa_date DESC LIMIT 1',
           [user_id, dateString]
         );
 
