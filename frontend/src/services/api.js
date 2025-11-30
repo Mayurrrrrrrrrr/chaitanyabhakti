@@ -9,17 +9,14 @@ if (!API_URL) {
   const isIpOrLocal = /^(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)$/.test(hostname);
 
   if (isIpOrLocal) {
-    API_URL = window.location.origin; // Use current origin (e.g., http://140.245.9.30)
+    API_URL = `${window.location.origin}/api`; // Use current origin + /api
   } else {
-    API_URL = window.location.origin; // Fallback to domain
+    API_URL = `${window.location.origin}/api`; // Fallback to domain + /api
   }
-}
-
-// Sanitize API_URL (remove trailing slash)
-// Only remove /api suffix if there's more to the URL (to avoid empty string)
-API_URL = API_URL.replace(/\/$/, '');
-if (API_URL !== '/api') {
-  API_URL = API_URL.replace(/\/api$/, '');
+} else {
+  // If it's a relative path (like /api), use it as is
+  // If it's a full URL, use it as is
+  // No sanitization needed
 }
 
 console.log('Using API URL:', API_URL);
@@ -64,30 +61,31 @@ api.interceptors.response.use(
 );
 
 // API Methods wrapper
+// Note: baseURL is set to '/api', so we don't prefix endpoints with /api
 const apiService = {
   // Auth
-  login: (credentials) => api.post('/api/auth/login', credentials),
-  register: (userData) => api.post('/api/auth/register', userData),
-  sendOtp: (data) => api.post('/api/auth/send-otp', data),
-  verifyOtp: (data) => api.post('/api/auth/verify-otp', data),
-  getProfile: () => api.get('/api/user/profile'),
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+  sendOtp: (data) => api.post('/auth/send-otp', data),
+  verifyOtp: (data) => api.post('/auth/verify-otp', data),
+  getProfile: () => api.get('/user/profile'),
 
   // Tasks
-  getTasks: () => api.get('/api/tasks'),
-  createTask: (task) => api.post('/api/tasks', task),
-  updateTask: (id, data) => api.put(`/api/tasks/${id}`, data),
-  deleteTask: (id) => api.delete(`/api/tasks/${id}`),
+  getTasks: () => api.get('/tasks'),
+  createTask: (task) => api.post('/tasks', task),
+  updateTask: (id, data) => api.put(`/tasks/${id}`, data),
+  deleteTask: (id) => api.delete(`/tasks/${id}`),
 
   // Japa
-  getJapaSummary: () => api.get('/api/japa/summary'),
-  logJapa: (data) => api.post('/api/japa', data),
+  getJapaSummary: () => api.get('/japa/summary'),
+  logJapa: (data) => api.post('/japa', data),
 
   // Breathe
-  logBreathSession: (data) => api.post('/api/breathe', data),
+  logBreathSession: (data) => api.post('/breathe', data),
 
   // Media
-  getVideos: () => api.get('/api/media/videos'),
-  getAudio: () => api.get('/api/media/audio'),
+  getVideos: () => api.get('/media/videos'),
+  getAudio: () => api.get('/media/audio'),
 
   // General Axios Instance (for custom calls)
   get: api.get,
