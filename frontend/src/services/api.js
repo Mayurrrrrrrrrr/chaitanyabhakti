@@ -11,7 +11,7 @@ if (!API_URL) {
   if (isIpOrLocal) {
     API_URL = window.location.origin; // Use current origin (e.g., http://140.245.9.30)
   } else {
-    API_URL = 'https://haribol.yuktaa.com'; // Fallback to domain
+    API_URL = window.location.origin; // Fallback to domain
   }
 }
 
