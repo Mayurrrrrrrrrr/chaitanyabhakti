@@ -43,16 +43,16 @@ const Dashboard = () => {
         setUpcomingFestivals(nextEvents);
 
         // 2. Load global posts (temple updates / satsang)
-        const postsRes = await api.get('/api/community/satsang').catch(() => ({ data: [] }));
+        const postsRes = await api.get('/community/satsang').catch(() => ({ data: [] }));
         const posts = Array.isArray(postsRes.data) ? postsRes.data : [];
         setSatsangPosts(posts);
 
         // 3. Load Japa Stats
-        const japaRes = await api.get('/api/japa/summary').catch(() => ({ data: {} }));
+        const japaRes = await api.getJapaSummary().catch(() => ({ data: {} }));
         setJapaStats(japaRes.data || { today_count: 0, current_streak: 0 });
 
         // 4. Load Pending Tasks
-        const tasksRes = await api.get('/api/tasks/summary/my-pending').catch(() => ({ data: { pending_count: 0 } }));
+        const tasksRes = await api.get('/tasks/summary/my-pending').catch(() => ({ data: { pending_count: 0 } }));
         setPendingTasksCount(tasksRes.data.pending_count || 0);
 
       } catch (err) {
