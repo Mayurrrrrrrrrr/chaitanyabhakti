@@ -9,10 +9,10 @@ const CALM_BREATH = {
   description: 'Relax your mind and body with this simple breathing exercise. (अपने मन और शरीर को शांत करें)',
   icon: <FiWind />,
   phases: [
-    { name: 'Inhale', duration: 4000, instruction: 'Breathe In (सांस लें)' },
-    { name: 'Hold', duration: 4000, instruction: 'Hold (रोकें)' },
-    { name: 'Exhale', duration: 6000, instruction: 'Breathe Out (सांस छोड़ें)' },
-    { name: 'Hold', duration: 2000, instruction: 'Hold (रोकें)' }
+    { name: 'Inhale', duration: 4000, instruction: 'Breathe In (सांस लें)', type: 'inhale' },
+    { name: 'Hold', duration: 4000, instruction: 'Hold (रोकें)', type: 'hold-in' },
+    { name: 'Exhale', duration: 6000, instruction: 'Breathe Out (सांस छोड़ें)', type: 'exhale' },
+    { name: 'Hold', duration: 2000, instruction: 'Hold (रोकें)', type: 'hold-out' }
   ]
 };
 
@@ -100,10 +100,7 @@ const Breathe = () => {
   };
 
   const getAnimationClass = () => {
-    const phaseName = CALM_BREATH.phases[currentPhaseIndex].name.toLowerCase();
-    if (phaseName.includes('inhale')) return 'inhale';
-    if (phaseName.includes('exhale')) return 'exhale';
-    return 'hold';
+    return CALM_BREATH.phases[currentPhaseIndex].type;
   };
 
   const getAnimationStyle = () => {

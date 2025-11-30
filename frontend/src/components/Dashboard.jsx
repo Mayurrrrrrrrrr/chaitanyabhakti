@@ -26,11 +26,31 @@ const Dashboard = () => {
   const [pendingTasksCount, setPendingTasksCount] = useState(0);
   const [satsangPosts, setSatsangPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [weather, setWeather] = useState({ temp: null, city: 'Vrindavan' });
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
+
+        // 0. Get Weather
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(async (position) => {
+            const { latitude, longitude } = position.coords;
+            try {
+              const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
+              const data = await res.json();
+              setWeather({
+                temp: data.current_weather.temperature,
+                city: 'My Location' // OpenMeteo doesn't give city name easily without geocoding, keeping simple
+              });
+            } catch (e) {
+              console.error("Weather fetch failed", e);
+            }
+          }, (err) => {
+            console.log("Geolocation permission denied or failed", err);
+          });
+        }
 
         // 1. Get Upcoming Festivals (Next 2)
         const allEvents = await fetchVaishnavaEvents();
@@ -43,7 +63,7 @@ const Dashboard = () => {
         setUpcomingFestivals(nextEvents);
 
         // 2. Load global posts (temple updates / satsang)
-        const postsRes = await api.get('/community/satsang').catch(() => ({ data: [] }));
+        const postsRes = await api.get('/events').catch(() => ({ data: [] }));
         const posts = Array.isArray(postsRes.data) ? postsRes.data : [];
         setSatsangPosts(posts);
 
@@ -82,19 +102,19 @@ const Dashboard = () => {
           <p>May your day be filled with devotion.</p>
         </div>
         <div className="weather-widget glass-panel">
-          <IconSun /> <span>Vrindavan</span>
+          <IconSun /> <span>{weather.temp ? `${weather.temp}°C` : 'Vrindavan'}</span>
         </div>
       </header>
 
       {/* Stats Overview Grid */}
       <div className="stats-overview">
-        <div className="stat-card-premium japa-card">
+        <Link to="/japa" className="stat-card-premium japa-card" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="stat-icon-bg">📿</div>
           <div className="stat-info">
             <h3>Today's Japa</h3>
             <div className="stat-value">{japaStats.today_count} <span className="unit">Malas</span></div>
           </div>
-        </div>
+        </Link>
 
         <div className="stat-card-premium streak-card">
           <div className="stat-icon-bg">🔥</div>
@@ -104,13 +124,13 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="stat-card-premium tasks-card">
+        <Link to="/tasks" className="stat-card-premium tasks-card" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="stat-icon-bg">📝</div>
           <div className="stat-info">
             <h3>Pending Seva</h3>
             <div className="stat-value">{pendingTasksCount} <span className="unit">Tasks</span></div>
           </div>
-        </div>
+        </Link>
       </div>
 
       <div className="dashboard-grid-layout">
@@ -170,7 +190,7 @@ const Dashboard = () => {
         <div className="dashboard-right-col">
 
           {/* Temple Updates */}
-          <div className="card message-card">
+          <Link to="/events" className="card message-card" style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
             <div className="card-header">
               <h3><IconBell /> Temple Updates</h3>
             </div>
@@ -188,7 +208,7 @@ const Dashboard = () => {
                 <div className="message-item info"><p>No updates yet.</p></div>
               )}
             </div>
-          </div>
+          </Link>
 
           {/* Satsang Highlights */}
           <div className="card blog-card">

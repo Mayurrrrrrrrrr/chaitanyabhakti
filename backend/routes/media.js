@@ -39,6 +39,8 @@ module.exports = (db, upload) => {
       const { family_id, title, title_en, video_url, category, is_public, description } = req.body;
       const user_id = req.user.id;
 
+      console.log('POST /video body:', req.body, 'User:', user_id); // Debug logging
+
       if (!video_url) {
         return res.status(400).json({ error: 'Video URL is required.' });
       }
@@ -57,8 +59,8 @@ module.exports = (db, upload) => {
       const thumbnail_url = youtube_id ? `https://img.youtube.com/vi/${youtube_id}/0.jpg` : null;
 
       const [result] = await db.query(
-        'INSERT INTO video_links (added_by, family_id, title, title_en, video_url, youtube_id, category, is_public, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [user_id, family_id || null, title, title_en || null, video_url, youtube_id, category || 'other', is_public || 1, description || null]
+        'INSERT INTO video_links (added_by, family_id, title, title_en, youtube_url, youtube_id, category, is_public, description, thumbnail_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [user_id || null, family_id || null, title || null, title_en || null, video_url, youtube_id || null, category || 'other', is_public || 1, description || null, thumbnail_url || null]
       );
 
       res.status(201).json({ message: 'Video link added', video_id: result.insertId });

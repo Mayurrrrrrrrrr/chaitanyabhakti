@@ -24,12 +24,12 @@ module.exports = (db) => {
       const user_id = req.user.id;
 
       const [today] = await db.query(
-        'SELECT COALESCE(SUM(rounds), 0) as today_count FROM japa_records WHERE user_id = ? AND japa_date = CURDATE()',
+        'SELECT COALESCE(SUM(mala_count), 0) as today_count FROM japa_records WHERE user_id = ? AND japa_date = CURDATE()',
         [user_id]
       );
 
       const [userStats] = await db.query(
-        'SELECT current_streak, longest_streak FROM users WHERE user_id = ?',
+        'SELECT u.current_streak, u.longest_streak, up.daily_japa_goal FROM users u LEFT JOIN user_preferences up ON u.user_id = up.user_id WHERE u.user_id = ?',
         [user_id]
       );
 
@@ -38,22 +38,106 @@ module.exports = (db) => {
       res.json({
         today_count: today[0].today_count || 0,
         current_streak: stats.current_streak || 0,
-        longest_streak: stats.longest_streak || 0
+        longest_streak: stats.longest_streak || 0,
+        daily_goal: stats.daily_japa_goal || 16
       });
 
     } catch (error) {
       console.error('Get japa summary error:', error);
-      res.status(500).json({ error: 'Failed to fetch japa summary' });
+      console.error('Stack:', error.stack);
+      res.status(500).json({ error: 'Failed to fetch japa summary', details: error.message });
+    }
+  });
+
+  // POST update daily goal
+  router.post('/goal', async (req, res) => {
+    try {
+      const { daily_goal } = req.body;
+      const user_id = req.user.id;
+
+      if (!daily_goal) return res.status(400).json({ error: 'Daily goal is required' });
+
+      await db.query(
+        'INSERT INTO user_preferences (user_id, daily_japa_goal) VALUES (?, ?) ON DUPLICATE KEY UPDATE daily_japa_goal = ?',
+        [user_id, daily_goal, daily_goal]
+      );
+
+      res.json({ message: 'Daily goal updated', daily_goal });
+    } catch (error) {
+      console.error('Update goal error:', error);
+      res.status(500).json({ error: 'Failed to update daily goal' });
+    }
+  });
+
+  // GET history stats
+  router.get('/history-stats', async (req, res) => {
+    try {
+      const user_id = req.user.id;
+
+      // Yesterday
+      const [yesterday] = await db.query(
+        'SELECT COALESCE(SUM(mala_count), 0) as count FROM japa_records WHERE user_id = ? AND japa_date = CURDATE() - INTERVAL 1 DAY',
+        [user_id]
+      );
+
+      // This Week
+      const [week] = await db.query(
+        'SELECT COALESCE(SUM(mala_count), 0) as count FROM japa_records WHERE user_id = ? AND YEARWEEK(japa_date, 1) = YEARWEEK(CURDATE(), 1)',
+        [user_id]
+      );
+
+      // This Month
+      const [month] = await db.query(
+        'SELECT COALESCE(SUM(mala_count), 0) as count FROM japa_records WHERE user_id = ? AND MONTH(japa_date) = MONTH(CURDATE()) AND YEAR(japa_date) = YEAR(CURDATE())',
+        [user_id]
+      );
+
+      // Total
+      const [total] = await db.query(
+        'SELECT COALESCE(SUM(mala_count), 0) as count FROM japa_records WHERE user_id = ?',
+        [user_id]
+      );
+
+      res.json({
+        yesterday: yesterday[0].count,
+        this_week: week[0].count,
+        this_month: month[0].count,
+        total: total[0].count
+      });
+    } catch (error) {
+      console.error('Get history stats error:', error);
+      res.status(500).json({ error: 'Failed to fetch history stats' });
     }
   });
 
   // --- NEW: GLOBAL LEADERBOARD ---
   router.get('/leaderboard/global', async (req, res) => {
     try {
-      // Fetch from the view 'global_leaderboard'
-      const [leaderboard] = await db.query(
-        'SELECT * FROM global_leaderboard ORDER BY total_japa_count DESC LIMIT 50'
-      );
+      const { period } = req.query;
+      let dateFilter = '';
+
+      if (period === 'today') {
+        dateFilter = 'AND japa_date = CURDATE()';
+      } else if (period === 'week') {
+        dateFilter = 'AND YEARWEEK(japa_date, 1) = YEARWEEK(CURDATE(), 1)';
+      } else if (period === 'month') {
+        dateFilter = 'AND MONTH(japa_date) = MONTH(CURDATE()) AND YEAR(japa_date) = YEAR(CURDATE())';
+      }
+
+      // We need to join with users table to get names
+      // Note: This query aggregates from japa_records directly instead of using the view for flexibility
+      const query = `
+        SELECT u.user_id, u.name, u.spiritual_name, u.profile_photo, u.current_streak, 
+               COALESCE(SUM(jr.mala_count), 0) as total_malas
+        FROM users u
+        JOIN japa_records jr ON u.user_id = jr.user_id
+        WHERE u.is_active = 1 ${dateFilter}
+        GROUP BY u.user_id
+        ORDER BY total_malas DESC
+        LIMIT 50
+      `;
+
+      const [leaderboard] = await db.query(query);
       res.json({ leaderboard });
     } catch (error) {
       console.error('Get global leaderboard error:', error);
@@ -89,9 +173,9 @@ module.exports = (db) => {
 
       // 1. Insert/Update Japa Record
       await db.query(
-        `INSERT INTO japa_records (user_id, family_id, rounds, japa_date) 
+        `INSERT INTO japa_records (user_id, family_id, mala_count, japa_date) 
          VALUES (?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE rounds = ?`,
+         ON DUPLICATE KEY UPDATE mala_count = ?`,
         [user_id, family_id || null, rounds, dateString, rounds]
       );
 
@@ -105,7 +189,7 @@ module.exports = (db) => {
 
         // Check previous day's record
         const [lastJapa] = await db.query(
-          'SELECT japa_date FROM japa_records WHERE user_id = ? AND japa_date < ? AND rounds > 0 ORDER BY japa_date DESC LIMIT 1',
+          'SELECT japa_date FROM japa_records WHERE user_id = ? AND japa_date < ? AND mala_count > 0 ORDER BY japa_date DESC LIMIT 1',
           [user_id, dateString]
         );
 

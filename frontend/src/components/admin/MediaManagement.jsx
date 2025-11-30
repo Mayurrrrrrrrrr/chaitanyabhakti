@@ -1,16 +1,16 @@
 // frontend/src/components/admin/MediaManagement.jsx
 import React, { useState } from 'react';
 import api from '../../services/api';
-import './AdminForms.css'; 
+import './AdminForms.css';
 
 const MediaManagement = () => {
   const [videoTitle, setVideoTitle] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [videoDescription, setVideoDescription] = useState('');
-  
+
   const [audioTitle, setAudioTitle] = useState('');
   const [audioFile, setAudioFile] = useState(null);
-  
+
   const [message, setMessage] = useState({ text: '', type: '' });
   const [loading, setLoading] = useState(false);
 
@@ -22,18 +22,18 @@ const MediaManagement = () => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
     setLoading(true);
-    
+
     try {
       const videoData = {
         title: videoTitle,
-        youtube_url: videoUrl,
+        video_url: videoUrl,
         description: videoDescription,
         is_public: 1, // Default to public
         category: 'satsang'
       };
       // Backend: router.post('/video') mounted at /api/media
       await api.post('/media/video', videoData);
-      
+
       setMessage({ text: 'Video added successfully!', type: 'success' });
       setVideoTitle('');
       setVideoUrl('');
@@ -50,7 +50,7 @@ const MediaManagement = () => {
   const handleAudioSubmit = async (e) => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
-    
+
     if (!audioFile) {
       setMessage({ text: 'Please select an audio file.', type: 'error' });
       return;
@@ -59,7 +59,7 @@ const MediaManagement = () => {
     setLoading(true);
     const formData = new FormData();
     formData.append('title', audioTitle);
-    formData.append('audio_file', audioFile); 
+    formData.append('audio_file', audioFile);
     formData.append('is_public', 1);
     formData.append('category', 'kirtan'); // Default category
 
@@ -70,11 +70,11 @@ const MediaManagement = () => {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
+
       setMessage({ text: 'Audio uploaded successfully!', type: 'success' });
       setAudioTitle('');
       setAudioFile(null);
-      if(fileInputRef.current) fileInputRef.current.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       console.error('Failed to upload audio:', err);
       setMessage({ text: err.response?.data?.error || 'Error uploading audio.', type: 'error' });
@@ -86,7 +86,7 @@ const MediaManagement = () => {
   return (
     <div className="admin-page-container">
       <h2>Manage Satsang Media</h2>
-      
+
       {message.text && (
         <p className={message.type === 'error' ? "error-message" : "success-message"}>
           {message.text}
@@ -160,7 +160,7 @@ const MediaManagement = () => {
           />
         </div>
         <button type="submit" className="btn-submit" disabled={loading}>
-           {loading ? 'Uploading...' : 'Upload Audio'}
+          {loading ? 'Uploading...' : 'Upload Audio'}
         </button>
       </form>
     </div>

@@ -34,7 +34,7 @@ module.exports = (db) => {
       const { family_id } = req.params;
       const [family] = await db.query('SELECT * FROM families WHERE family_id = ?', [family_id]);
       if (family.length === 0) return res.status(404).json({ error: 'Family not found' });
-      
+
       const [members] = await db.query(
         'SELECT u.user_id, u.name, u.spiritual_name, u.profile_photo, fm.is_admin, fm.relation_label FROM users u JOIN family_members fm ON u.user_id = fm.user_id WHERE fm.family_id = ?',
         [family_id]
@@ -65,13 +65,13 @@ module.exports = (db) => {
         'INSERT INTO families (family_name, family_code, description, created_by) VALUES (?, ?, ?, ?)',
         [family_name, family_code, description || null, user_id]
       );
-      
+
       const family_id = result.insertId;
       await db.query(
         'INSERT INTO family_members (family_id, user_id, relation_label, is_admin) VALUES (?, ?, ?, ?)',
         [family_id, user_id, relation_label || 'Admin', 1]
       );
-      
+
       res.status(201).json({ message: 'Family created', family_id, family_code });
     } catch (error) {
       console.error('Create family error:', error);
@@ -94,7 +94,7 @@ module.exports = (db) => {
         'INSERT INTO family_members (family_id, user_id, relation_label, is_admin) VALUES (?, ?, ?, 0) ON DUPLICATE KEY UPDATE relation_label = VALUES(relation_label)',
         [family_id, user_id, relation_label || null]
       );
-      
+
       res.json({ message: 'Successfully joined family', family_id });
     } catch (error) {
       if (error.code === 'ER_DUP_ENTRY') {
@@ -104,7 +104,7 @@ module.exports = (db) => {
       res.status(500).json({ error: 'Failed to join family' });
     }
   });
-  
+
   // (Add other routes like LEAVE family, REMOVE member, UPDATE family info...)
 
   return router;

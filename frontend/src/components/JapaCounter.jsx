@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-// Switching to utils/api as seen in LoginPage for better consistency
 import api from '../utils/api';
 import { useLanguage } from '../context/LanguageContext';
+import Leaderboard from './Leaderboard'; // Import existing Leaderboard component
 import './JapaCounter.css';
 
-// --- Icons as inline components to avoid external dependencies ---
+// --- Icons ---
 const IconMic = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>;
 const IconMicOff = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="1" y1="1" x2="23" y2="23" /><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" /><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>;
 const IconVolume2 = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" /></svg>;
@@ -15,6 +15,8 @@ const IconPlus = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="non
 const IconTarget = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>;
 const IconActivity = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>;
 const IconSmartphone = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></svg>;
+const IconHistory = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><path d="M12 7v5l4 2" /></svg>;
+const IconTrophy = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21h8" /><path d="M12 17v4" /><path d="M7 4h10" /><path d="M17 4v8a5 5 0 0 1-10 0V4" /><path d="M5 9v1a10 10 0 0 0 10 10" /><path d="M19 9v1a10 10 0 0 1-10 10" /></svg>;
 
 // Speech Recognition Setup
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -26,7 +28,8 @@ if (SpeechRecognition) {
 }
 
 const JapaCounter = () => {
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
+  const [activeTab, setActiveTab] = useState('counter'); // 'counter', 'leaderboard', 'history'
 
   // --- State Management ---
   const [beadCount, setBeadCount] = useState(() => {
@@ -39,10 +42,7 @@ const JapaCounter = () => {
     return (saved && saved !== 'undefined') ? JSON.parse(saved) : 0;
   });
 
-  const [dailyGoal, setDailyGoal] = useState(() => {
-    const saved = localStorage.getItem('dailyGoal');
-    return (saved && saved !== 'undefined') ? JSON.parse(saved) : 16;
-  });
+  const [dailyGoal, setDailyGoal] = useState(16);
 
   const [selectedMantra, setSelectedMantra] = useState(() => {
     return localStorage.getItem('selectedMantra') || 'Hare Krishna';
@@ -60,6 +60,14 @@ const JapaCounter = () => {
   const [hapticEnabled, setHapticEnabled] = useState(true);
   const [voiceError, setVoiceError] = useState('');
 
+  // Voice Training
+  const [showVoiceTrain, setShowVoiceTrain] = useState(false);
+  const [voiceTrigger, setVoiceTrigger] = useState(() => localStorage.getItem('voiceTrigger') || 'hare krishna');
+  const [isTraining, setIsTraining] = useState(false);
+
+  // History Stats
+  const [historyStats, setHistoryStats] = useState(null);
+
   // Refs
   const malaCountRef = useRef(malaCount);
   const isListeningRef = useRef(isListening);
@@ -72,7 +80,6 @@ const JapaCounter = () => {
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
   useEffect(() => { localStorage.setItem('malaCount', JSON.stringify(malaCount)); }, [malaCount]);
   useEffect(() => { localStorage.setItem('beadCount', JSON.stringify(beadCount)); }, [beadCount]);
-  useEffect(() => { localStorage.setItem('dailyGoal', JSON.stringify(dailyGoal)); }, [dailyGoal]);
   useEffect(() => { localStorage.setItem('selectedMantra', selectedMantra); }, [selectedMantra]);
   useEffect(() => { localStorage.setItem('malaType', malaType); }, [malaType]);
 
@@ -81,26 +88,32 @@ const JapaCounter = () => {
     bellSound.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDGH0fPTgjMHGGS36+OhTgwOUKXi8bllHAU7ldnyzn0vBSd+zPDckjwIEly17OmkUhELSpzg8sFuIwQ1jtL01Ik2Bhlit+zmoVAMEFOp5fK8aiEGPZfZ8tWAMgcsdM3w45NECRxiu+7ro1IPD1Gs5/O9ayMHPJPX8tGFNQgldcvx5pZAChVdu+npo08ODVGo4/K/bSIF');
   }, []);
 
-  // Initial API Sync
+  // Initial API Sync (Summary & Goal)
   useEffect(() => {
     api.getJapaSummary()
       .then(res => {
         if (!res.data) return;
-
         const serverTodayCount = res.data.today_count || 0;
+        const serverGoal = res.data.daily_goal || 16;
 
         // Sync local state with server
         if (serverTodayCount !== malaCountRef.current) {
           setMalaCount(serverTodayCount);
-          // If server count is different, reset beads to 0 to avoid sync issues
           setBeadCount(0);
         }
+        setDailyGoal(serverGoal);
       })
-      .catch(err => {
-        console.error("Sync failed", err);
-        // Fail silently, use local storage
-      });
+      .catch(err => console.error("Sync failed", err));
   }, []);
+
+  // Load History when tab changes
+  useEffect(() => {
+    if (activeTab === 'history') {
+      api.getHistoryStats()
+        .then(res => setHistoryStats(res.data))
+        .catch(err => console.error("History fetch failed", err));
+    }
+  }, [activeTab]);
 
   // --- Core Logic ---
 
@@ -152,12 +165,18 @@ const JapaCounter = () => {
     setShowSettings(false);
   };
 
-  // Voice Logic
+  const handleGoalChange = (newGoal) => {
+    setDailyGoal(newGoal);
+    api.updateDailyGoal(newGoal).catch(e => console.error("Goal update failed", e));
+  };
+
+  // --- Voice Logic ---
   useEffect(() => {
     if (!recognition) return;
     recognition.onresult = (event) => {
       const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-      const keywords = ["hare", "krishna", "next", "ram", "राम", "एक"];
+      // Check against trained trigger phrase or default keywords
+      const keywords = [voiceTrigger.toLowerCase(), "hare", "krishna", "next", "ram", "राम", "एक"];
       if (keywords.some(k => transcript.includes(k))) handleBeadClick();
     };
     recognition.onerror = (event) => {
@@ -172,7 +191,7 @@ const JapaCounter = () => {
       }
     };
     return () => { if (recognition) recognition.stop(); };
-  }, [handleBeadClick]);
+  }, [handleBeadClick, voiceTrigger]);
 
   const toggleListen = () => {
     if (!recognition) { setVoiceError('Not supported'); return; }
@@ -189,19 +208,41 @@ const JapaCounter = () => {
     }
   };
 
+  const startTraining = () => {
+    if (!recognition) return;
+    setIsTraining(true);
+    recognition.stop(); // Stop current session
+
+    // Start temporary session for training
+    const trainRec = new SpeechRecognition();
+    trainRec.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+    trainRec.start();
+
+    trainRec.onresult = (e) => {
+      const phrase = e.results[0][0].transcript.trim().toLowerCase();
+      setVoiceTrigger(phrase);
+      localStorage.setItem('voiceTrigger', phrase);
+      setIsTraining(false);
+      trainRec.stop();
+      alert(`Voice trained! Say "${phrase}" to count.`);
+    };
+
+    trainRec.onerror = (e) => {
+      console.error("Voice training error:", e);
+      setIsTraining(false);
+      alert(`Training failed: ${e.error}. Try again.`);
+    };
+  };
+
   // --- Visualization Logic ---
-  // Generate beads around a circle
   const beads = Array.from({ length: 108 }, (_, i) => i);
   const RADIUS = 140;
   const CENTER = 160;
-
-  // Calculate visual progress (0 to 100%)
   const goalPercentage = Math.min((malaCount / dailyGoal) * 100, 100);
 
-  return (
-    <div className="page-container japa-page">
-
-      {/* Top Stats */}
+  // --- Render Helpers ---
+  const renderCounter = () => (
+    <>
       <div className="japa-header-stats">
         <div className="stat-pill">
           <span className="stat-label">Daily Goal</span>
@@ -213,12 +254,10 @@ const JapaCounter = () => {
         </div>
       </div>
 
-      {/* Mantra Display */}
       <div className="mantra-display">
         <span className="mantra-text">"{selectedMantra}"</span>
       </div>
 
-      {/* Main Interactive Mala */}
       <div className="mala-visual-container">
         <svg viewBox="0 0 320 320" className="bead-svg">
           <defs>
@@ -227,51 +266,33 @@ const JapaCounter = () => {
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
           </defs>
-
-          {/* The Thread */}
           <circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none" stroke="#e0e0e0" strokeWidth="1" />
-
-          {/* The Beads */}
           {beads.map((i) => {
-            // Logic to start from top (270 degrees) and go clockwise
             const angleDeg = (i * (360 / 108)) - 90;
             const angleRad = (angleDeg * Math.PI) / 180;
             const x = CENTER + RADIUS * Math.cos(angleRad);
             const y = CENTER + RADIUS * Math.sin(angleRad);
-
-            // Class logic
             let beadClass = "japa-bead pending";
             if (i < beadCount) beadClass = "japa-bead completed";
             if (i === beadCount) beadClass = "japa-bead current";
-
             return (
               <g key={i} className={beadClass}>
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={i === beadCount ? 8 : 5} /* Pulse size in CSS */
-                />
+                <circle cx={x} cy={y} r={i === beadCount ? 8 : 5} />
               </g>
             );
           })}
-
-          {/* The Meru Bead (Top Center) */}
           <g className="japa-bead meru">
             <circle cx={CENTER} cy={CENTER - RADIUS - 10} r={10} />
           </g>
         </svg>
 
-        {/* Center Counter */}
         <div className="mala-center-display">
           <div className="bead-counter-large">{beadCount}</div>
           <div className="bead-counter-label">Chants</div>
         </div>
-
-        {/* Invisible Tap Area Over the whole circle */}
         <div className="tap-area-overlay" onClick={handleBeadClick}></div>
       </div>
 
-      {/* Goal Progress Bar */}
       <div className="goal-progress-container">
         <div className="goal-labels">
           <span>Progress</span>
@@ -282,42 +303,71 @@ const JapaCounter = () => {
         </div>
       </div>
 
-      {/* Bottom Action Bar */}
       <div className="action-bar">
-        <button
-          className="action-btn"
-          onClick={() => setSoundEnabled(!soundEnabled)}
-          title="Toggle Sound"
-        >
+        <button className="action-btn" onClick={() => setSoundEnabled(!soundEnabled)} title="Toggle Sound">
           {soundEnabled ? <IconVolume2 /> : <IconVolumeX />}
         </button>
-
-        {/* Mic Button */}
         {recognition && (
-          <button
-            className={`action-btn ${isListening ? 'listening' : ''}`}
-            onClick={toggleListen}
-            title="Voice Count"
-          >
+          <button className={`action-btn ${isListening ? 'listening' : ''}`} onClick={toggleListen} title="Voice Count">
             {isListening ? <IconMicOff /> : <IconMic />}
           </button>
         )}
-
-        <button
-          className="action-btn active"
-          onClick={handleBeadClick}
-          title="Add Bead Manual"
-        >
+        <button className="action-btn active" onClick={handleBeadClick} title="Add Bead Manual">
           <IconPlus />
         </button>
-
-        <button
-          className="action-btn"
-          onClick={() => setShowSettings(true)}
-          title="Settings"
-        >
+        <button className="action-btn" onClick={() => setShowSettings(true)} title="Settings">
           <IconSettings />
         </button>
+      </div>
+    </>
+  );
+
+  const renderHistory = () => {
+    if (!historyStats) return <div className="loading">Loading stats...</div>;
+    return (
+      <div className="history-container">
+        <h3>My Japa History</h3>
+        <div className="history-grid">
+          <div className="history-card">
+            <span className="label">Yesterday</span>
+            <span className="value">{historyStats.yesterday}</span>
+          </div>
+          <div className="history-card">
+            <span className="label">This Week</span>
+            <span className="value">{historyStats.this_week}</span>
+          </div>
+          <div className="history-card">
+            <span className="label">This Month</span>
+            <span className="value">{historyStats.this_month}</span>
+          </div>
+          <div className="history-card total">
+            <span className="label">Total Lifetime</span>
+            <span className="value">{historyStats.total}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="page-container japa-page">
+      {/* Tabs */}
+      <div className="japa-tabs">
+        <button className={`tab-btn ${activeTab === 'counter' ? 'active' : ''}`} onClick={() => setActiveTab('counter')}>
+          <IconActivity /> Counter
+        </button>
+        <button className={`tab-btn ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => setActiveTab('leaderboard')}>
+          <IconTrophy /> Leaderboard
+        </button>
+        <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
+          <IconHistory /> History
+        </button>
+      </div>
+
+      <div className="tab-content">
+        {activeTab === 'counter' && renderCounter()}
+        {activeTab === 'leaderboard' && <Leaderboard />}
+        {activeTab === 'history' && renderHistory()}
       </div>
 
       {/* Settings Modal */}
@@ -325,52 +375,39 @@ const JapaCounter = () => {
         <div className="modal-overlay" onClick={() => setShowSettings(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <h3>Japa Settings</h3>
-
             <div className="setting-row">
               <label><IconTarget /> Daily Goal (Malas)</label>
-              <input
-                type="number"
-                className="setting-input"
-                value={dailyGoal}
-                min="1"
-                max="64"
-                onChange={(e) => setDailyGoal(Number(e.target.value))}
-              />
+              <input type="number" className="setting-input" value={dailyGoal} min="1" max="64" onChange={(e) => handleGoalChange(Number(e.target.value))} />
             </div>
-
             <div className="setting-row">
               <label><IconActivity /> Mantra</label>
-              <select
-                className="setting-select"
-                value={selectedMantra}
-                onChange={(e) => setSelectedMantra(e.target.value)}
-              >
+              <select className="setting-select" value={selectedMantra} onChange={(e) => setSelectedMantra(e.target.value)}>
                 <option value="Hare Krishna">Hare Krishna</option>
                 <option value="Om Namah Shivaya">Om Namah Shivaya</option>
                 <option value="Om Namo Bhagavate Vasudevaya">Om Namo Bhagavate Vasudevaya</option>
                 <option value="Sri Ram Jai Ram">Sri Ram Jai Ram</option>
               </select>
             </div>
-
+            <div className="setting-row">
+              <label><IconMic /> Voice Training</label>
+              <div className="voice-train-section">
+                <p>Current Trigger: <strong>"{voiceTrigger}"</strong></p>
+                <button className="btn-secondary" onClick={startTraining} disabled={isTraining}>
+                  {isTraining ? "Listening..." : "Train New Trigger"}
+                </button>
+              </div>
+            </div>
             <div className="setting-row">
               <label><IconSmartphone /> Haptic Feedback</label>
-              <input
-                type="checkbox"
-                checked={hapticEnabled}
-                onChange={(e) => setHapticEnabled(e.target.checked)}
-              /> Enable Vibration
+              <input type="checkbox" checked={hapticEnabled} onChange={(e) => setHapticEnabled(e.target.checked)} /> Enable Vibration
             </div>
-
             <div className="modal-actions">
-              <button className="btn-text danger" onClick={handleMalaReset}>
-                <IconRotateCcw /> Reset Beads
-              </button>
+              <button className="btn-text danger" onClick={handleMalaReset}><IconRotateCcw /> Reset Beads</button>
               <button className="btn-primary" onClick={() => setShowSettings(false)}>Done</button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

@@ -79,6 +79,9 @@ const apiService = {
   // Japa
   getJapaSummary: () => api.get('/japa/summary'),
   logJapa: (data) => api.post('/japa', data),
+  updateDailyGoal: (goal) => api.post('/japa/goal', { daily_goal: goal }),
+  getHistoryStats: () => api.get('/japa/history-stats'),
+  getGlobalLeaderboard: () => api.get('/japa/leaderboard/global'),
 
   // Breathe
   logBreathSession: (data) => api.post('/breathe', data),

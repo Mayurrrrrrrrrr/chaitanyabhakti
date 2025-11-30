@@ -71,8 +71,8 @@ module.exports = (db) => {
       const taskTitle = title || description || 'New Task';
 
       const [result] = await db.query(
-        'INSERT INTO tasks (family_id, created_by, title, description, due_date, task_type) VALUES (?, ?, ?, ?, ?, ?)',
-        [family_id || null, user_id, taskTitle, description, due_date || null, task_type || 'sadhana']
+        'INSERT INTO tasks (family_id, created_by, title, description, due_date) VALUES (?, ?, ?, ?, ?)',
+        [family_id || null, user_id || null, taskTitle || null, description || null, due_date || null]
       );
 
       const task_id = result.insertId;

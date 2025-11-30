@@ -23,7 +23,7 @@ module.exports = (db) => {
   // POST a new event (admin only)
   router.post('/', isSuperAdmin(db), async (req, res) => {
     try {
-      const { title, event_type, start_date, end_date } = req.body;
+      const { title, event_type, start_date, end_date, description, location } = req.body;
       const user_id = req.user.id;
 
       if (!title || !event_type || !start_date) {
@@ -31,10 +31,10 @@ module.exports = (db) => {
       }
 
       const [result] = await db.query(
-        'INSERT INTO global_events (title, event_type, start_date, end_date, created_by) VALUES (?, ?, ?, ?, ?)',
-        [title, event_type, start_date, end_date || null, user_id]
+        'INSERT INTO global_events (title, event_type, start_date, end_date, description, location, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [title, event_type, start_date, end_date || null, description || null, location || null, user_id]
       );
-      
+
       res.status(201).json({ message: 'Event created', event_id: result.insertId });
     } catch (error) {
       console.error('Create event error:', error);

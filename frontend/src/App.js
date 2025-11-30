@@ -27,6 +27,7 @@ import UserManagement from './components/admin/UserManagement';
 import ScriptureManagement from './components/admin/ScriptureManagement';
 import MediaManagement from './components/admin/MediaManagement';
 import EventManagement from './components/admin/EventManagement';
+import Events from './components/Events';
 
 import './App.css';
 
@@ -84,6 +85,7 @@ function App() {
             <Route path="breathe/*" element={<Breathe />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="events" element={<Events />} />
           </Route>
 
           <Route
