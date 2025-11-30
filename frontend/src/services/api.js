@@ -15,9 +15,12 @@ if (!API_URL) {
   }
 }
 
-// Sanitize API_URL (remove trailing slash and /api suffix if present)
-// This prevents duplicate /api/api paths since our endpoint methods already include /api
-API_URL = API_URL.replace(/\/$/, '').replace(/\/api$/, '');
+// Sanitize API_URL (remove trailing slash)
+// Only remove /api suffix if there's more to the URL (to avoid empty string)
+API_URL = API_URL.replace(/\/$/, '');
+if (API_URL !== '/api') {
+  API_URL = API_URL.replace(/\/api$/, '');
+}
 
 console.log('Using API URL:', API_URL);
 
