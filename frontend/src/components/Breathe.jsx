@@ -1,57 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiWind, FiActivity, FiCircle, FiPlay, FiStopCircle, FiClock } from 'react-icons/fi';
+import { FiWind, FiPlay, FiStopCircle } from 'react-icons/fi';
 import api from '../services/api';
 import './Breathe.css';
 
-const TECHNIQUES = [
-  {
-    id: '4-7-8',
-    title: 'Relaxing Breath (4-7-8)',
-    description: 'A natural tranquilizer for the nervous system. Helps reduce anxiety and aids sleep.',
-    icon: <FiWind />,
-    phases: [
-      { name: 'Inhale', duration: 4000, instruction: 'Breathe In...' },
-      { name: 'Hold', duration: 7000, instruction: 'Hold...' },
-      { name: 'Exhale', duration: 8000, instruction: 'Breathe Out...' }
-    ]
-  },
-  {
-    id: 'box',
-    title: 'Box Breathing',
-    description: 'Used by Navy SEALs for focus and stress control. Equal duration for all phases.',
-    icon: <FiActivity />,
-    phases: [
-      { name: 'Inhale', duration: 4000, instruction: 'Breathe In...' },
-      { name: 'Hold', duration: 4000, instruction: 'Hold...' },
-      { name: 'Exhale', duration: 4000, instruction: 'Breathe Out...' },
-      { name: 'Hold', duration: 4000, instruction: 'Hold...' }
-    ]
-  },
-  {
-    id: 'coherent',
-    title: 'Coherent Breathing',
-    description: 'Balances the autonomic nervous system. Smooth, continuous breathing.',
-    icon: <FiCircle />,
-    phases: [
-      { name: 'Inhale', duration: 6000, instruction: 'Breathe In...' },
-      { name: 'Exhale', duration: 6000, instruction: 'Breathe Out...' }
-    ]
-  },
-  {
-    id: 'retention',
-    title: 'Breath Retention',
-    description: 'Advanced practice for lung capacity. Deep inhale, long hold, slow exhale.',
-    icon: <FiClock />,
-    phases: [
-      { name: 'Inhale', duration: 5000, instruction: 'Deep Inhale...' },
-      { name: 'Hold', duration: 15000, instruction: 'Hold (Retention)...' },
-      { name: 'Exhale', duration: 10000, instruction: 'Slow Exhale...' }
-    ]
-  }
-];
+const CALM_BREATH = {
+  id: 'calm-cool',
+  title: 'Calm & Cool (शांत और शीतल)',
+  description: 'Relax your mind and body with this simple breathing exercise. (अपने मन और शरीर को शांत करें)',
+  icon: <FiWind />,
+  phases: [
+    { name: 'Inhale', duration: 4000, instruction: 'Breathe In (सांस लें)' },
+    { name: 'Hold', duration: 4000, instruction: 'Hold (रोकें)' },
+    { name: 'Exhale', duration: 6000, instruction: 'Breathe Out (सांस छोड़ें)' },
+    { name: 'Hold', duration: 2000, instruction: 'Hold (रोकें)' }
+  ]
+};
 
 const Breathe = () => {
-  const [activeTechnique, setActiveTechnique] = useState(null);
   const [isActive, setIsActive] = useState(false);
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -68,26 +33,25 @@ const Breathe = () => {
     };
   }, []);
 
-  const startSession = (technique) => {
-    setActiveTechnique(technique);
+  const startSession = () => {
     setIsActive(true);
     setCurrentPhaseIndex(0);
     setCycles(1);
     setSessionStartTime(Date.now());
-    startPhase(technique.phases[0]);
+    startPhase(CALM_BREATH.phases[0]);
   };
 
   const stopSession = async () => {
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
     // Save session to DB
-    if (sessionStartTime && activeTechnique) {
+    if (sessionStartTime) {
       const durationSeconds = Math.round((Date.now() - sessionStartTime) / 1000);
       if (durationSeconds > 5) { // Only save if > 5 seconds
         try {
           await api.logBreathSession({
-            technique_id: activeTechnique.id,
-            technique_name: activeTechnique.title,
+            technique_id: CALM_BREATH.id,
+            technique_name: CALM_BREATH.title,
             duration_seconds: durationSeconds
           });
           console.log('Session saved');
@@ -98,7 +62,6 @@ const Breathe = () => {
     }
 
     setIsActive(false);
-    setActiveTechnique(null);
     setSessionStartTime(null);
   };
 
@@ -125,9 +88,7 @@ const Breathe = () => {
   };
 
   const nextPhase = () => {
-    if (!activeTechnique) return;
-
-    const nextIndex = (currentPhaseIndex + 1) % activeTechnique.phases.length;
+    const nextIndex = (currentPhaseIndex + 1) % CALM_BREATH.phases.length;
 
     // If we wrapped around to 0, a cycle is complete
     if (nextIndex === 0) {
@@ -135,21 +96,19 @@ const Breathe = () => {
     }
 
     setCurrentPhaseIndex(nextIndex);
-    startPhase(activeTechnique.phases[nextIndex]);
+    startPhase(CALM_BREATH.phases[nextIndex]);
   };
 
   const getAnimationClass = () => {
-    if (!activeTechnique) return '';
-    const phaseName = activeTechnique.phases[currentPhaseIndex].name.toLowerCase();
+    const phaseName = CALM_BREATH.phases[currentPhaseIndex].name.toLowerCase();
     if (phaseName.includes('inhale')) return 'inhale';
     if (phaseName.includes('exhale')) return 'exhale';
     return 'hold';
   };
 
   const getAnimationStyle = () => {
-    if (!activeTechnique) return {};
     return {
-      '--duration': `${activeTechnique.phases[currentPhaseIndex].duration}ms`
+      '--duration': `${CALM_BREATH.phases[currentPhaseIndex].duration}ms`
     };
   };
 
@@ -158,25 +117,16 @@ const Breathe = () => {
       {!isActive ? (
         <>
           <header className="page-header">
-            <h1 className="page-title">Breathe & Relax</h1>
-            <p className="page-subtitle">Choose a breathing technique to calm your mind</p>
+            <h1 className="page-title">Breathe & Relax (प्राणायाम)</h1>
+            <p className="page-subtitle">{CALM_BREATH.description}</p>
           </header>
 
-          <div className="technique-grid">
-            {TECHNIQUES.map((tech) => (
-              <div
-                key={tech.id}
-                className="technique-card"
-                onClick={() => startSession(tech)}
-              >
-                <div className="technique-icon">{tech.icon}</div>
-                <h3 className="technique-title">{tech.title}</h3>
-                <p className="technique-desc">{tech.description}</p>
-                <div style={{ marginTop: '16px', color: 'var(--primary-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FiPlay /> Start
-                </div>
-              </div>
-            ))}
+          <div className="technique-card single-technique" onClick={startSession}>
+            <div className="technique-icon">{CALM_BREATH.icon}</div>
+            <h3 className="technique-title">{CALM_BREATH.title}</h3>
+            <div style={{ marginTop: '24px', color: 'var(--primary-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem' }}>
+              <FiPlay /> Start Session (शुरू करें)
+            </div>
           </div>
         </>
       ) : (
@@ -187,14 +137,14 @@ const Breathe = () => {
 
           <div className="circle-container">
             <div
-              key={`${activeTechnique.id}-${currentPhaseIndex}`}
+              key={`${currentPhaseIndex}`}
               className={`breathing-circle ${getAnimationClass()}`}
               style={getAnimationStyle()}
             />
 
             <div className="inner-circle">
               <span className="instruction-text">
-                {activeTechnique.phases[currentPhaseIndex].instruction}
+                {CALM_BREATH.phases[currentPhaseIndex].instruction}
               </span>
               <span className="timer-text">
                 {Math.ceil(timeLeft / 1000)}s
@@ -204,7 +154,7 @@ const Breathe = () => {
 
           <div className="controls">
             <button className="btn-stop" onClick={stopSession}>
-              <FiStopCircle style={{ marginRight: '8px' }} /> End Session
+              <FiStopCircle style={{ marginRight: '8px' }} /> End Session (समाप्त करें)
             </button>
           </div>
         </div>
