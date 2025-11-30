@@ -18,6 +18,19 @@ async function resetAdmin() {
     const name = 'Super Admin';
 
     try {
+        // 1. Check if 'password' column exists
+        try {
+            await pool.query('SELECT password FROM users LIMIT 1');
+        } catch (err) {
+            if (err.code === 'ER_BAD_FIELD_ERROR') {
+                console.log('⚠️  Column "password" missing. Adding it now...');
+                await pool.query('ALTER TABLE users ADD COLUMN password VARCHAR(255) AFTER spiritual_name');
+                console.log('✅ Column "password" added successfully.');
+            } else {
+                throw err;
+            }
+        }
+
         const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
         // Check if user exists
