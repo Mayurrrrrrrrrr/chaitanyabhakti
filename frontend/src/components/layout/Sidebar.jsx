@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import logo from '../../logo.svg';
+// Removed logo.svg import
 import {
   FiHome, FiRepeat, FiUsers, FiCalendar, FiUser,
   FiBookOpen, FiMusic, FiSettings, FiLogOut, FiActivity, FiChevronsLeft, FiChevronsRight, FiWind, FiX
@@ -53,7 +53,7 @@ const Sidebar = ({ collapsed, onToggleCollapse, mobileOpen, onMobileClose }) => 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-primary-800/50">
           <div className={`flex items-center gap-3 overflow-hidden ${collapsed ? 'justify-center w-full' : ''}`}>
-            <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
+            <img src="/logo192.png" alt="Logo" className="w-8 h-8 object-contain drop-shadow-md" />
             {!collapsed && (
               <h2 className="font-heading font-bold text-xl tracking-tight text-secondary-400 whitespace-nowrap">
                 {t('app_title')}

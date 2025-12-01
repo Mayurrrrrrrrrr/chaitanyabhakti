@@ -92,6 +92,8 @@
 body {
   font-family: var(--font-body);
   background-color: var(--bg-app);
+  background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+  background-size: 20px 20px;
   color: var(--neutral-900);
   /* Darker text for contrast */
   font-size: 18px;
