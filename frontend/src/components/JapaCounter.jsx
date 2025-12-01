@@ -1,413 +1,109 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { CircularProgressbarWithChildren, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
 import api from '../utils/api';
-import { useLanguage } from '../context/LanguageContext';
-import Leaderboard from './Leaderboard'; // Import existing Leaderboard component
 import './JapaCounter.css';
 
-// --- Icons ---
-const IconMic = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>;
-const IconMicOff = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="1" y1="1" x2="23" y2="23" /><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" /><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>;
-const IconVolume2 = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" /></svg>;
-const IconVolumeX = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" /></svg>;
-const IconSettings = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>;
-const IconRotateCcw = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></svg>;
-const IconPlus = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
-const IconTarget = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>;
-const IconActivity = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>;
-const IconSmartphone = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></svg>;
-const IconHistory = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><path d="M12 7v5l4 2" /></svg>;
-const IconTrophy = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21h8" /><path d="M12 17v4" /><path d="M7 4h10" /><path d="M17 4v8a5 5 0 0 1-10 0V4" /><path d="M5 9v1a10 10 0 0 0 10 10" /><path d="M19 9v1a10 10 0 0 1-10 10" /></svg>;
-
-// Speech Recognition Setup
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition = null;
-if (SpeechRecognition) {
-  recognition = new SpeechRecognition();
-  recognition.continuous = true;
-  recognition.interimResults = false;
-}
-
 const JapaCounter = () => {
-  const { language } = useLanguage();
-  const [activeTab, setActiveTab] = useState('counter'); // 'counter', 'leaderboard', 'history'
+  const [count, setCount] = useState(0);
+  const [rounds, setRounds] = useState(0);
+  const [beadAudio] = useState(new Audio('/sounds/bead-click.mp3')); // Optional sound
 
-  // --- State Management ---
-  const [beadCount, setBeadCount] = useState(() => {
-    const saved = localStorage.getItem('beadCount');
-    return (saved && saved !== 'undefined') ? JSON.parse(saved) : 0;
-  });
-
-  const [malaCount, setMalaCount] = useState(() => {
-    const saved = localStorage.getItem('malaCount');
-    return (saved && saved !== 'undefined') ? JSON.parse(saved) : 0;
-  });
-
-  const [dailyGoal, setDailyGoal] = useState(16);
-
-  const [selectedMantra, setSelectedMantra] = useState(() => {
-    return localStorage.getItem('selectedMantra') || 'Hare Krishna';
-  });
-
-  const [malaType, setMalaType] = useState(() => {
-    return localStorage.getItem('malaType') || 'rudraksh';
-  });
-
-  // UI States
-  const [showSettings, setShowSettings] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [hapticEnabled, setHapticEnabled] = useState(true);
-  const [voiceError, setVoiceError] = useState('');
-
-  // Voice Training
-  const [showVoiceTrain, setShowVoiceTrain] = useState(false);
-  const [voiceTrigger, setVoiceTrigger] = useState(() => localStorage.getItem('voiceTrigger') || 'hare krishna');
-  const [isTraining, setIsTraining] = useState(false);
-
-  // History Stats
-  const [historyStats, setHistoryStats] = useState(null);
-
-  // Refs
-  const malaCountRef = useRef(malaCount);
-  const isListeningRef = useRef(isListening);
-  const bellSound = useRef(null);
-
-  // --- Effects ---
-
-  // Persist Data
-  useEffect(() => { malaCountRef.current = malaCount; }, [malaCount]);
-  useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
-  useEffect(() => { localStorage.setItem('malaCount', JSON.stringify(malaCount)); }, [malaCount]);
-  useEffect(() => { localStorage.setItem('beadCount', JSON.stringify(beadCount)); }, [beadCount]);
-  useEffect(() => { localStorage.setItem('selectedMantra', selectedMantra); }, [selectedMantra]);
-  useEffect(() => { localStorage.setItem('malaType', malaType); }, [malaType]);
-
-  // Load Sound
+  // Sync with backend
   useEffect(() => {
-    bellSound.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDGH0fPTgjMHGGS36+OhTgwOUKXi8bllHAU7ldnyzn0vBSd+zPDckjwIEly17OmkUhELSpzg8sFuIwQ1jtL01Ik2Bhlit+zmoVAMEFOp5fK8aiEGPZfZ8tWAMgcsdM3w45NECRxiu+7ro1IPD1Gs5/O9ayMHPJPX8tGFNQgldcvx5pZAChVdu+npo08ODVGo4/K/bSIF');
+    fetchStats();
   }, []);
 
-  // Initial API Sync (Summary & Goal)
-  useEffect(() => {
-    api.getJapaSummary()
-      .then(res => {
-        if (!res.data) return;
-        const serverTodayCount = Number(res.data.today_count) || 0;
-        const serverGoal = Number(res.data.daily_goal) || 16;
-
-        // Sync local state with server
-        if (serverTodayCount !== malaCountRef.current) {
-          setMalaCount(serverTodayCount);
-          setBeadCount(0);
-        }
-        setDailyGoal(serverGoal);
-      })
-      .catch(err => console.error("Sync failed", err));
-  }, []);
-
-  // Load History when tab changes
-  useEffect(() => {
-    if (activeTab === 'history') {
-      api.getHistoryStats()
-        .then(res => setHistoryStats(res.data))
-        .catch(err => console.error("History fetch failed", err));
-    }
-  }, [activeTab]);
-
-  // --- Core Logic ---
-
-  const playSound = () => {
-    if (soundEnabled && bellSound.current) {
-      bellSound.current.currentTime = 0;
-      bellSound.current.play().catch(e => console.log('Audio failed', e));
-    }
-  };
-
-  const triggerHaptic = () => {
-    if (hapticEnabled && navigator.vibrate) navigator.vibrate(40);
-  };
-
-  const saveToApi = useCallback(async (countToSave) => {
-    setIsSyncing(true);
+  const fetchStats = async () => {
     try {
-      await api.logJapa({
-        rounds: countToSave,
-        japa_date: new Date().toISOString().split('T')[0],
-      });
-    } catch (err) {
-      console.error('Save failed', err);
-    } finally {
-      setIsSyncing(false);
+      const res = await api.get('/japa/today');
+      if (res.data) {
+        setCount(res.data.count || 0);
+        setRounds(res.data.rounds || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching japa stats");
     }
-  }, []);
-
-  const handleBeadClick = useCallback(() => {
-    triggerHaptic();
-    setBeadCount(prev => {
-      const newBead = prev + 1;
-      if (newBead >= 108) {
-        const newMala = malaCountRef.current + 1;
-        setMalaCount(newMala);
-        saveToApi(newMala);
-        playSound();
-        if (newMala === dailyGoal) {
-          alert(`Haribol! You reached your daily goal of ${dailyGoal} rounds! 🙏`);
-        }
-        return 0;
-      }
-      return newBead;
-    });
-  }, [saveToApi, dailyGoal, soundEnabled, hapticEnabled]);
-
-  const handleMalaReset = () => {
-    if (window.confirm("Reset current round beads to 0?")) setBeadCount(0);
-    setShowSettings(false);
   };
 
-  const handleGoalChange = (newGoal) => {
-    setDailyGoal(newGoal);
-    api.updateDailyGoal(newGoal).catch(e => console.error("Goal update failed", e));
-  };
+  const handleChant = async () => {
+    const newCount = count + 1;
+    let newRounds = rounds;
 
-  // --- Voice Logic ---
-  useEffect(() => {
-    if (!recognition) return;
-    recognition.onresult = (event) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-      // Check against trained trigger phrase or default keywords
-      const keywords = [voiceTrigger.toLowerCase(), "hare", "krishna", "next", "ram", "राम", "एक"];
-      if (keywords.some(k => transcript.includes(k))) handleBeadClick();
-    };
-    recognition.onerror = (event) => {
-      if (event.error === 'not-allowed') {
-        setVoiceError('Mic blocked');
-        setIsListening(false);
-      }
-    };
-    recognition.onend = () => {
-      if (isListeningRef.current) {
-        try { recognition.start(); } catch (e) { setIsListening(false); }
-      }
-    };
-    return () => { if (recognition) recognition.stop(); };
-  }, [handleBeadClick, voiceTrigger]);
+    // Play subtle sound if you have it, else ignore
+    // beadAudio.play().catch(e => {}); 
 
-  const toggleListen = () => {
-    if (!recognition) { setVoiceError('Not supported'); return; }
-    if (isListening) {
-      recognition.stop();
-      setIsListening(false);
+    if (newCount >= 108) {
+      newRounds += 1;
+      setCount(0);
+      setRounds(newRounds);
+      // Trigger vibration on mobile
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      await api.post('/japa/round', { timestamp: new Date() });
     } else {
-      try {
-        recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
-        recognition.start();
-        setIsListening(true);
-        setVoiceError('');
-      } catch (err) { setVoiceError('Mic Error'); }
+      setCount(newCount);
+      if (navigator.vibrate) navigator.vibrate(50);
     }
+
+    // Debounce API call for individual beads usually, 
+    // but for simplicity we can sync periodically or just rely on local state + background sync.
+    // Here implies immediate round sync, local bead state.
   };
 
-  const startTraining = () => {
-    if (!recognition) return;
-    setIsTraining(true);
-    recognition.stop(); // Stop current session
-
-    // Start temporary session for training
-    const trainRec = new SpeechRecognition();
-    trainRec.lang = language === 'hi' ? 'hi-IN' : 'en-US';
-    trainRec.start();
-
-    trainRec.onresult = (e) => {
-      const phrase = e.results[0][0].transcript.trim().toLowerCase();
-      setVoiceTrigger(phrase);
-      localStorage.setItem('voiceTrigger', phrase);
-      setIsTraining(false);
-      trainRec.stop();
-      alert(`Voice trained! Say "${phrase}" to count.`);
-    };
-
-    trainRec.onerror = (e) => {
-      console.error("Voice training error:", e);
-      setIsTraining(false);
-      alert(`Training failed: ${e.error}. Try again.`);
-    };
-  };
-
-  // --- Visualization Logic ---
-  const beads = Array.from({ length: 108 }, (_, i) => i);
-  const RADIUS = 140;
-  const CENTER = 160;
-  const goalPercentage = Math.min((malaCount / dailyGoal) * 100, 100);
-
-  // --- Render Helpers ---
-  const renderCounter = () => (
-    <>
-      <div className="japa-header-stats">
-        <div className="stat-pill">
-          <span className="stat-label">Daily Goal</span>
-          <span className="stat-value">{malaCount} / {dailyGoal}</span>
-        </div>
-        <div className="stat-pill">
-          <span className="stat-label">Beads</span>
-          <span className="stat-value">{beadCount}</span>
-        </div>
-      </div>
-
-      <div className="mantra-display">
-        <span className="mantra-text">"{selectedMantra}"</span>
-      </div>
-
-      <div className="mala-visual-container">
-        <svg viewBox="0 0 320 320" className="bead-svg">
-          <defs>
-            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="2" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
-          <circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none" stroke="#e0e0e0" strokeWidth="1" />
-          {beads.map((i) => {
-            const angleDeg = (i * (360 / 108)) - 90;
-            const angleRad = (angleDeg * Math.PI) / 180;
-            const x = CENTER + RADIUS * Math.cos(angleRad);
-            const y = CENTER + RADIUS * Math.sin(angleRad);
-            let beadClass = "japa-bead pending";
-            if (i < beadCount) beadClass = "japa-bead completed";
-            if (i === beadCount) beadClass = "japa-bead current";
-            return (
-              <g key={i} className={beadClass}>
-                <circle cx={x} cy={y} r={i === beadCount ? 8 : 5} />
-              </g>
-            );
-          })}
-          <g className="japa-bead meru">
-            <circle cx={CENTER} cy={CENTER - RADIUS - 10} r={10} />
-          </g>
-        </svg>
-
-        <div className="mala-center-display">
-          <div className="bead-counter-large">{beadCount}</div>
-          <div className="bead-counter-label">Chants</div>
-        </div>
-        <div className="tap-area-overlay" onClick={handleBeadClick}></div>
-      </div>
-
-      <div className="goal-progress-container">
-        <div className="goal-labels">
-          <span>Progress</span>
-          <span>{Math.round(goalPercentage)}%</span>
-        </div>
-        <div className="progress-track">
-          <div className="progress-bar" style={{ width: `${goalPercentage}%` }}></div>
-        </div>
-      </div>
-
-      <div className="action-bar">
-        <button className="action-btn" onClick={() => setSoundEnabled(!soundEnabled)} title="Toggle Sound">
-          {soundEnabled ? <IconVolume2 /> : <IconVolumeX />}
-        </button>
-        {recognition && (
-          <button className={`action-btn ${isListening ? 'listening' : ''}`} onClick={toggleListen} title="Voice Count">
-            {isListening ? <IconMicOff /> : <IconMic />}
-          </button>
-        )}
-        <button className="action-btn active" onClick={handleBeadClick} title="Add Bead Manual">
-          <IconPlus />
-        </button>
-        <button className="action-btn" onClick={() => setShowSettings(true)} title="Settings">
-          <IconSettings />
-        </button>
-      </div>
-    </>
-  );
-
-  const renderHistory = () => {
-    if (!historyStats) return <div className="loading">Loading stats...</div>;
-    return (
-      <div className="history-container">
-        <h3>My Japa History</h3>
-        <div className="history-grid">
-          <div className="history-card">
-            <span className="label">Yesterday</span>
-            <span className="value">{historyStats.yesterday}</span>
-          </div>
-          <div className="history-card">
-            <span className="label">This Week</span>
-            <span className="value">{historyStats.this_week}</span>
-          </div>
-          <div className="history-card">
-            <span className="label">This Month</span>
-            <span className="value">{historyStats.this_month}</span>
-          </div>
-          <div className="history-card total">
-            <span className="label">Total Lifetime</span>
-            <span className="value">{historyStats.total}</span>
-          </div>
-        </div>
-      </div>
-    );
+  const resetCounter = () => {
+    if (window.confirm("Reset current round?")) {
+      setCount(0);
+    }
   };
 
   return (
-    <div className="page-container japa-page">
-      {/* Tabs */}
-      <div className="japa-tabs">
-        <button className={`tab-btn ${activeTab === 'counter' ? 'active' : ''}`} onClick={() => setActiveTab('counter')}>
-          <IconActivity /> Counter
-        </button>
-        <button className={`tab-btn ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => setActiveTab('leaderboard')}>
-          <IconTrophy /> Leaderboard
-        </button>
-        <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
-          <IconHistory /> History
-        </button>
-      </div>
+    <div className="japa-layout min-h-screen flex flex-col items-center justify-between pb-20 pt-6 bg-gradient-to-b from-yellow-50 via-white to-blue-50">
 
-      <div className="tab-content">
-        {activeTab === 'counter' && renderCounter()}
-        {activeTab === 'leaderboard' && <Leaderboard />}
-        {activeTab === 'history' && renderHistory()}
-      </div>
-
-      {/* Settings Modal */}
-      {showSettings && (
-        <div className="modal-overlay" onClick={() => setShowSettings(false)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <h3>Japa Settings</h3>
-            <div className="setting-row">
-              <label><IconTarget /> Daily Goal (Malas)</label>
-              <input type="number" className="setting-input" value={dailyGoal} min="1" max="64" onChange={(e) => handleGoalChange(Number(e.target.value))} />
-            </div>
-            <div className="setting-row">
-              <label><IconActivity /> Mantra</label>
-              <select className="setting-select" value={selectedMantra} onChange={(e) => setSelectedMantra(e.target.value)}>
-                <option value="Hare Krishna">Hare Krishna</option>
-                <option value="Om Namah Shivaya">Om Namah Shivaya</option>
-                <option value="Om Namo Bhagavate Vasudevaya">Om Namo Bhagavate Vasudevaya</option>
-                <option value="Sri Ram Jai Ram">Sri Ram Jai Ram</option>
-              </select>
-            </div>
-            <div className="setting-row">
-              <label><IconMic /> Voice Training</label>
-              <div className="voice-train-section">
-                <p>Current Trigger: <strong>"{voiceTrigger}"</strong></p>
-                <button className="btn-secondary" onClick={startTraining} disabled={isTraining}>
-                  {isTraining ? "Listening..." : "Train New Trigger"}
-                </button>
-              </div>
-            </div>
-            <div className="setting-row">
-              <label><IconSmartphone /> Haptic Feedback</label>
-              <input type="checkbox" checked={hapticEnabled} onChange={(e) => setHapticEnabled(e.target.checked)} /> Enable Vibration
-            </div>
-            <div className="modal-actions">
-              <button className="btn-text danger" onClick={handleMalaReset}><IconRotateCcw /> Reset Beads</button>
-              <button className="btn-primary" onClick={() => setShowSettings(false)}>Done</button>
-            </div>
-          </div>
+      {/* Header Stats */}
+      <div className="w-full max-w-md px-6 grid grid-cols-2 gap-4">
+        <div className="stat-card bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500">
+          <p className="text-xs font-bold uppercase tracking-wider">Total Rounds</p>
+          <p className="text-3xl font-bold">{rounds}</p>
         </div>
-      )}
+        <div className="stat-card bg-blue-100 text-blue-800 border-l-4 border-blue-500">
+          <p className="text-xs font-bold uppercase tracking-wider">Beads Today</p>
+          <p className="text-3xl font-bold">{(rounds * 108) + count}</p>
+        </div>
+      </div>
+
+      {/* Main Bead Interaction */}
+      <div className="main-counter-wrapper w-72 h-72 relative mt-8 mb-8">
+        <CircularProgressbarWithChildren
+          value={count}
+          maxValue={108}
+          strokeWidth={8}
+          styles={buildStyles({
+            pathColor: `rgba(34, 197, 94, ${count / 108})`, // Green transitioning opacity
+            trailColor: '#e2e8f0',
+            pathTransitionDuration: 0.1,
+          })}
+        >
+          {/* Central Tap Area */}
+          <button
+            onClick={handleChant}
+            className="bead-button w-56 h-56 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-500 shadow-inner flex flex-col items-center justify-center transform transition active:scale-95 focus:outline-none"
+          >
+            <span className="text-6xl font-bold text-white drop-shadow-md">{count}</span>
+            <span className="text-sm text-yellow-100 mt-2">/ 108</span>
+            <div className="absolute inset-0 rounded-full border-4 border-white opacity-30 pointer-events-none"></div>
+          </button>
+        </CircularProgressbarWithChildren>
+      </div>
+
+      {/* Footer Controls */}
+      <div className="w-full max-w-md px-8 flex justify-between items-center">
+        <button onClick={resetCounter} className="text-gray-400 hover:text-red-500 font-medium text-sm transition">
+          Reset Round
+        </button>
+        <div className="text-center">
+          <p className="text-gray-500 text-xs italic">Tap the yellow circle to chant</p>
+        </div>
+      </div>
     </div>
   );
 };

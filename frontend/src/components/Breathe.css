@@ -1,198 +1,105 @@
-/* frontend/src/components/Breathe.css */
-
 .breathe-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 70vh;
-    text-align: center;
-    padding: 20px;
-    color: var(--text-primary);
-}
-
-/* --- Selection Screen --- */
-.single-technique {
-    max-width: 400px;
-    margin: 40px auto;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    background: linear-gradient(135deg, #f0f9ff 0%, #e6fffa 100%);
     border-radius: 20px;
-    padding: 40px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
-.single-technique:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
-    border-color: var(--primary-color);
-}
-
-.technique-icon {
-    font-size: 4rem;
-    margin-bottom: 20px;
-    color: var(--primary-color);
-    background: rgba(255, 107, 53, 0.1);
-    padding: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.technique-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 12px;
-    color: var(--text-primary);
-}
-
-.technique-desc {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin-bottom: 20px;
-}
-
-/* --- Active Session --- */
-.session-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 600px;
-}
-
-.circle-container {
+.breathe-circle {
     position: relative;
     width: 300px;
     height: 300px;
+    background: #fff;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 40px 0;
+    transition: all 0.5s ease-in-out;
+    z-index: 10;
+    border: 8px solid #fff;
 }
 
-.breathing-circle {
+/* Base states affecting the border */
+.breathe-circle.ready {
+    border-color: #cbd5e1;
+}
+
+.breathe-circle.inhale {
+    border-color: #3b82f6;
+    transform: scale(1.1);
+}
+
+.breathe-circle.hold {
+    border-color: #eab308;
+    transform: scale(1.1);
+}
+
+.breathe-circle.exhale {
+    border-color: #22c55e;
+    transform: scale(1.0);
+}
+
+.breathe-circle.holdEmpty {
+    border-color: #94a3b8;
+    transform: scale(1.0);
+}
+
+.breathe-content {
+    text-align: center;
+    z-index: 20;
+}
+
+/* Ripples for visual effect */
+[class^="ripple-"] {
     position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: conic-gradient(from 0deg, var(--primary-color), var(--secondary-color));
+    background: inherit;
     opacity: 0.2;
-    filter: blur(20px);
-    transform: scale(0.5);
-    transition: transform 0.1s linear;
-    /* Smooth transition handled by JS/CSS keyframes */
+    z-index: -1;
 }
 
-.inner-circle {
-    position: relative;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+.breathe-circle.inhale .ripple-1 {
+    animation: ripple 2s infinite;
+    background: #3b82f6;
 }
 
-.instruction-text {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
+.breathe-circle.inhale .ripple-2 {
+    animation: ripple 2s infinite 0.5s;
+    background: #3b82f6;
 }
 
-.timer-text {
-    font-size: 1.5rem;
-    color: var(--text-secondary);
-    font-variant-numeric: tabular-nums;
+.breathe-circle.exhale .ripple-1 {
+    animation: ripple-reverse 2s infinite;
+    background: #22c55e;
 }
 
-.controls {
-    margin-top: 40px;
-    display: flex;
-    gap: 16px;
-}
-
-.btn-stop {
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    padding: 12px 32px;
-    border-radius: 50px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-stop:hover {
-    background-color: var(--error-color);
-    color: white;
-    border-color: var(--error-color);
-}
-
-/* --- Animations --- */
-/* These classes will be applied dynamically */
-.inhale {
-    animation: breatheIn var(--duration) ease-in-out forwards;
-}
-
-.exhale {
-    animation: breatheOut var(--duration) ease-in-out forwards;
-}
-
-.hold-in {
-    transform: scale(1.1);
-    opacity: 0.9;
-}
-
-.hold-out {
-    transform: scale(0.5);
-    opacity: 0.5;
-}
-
-@keyframes breatheIn {
-    from {
-        transform: scale(0.5);
-        opacity: 0.5;
+@keyframes ripple {
+    0% {
+        width: 100%;
+        height: 100%;
+        opacity: 0.4;
     }
 
-    to {
-        transform: scale(1.1);
-        opacity: 0.9;
+    100% {
+        width: 140%;
+        height: 140%;
+        opacity: 0;
     }
 }
 
-@keyframes breatheOut {
-    from {
-        transform: scale(1.1);
-        opacity: 0.9;
+@keyframes ripple-reverse {
+    0% {
+        width: 140%;
+        height: 140%;
+        opacity: 0;
     }
 
-    to {
-        transform: scale(0.5);
-        opacity: 0.5;
-    }
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-    .circle-container {
-        width: 250px;
-        height: 250px;
-    }
-
-    .instruction-text {
-        font-size: 1.5rem;
+    100% {
+        width: 100%;
+        height: 100%;
+        opacity: 0.4;
     }
 }

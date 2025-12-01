@@ -1,161 +1,166 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiWind, FiPlay, FiStopCircle } from 'react-icons/fi';
-import api from '../services/api';
-import './Breathe.css';
-
-const CALM_BREATH = {
-  id: 'calm-cool',
-  title: 'Calm & Cool (शांत और शीतल)',
-  description: 'Relax your mind and body with this simple breathing exercise. (अपने मन और शरीर को शांत करें)',
-  icon: <FiWind />,
-  phases: [
-    { name: 'Inhale', duration: 4000, instruction: 'Breathe In (सांस लें)', type: 'inhale' },
-    { name: 'Hold', duration: 4000, instruction: 'Hold (रोकें)', type: 'hold-in' },
-    { name: 'Exhale', duration: 6000, instruction: 'Breathe Out (सांस छोड़ें)', type: 'exhale' },
-    { name: 'Hold', duration: 2000, instruction: 'Hold (रोकें)', type: 'hold-out' }
-  ]
-};
+import { useLanguage } from '../context/LanguageContext.js';
 
 const Breathe = () => {
-  const [isActive, setIsActive] = useState(false);
-  const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
+  const { t } = useLanguage();
+  const [phase, setPhase] = useState('ready'); // ready, inhale, hold, exhale
   const [timeLeft, setTimeLeft] = useState(0);
-  const [cycles, setCycles] = useState(0);
-  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [isActive, setIsActive] = useState(false);
+  const [cycleCount, setCycleCount] = useState(0);
 
   const timerRef = useRef(null);
-  const startTimeRef = useRef(null);
-  const phaseDurationRef = useRef(0);
+
+  const BREATH_TIMINGS = {
+    inhale: 4,
+    hold: 4,
+    exhale: 4,
+    holdEmpty: 2
+  };
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) cancelAnimationFrame(timerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
 
-  const startSession = () => {
-    setIsActive(true);
-    setCurrentPhaseIndex(0);
-    setCycles(1);
-    setSessionStartTime(Date.now());
-    startPhase(CALM_BREATH.phases[0]);
-  };
+  const runPhase = (currentPhase) => {
+    setPhase(currentPhase);
 
-  const stopSession = async () => {
-    if (timerRef.current) cancelAnimationFrame(timerRef.current);
+    let duration = 0;
+    let nextPhase = '';
 
-    // Save session to DB
-    if (sessionStartTime) {
-      const durationSeconds = Math.round((Date.now() - sessionStartTime) / 1000);
-      if (durationSeconds > 5) { // Only save if > 5 seconds
-        try {
-          await api.logBreathSession({
-            technique_id: CALM_BREATH.id,
-            technique_name: CALM_BREATH.title,
-            duration_seconds: durationSeconds
-          });
-          console.log('Session saved');
-        } catch (err) {
-          console.error('Failed to save session', err);
-        }
-      }
+    switch (currentPhase) {
+      case 'inhale':
+        duration = BREATH_TIMINGS.inhale;
+        nextPhase = 'hold';
+        break;
+      case 'hold':
+        duration = BREATH_TIMINGS.hold;
+        nextPhase = 'exhale';
+        break;
+      case 'exhale':
+        duration = BREATH_TIMINGS.exhale;
+        nextPhase = 'holdEmpty';
+        break;
+      case 'holdEmpty':
+        duration = BREATH_TIMINGS.holdEmpty;
+        nextPhase = 'inhale';
+        setCycleCount(c => c + 1);
+        break;
+      default:
+        return;
     }
 
-    setIsActive(false);
-    setSessionStartTime(null);
-  };
+    setTimeLeft(duration);
 
-  const startPhase = (phase) => {
-    phaseDurationRef.current = phase.duration;
-    startTimeRef.current = Date.now();
-    setTimeLeft(phase.duration);
+    // Start countdown for this phase
+    let counter = duration;
+    const countdownInterval = setInterval(() => {
+      counter -= 1;
+      setTimeLeft(counter);
+      if (counter <= 0) clearInterval(countdownInterval);
+    }, 1000);
 
-    const animate = () => {
-      const now = Date.now();
-      const elapsed = now - startTimeRef.current;
-      const remaining = Math.max(0, phaseDurationRef.current - elapsed);
-
-      setTimeLeft(remaining);
-
-      if (remaining > 0) {
-        timerRef.current = requestAnimationFrame(animate);
-      } else {
-        nextPhase();
+    // Schedule next phase
+    timerRef.current = setTimeout(() => {
+      clearInterval(countdownInterval);
+      if (isActive) {
+        runPhase(nextPhase);
       }
-    };
-
-    timerRef.current = requestAnimationFrame(animate);
+    }, duration * 1000);
   };
 
-  const nextPhase = () => {
-    const nextIndex = (currentPhaseIndex + 1) % CALM_BREATH.phases.length;
-
-    // If we wrapped around to 0, a cycle is complete
-    if (nextIndex === 0) {
-      setCycles(c => c + 1);
+  const toggleBreathing = () => {
+    if (isActive) {
+      setIsActive(false);
+      setPhase('ready');
+      setTimeLeft(0);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    } else {
+      setIsActive(true);
+      setCycleCount(0);
+      runPhase('inhale');
     }
-
-    setCurrentPhaseIndex(nextIndex);
-    startPhase(CALM_BREATH.phases[nextIndex]);
   };
 
-  const getAnimationClass = () => {
-    return CALM_BREATH.phases[currentPhaseIndex].type;
+  const getInstruction = () => {
+    switch (phase) {
+      case 'ready': return 'Press Start';
+      case 'inhale': return t('breatheIn') || 'Breathe In';
+      case 'hold': return t('hold') || 'Hold';
+      case 'exhale': return t('breatheOut') || 'Breathe Out';
+      case 'holdEmpty': return 'Relax';
+      default: return '';
+    }
   };
 
-  const getAnimationStyle = () => {
-    return {
-      '--duration': `${CALM_BREATH.phases[currentPhaseIndex].duration}ms`
-    };
-  };
+  const getCircleColor = () => {
+    switch (phase) {
+      case 'inhale': return 'border-blue-500 scale-110';
+      case 'hold': return 'border-yellow-500 scale-110';
+      case 'exhale': return 'border-green-500 scale-100';
+      case 'holdEmpty': return 'border-slate-400 scale-100';
+      default: return 'border-slate-300';
+    }
+  }
+
+  const getRippleColor = () => {
+    if (phase === 'inhale') return 'bg-blue-500';
+    if (phase === 'exhale') return 'bg-green-500';
+    return 'hidden';
+  }
 
   return (
-    <div className="page-container breathe-container">
-      {!isActive ? (
-        <>
-          <header className="page-header">
-            <h1 className="page-title">Breathe & Relax (प्राणायाम)</h1>
-            <p className="page-subtitle">{CALM_BREATH.description}</p>
-          </header>
+    <div className="w-full max-w-md mx-auto p-6 flex flex-col items-center justify-center min-h-[60vh] bg-gradient-to-br from-blue-50 to-green-50 rounded-3xl shadow-sm">
+      <style>{`
+        @keyframes ripple {
+          0% { width: 100%; height: 100%; opacity: 0.4; }
+          100% { width: 150%; height: 150%; opacity: 0; }
+        }
+        .animate-ripple {
+          animation: ripple 2s infinite;
+        }
+        .animate-ripple-delay {
+          animation: ripple 2s infinite 0.5s;
+        }
+      `}</style>
 
-          <div className="technique-card single-technique" onClick={startSession}>
-            <div className="technique-icon">{CALM_BREATH.icon}</div>
-            <h3 className="technique-title">{CALM_BREATH.title}</h3>
-            <div style={{ marginTop: '24px', color: 'var(--primary-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem' }}>
-              <FiPlay /> Start Session (शुरू करें)
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="session-container">
-          <div className="cycle-counter">
-            Cycle {cycles}
-          </div>
-
-          <div className="circle-container">
-            <div
-              key={`${currentPhaseIndex}`}
-              className={`breathing-circle ${getAnimationClass()}`}
-              style={getAnimationStyle()}
-            />
-
-            <div className="inner-circle">
-              <span className="instruction-text">
-                {CALM_BREATH.phases[currentPhaseIndex].instruction}
-              </span>
-              <span className="timer-text">
-                {Math.ceil(timeLeft / 1000)}s
-              </span>
-            </div>
-          </div>
-
-          <div className="controls">
-            <button className="btn-stop" onClick={stopSession}>
-              <FiStopCircle style={{ marginRight: '8px' }} /> End Session (समाप्त करें)
-            </button>
-          </div>
+      <div className={`relative w-72 h-72 bg-white rounded-full flex items-center justify-center transition-all duration-1000 border-8 shadow-2xl z-10 ${getCircleColor()}`}>
+        <div className="text-center z-20">
+          <h2 className="text-3xl font-bold text-slate-700 mb-2 transition-all">{getInstruction()}</h2>
+          {isActive && <span className="text-5xl font-mono text-blue-600 font-semibold">{timeLeft}s</span>}
         </div>
-      )}
+
+        {/* Ripples */}
+        {isActive && (phase === 'inhale' || phase === 'exhale') && (
+          <>
+            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-full opacity-20 -z-10 animate-ripple ${getRippleColor()}`}></div>
+            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-full opacity-20 -z-10 animate-ripple-delay ${getRippleColor()}`}></div>
+          </>
+        )}
+      </div>
+
+      {/* Stats Grid */}
+      <div className="mt-12 grid grid-cols-2 gap-6 w-full">
+        <div className="bg-white p-4 rounded-2xl shadow-sm text-center border-b-4 border-yellow-400">
+          <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Cycles</span>
+          <span className="text-3xl font-bold text-slate-800">{cycleCount}</span>
+        </div>
+        <div className="bg-white p-4 rounded-2xl shadow-sm text-center border-b-4 border-green-400">
+          <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Phase</span>
+          <span className="text-xl font-bold text-green-600 capitalize">{phase}</span>
+        </div>
+      </div>
+
+      <button
+        onClick={toggleBreathing}
+        className={`mt-10 px-10 py-4 rounded-full text-white font-bold text-xl transition-all transform hover:scale-105 shadow-lg active:scale-95 w-full max-w-xs ${isActive
+            ? 'bg-gradient-to-r from-red-500 to-pink-600 shadow-red-200'
+            : 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-blue-200'
+          }`}
+      >
+        {isActive ? 'Stop Session' : 'Start Breathing'}
+      </button>
     </div>
   );
 };
