@@ -6,98 +6,76 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                // Radha Krishna Theme Colors
+                // Divine Yellow - Saffron/Gold Theme
                 saffron: {
-                    50: '#FFF8E1',
-                    100: '#FFECB3',
-                    200: '#FFE082',
-                    300: '#FFD54F',
-                    400: '#FFCA28',
-                    500: '#FF9933', // Primary Saffron
-                    600: '#FF8C00',
-                    700: '#FF7F00',
-                    800: '#FF6F00',
-                    900: '#E65100',
+                    50: '#FFFBF0',
+                    100: '#FFF8E1',
+                    200: '#FFECB3',
+                    300: '#FFE082',
+                    400: '#FFD54F',
+                    500: '#FFD700', // Main Divine Yellow
+                    600: '#FFC107',
+                    700: '#FFB300',
+                    800: '#FFA000',
+                    900: '#FF8F00',
                 },
-                krishna: {
-                    50: '#E0F7FA',
-                    100: '#B2EBF2',
-                    200: '#80DEEA',
-                    300: '#4DD0E1',
-                    400: '#26C6DA',
-                    500: '#00BFFF', // Sky Blue
-                    600: '#00ACC1',
-                    700: '#0097A7',
-                    800: '#00838F',
-                    900: '#006064',
-                },
+                // Divine Green - Tulsi Theme
                 tulsi: {
-                    50: '#E8F5E9',
-                    100: '#C8E6C9',
-                    200: '#A5D6A7',
-                    300: '#81C784',
-                    400: '#66BB6A',
-                    500: '#2E8B57', // Tulsi Green
-                    600: '#43A047',
-                    700: '#388E3C',
-                    800: '#2E7D32',
-                    900: '#1B5E20',
+                    50: '#F1F8F4',
+                    100: '#E8F5E9',
+                    200: '#C8E6C9',
+                    300: '#A5D6A7',
+                    400: '#81C784',
+                    500: '#2E8B57', // Main Divine Green
+                    600: '#66BB6A',
+                    700: '#4CAF50',
+                    800: '#43A047',
+                    900: '#388E3C',
                 },
+                // Divine Blue - Krishna Theme
+                krishna: {
+                    50: '#E3F2FD',
+                    100: '#BBDEFB',
+                    200: '#90CAF9',
+                    300: '#64B5F6',
+                    400: '#42A5F5',
+                    500: '#4169E1', // Main Divine Blue
+                    600: '#2196F3',
+                    700: '#1976D2',
+                    800: '#1565C0',
+                    900: '#0D47A1',
+                },
+                // Lotus Pink - Accent
                 lotus: {
                     50: '#FCE4EC',
                     100: '#F8BBD0',
                     200: '#F48FB1',
                     300: '#F06292',
                     400: '#EC407A',
-                    500: '#FFB6C1', // Lotus Pink
-                    600: '#D81B60',
-                    700: '#C2185B',
-                    800: '#AD1457',
-                    900: '#880E4F',
+                    500: '#FFB6C1',
+                    600: '#E91E63',
+                    700: '#D81B60',
+                    800: '#C2185B',
+                    900: '#AD1457',
                 },
             },
             fontFamily: {
-                sans: ['Inter', 'system-ui', 'sans-serif'],
+                sans: ['Poppins', 'system-ui', 'sans-serif'],
                 heading: ['Playfair Display', 'serif'],
-                sanskrit: ['Noto Sans Devanagari', 'sans-serif'],
+                body: ['Poppins', 'sans-serif'],
             },
             animation: {
-                'breathe-in': 'breatheIn 4s ease-in-out',
-                'breathe-out': 'breatheOut 4s ease-in-out',
-                'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                 'float': 'float 6s ease-in-out infinite',
-                'ripple': 'ripple 0.6s ease-out',
-                'glow': 'glow 2s ease-in-out infinite alternate',
+                'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             },
             keyframes: {
-                breatheIn: {
-                    '0%': { transform: 'scale(1)' },
-                    '100%': { transform: 'scale(1.3)' },
-                },
-                breatheOut: {
-                    '0%': { transform: 'scale(1.3)' },
-                    '100%': { transform: 'scale(1)' },
-                },
                 float: {
                     '0%, 100%': { transform: 'translateY(0px)' },
                     '50%': { transform: 'translateY(-20px)' },
                 },
-                ripple: {
-                    '0%': { transform: 'scale(0)', opacity: '1' },
-                    '100%': { transform: 'scale(4)', opacity: '0' },
-                },
-                glow: {
-                    '0%': { boxShadow: '0 0 5px rgba(255, 153, 51, 0.5), 0 0 10px rgba(255, 153, 51, 0.3)' },
-                    '100%': { boxShadow: '0 0 20px rgba(255, 153, 51, 0.8), 0 0 30px rgba(255, 153, 51, 0.5)' },
-                },
             },
             backdropBlur: {
                 xs: '2px',
-            },
-            backgroundImage: {
-                'vrindavan': "url('https://images.unsplash.com/photo-1561361513-2d000a50f0dc?q=80&w=2070&auto=format&fit=crop')",
-                'peacock': "url('https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=80&w=2069&auto=format&fit=crop')",
-                'lotus': "url('https://images.unsplash.com/photo-1523678802081-8e30347f35e7?q=80&w=2010&auto=format&fit=crop')",
             },
         },
     },
