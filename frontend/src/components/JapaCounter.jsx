@@ -93,8 +93,8 @@ const JapaCounter = () => {
     api.getJapaSummary()
       .then(res => {
         if (!res.data) return;
-        const serverTodayCount = res.data.today_count || 0;
-        const serverGoal = res.data.daily_goal || 16;
+        const serverTodayCount = Number(res.data.today_count) || 0;
+        const serverGoal = Number(res.data.daily_goal) || 16;
 
         // Sync local state with server
         if (serverTodayCount !== malaCountRef.current) {
