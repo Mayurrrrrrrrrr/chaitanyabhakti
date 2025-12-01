@@ -1,166 +1,132 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../context/LanguageContext.js';
+import React, { useState, useEffect } from 'react';
+import { FiWind, FiPlay, FiPause, FiRefreshCcw } from 'react-icons/fi';
 
 const Breathe = () => {
-  const { t } = useLanguage();
-  const [phase, setPhase] = useState('ready'); // ready, inhale, hold, exhale
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [phase, setPhase] = useState('Inhale'); // Inhale, Hold, Exhale, Hold
+  const [timer, setTimer] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [cycleCount, setCycleCount] = useState(0);
 
-  const timerRef = useRef(null);
-
-  const BREATH_TIMINGS = {
-    inhale: 4,
-    hold: 4,
-    exhale: 4,
-    holdEmpty: 2
+  // Breathing Cycle: 4-7-8 Technique
+  // Inhale: 4s, Hold: 7s, Exhale: 8s
+  const cycleDurations = {
+    Inhale: 4,
+    Hold1: 7,
+    Exhale: 8,
+    Hold2: 0 // 4-7-8 doesn't have a post-exhale hold usually
   };
 
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
-
-  const runPhase = (currentPhase) => {
-    setPhase(currentPhase);
-
-    let duration = 0;
-    let nextPhase = '';
-
-    switch (currentPhase) {
-      case 'inhale':
-        duration = BREATH_TIMINGS.inhale;
-        nextPhase = 'hold';
-        break;
-      case 'hold':
-        duration = BREATH_TIMINGS.hold;
-        nextPhase = 'exhale';
-        break;
-      case 'exhale':
-        duration = BREATH_TIMINGS.exhale;
-        nextPhase = 'holdEmpty';
-        break;
-      case 'holdEmpty':
-        duration = BREATH_TIMINGS.holdEmpty;
-        nextPhase = 'inhale';
-        setCycleCount(c => c + 1);
-        break;
-      default:
-        return;
-    }
-
-    setTimeLeft(duration);
-
-    // Start countdown for this phase
-    let counter = duration;
-    const countdownInterval = setInterval(() => {
-      counter -= 1;
-      setTimeLeft(counter);
-      if (counter <= 0) clearInterval(countdownInterval);
-    }, 1000);
-
-    // Schedule next phase
-    timerRef.current = setTimeout(() => {
-      clearInterval(countdownInterval);
-      if (isActive) {
-        runPhase(nextPhase);
-      }
-    }, duration * 1000);
-  };
-
-  const toggleBreathing = () => {
+    let interval = null;
     if (isActive) {
-      setIsActive(false);
-      setPhase('ready');
-      setTimeLeft(0);
-      if (timerRef.current) clearTimeout(timerRef.current);
-    } else {
-      setIsActive(true);
-      setCycleCount(0);
-      runPhase('inhale');
+      interval = setInterval(() => {
+        setTimer((prev) => prev + 1);
+      }, 1000);
+    } else if (!isActive && timer !== 0) {
+      clearInterval(interval);
     }
-  };
+    return () => clearInterval(interval);
+  }, [isActive, timer]);
 
-  const getInstruction = () => {
-    switch (phase) {
-      case 'ready': return 'Press Start';
-      case 'inhale': return t('breatheIn') || 'Breathe In';
-      case 'hold': return t('hold') || 'Hold';
-      case 'exhale': return t('breatheOut') || 'Breathe Out';
-      case 'holdEmpty': return 'Relax';
-      default: return '';
-    }
-  };
+  useEffect(() => {
+    if (!isActive) return;
 
-  const getCircleColor = () => {
-    switch (phase) {
-      case 'inhale': return 'border-blue-500 scale-110';
-      case 'hold': return 'border-yellow-500 scale-110';
-      case 'exhale': return 'border-green-500 scale-100';
-      case 'holdEmpty': return 'border-slate-400 scale-100';
-      default: return 'border-slate-300';
-    }
-  }
+    let mounted = true;
 
-  const getRippleColor = () => {
-    if (phase === 'inhale') return 'bg-blue-500';
-    if (phase === 'exhale') return 'bg-green-500';
-    return 'hidden';
-  }
+    const runCycle = async () => {
+      if (!mounted) return;
+      // Inhale
+      setPhase('Inhale');
+      await new Promise(r => setTimeout(r, 4000));
+
+      if (!mounted || !isActive) return;
+      // Hold
+      setPhase('Hold');
+      await new Promise(r => setTimeout(r, 7000));
+
+      if (!mounted || !isActive) return;
+      // Exhale
+      setPhase('Exhale');
+      await new Promise(r => setTimeout(r, 8000));
+
+      if (mounted && isActive) {
+        setCycleCount(c => c + 1);
+        runCycle(); // Loop
+      }
+    };
+
+    runCycle();
+
+    return () => { mounted = false; };
+  }, [isActive]);
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 flex flex-col items-center justify-center min-h-[60vh] bg-gradient-to-br from-blue-50 to-green-50 rounded-3xl shadow-sm">
-      <style>{`
-        @keyframes ripple {
-          0% { width: 100%; height: 100%; opacity: 0.4; }
-          100% { width: 150%; height: 150%; opacity: 0; }
-        }
-        .animate-ripple {
-          animation: ripple 2s infinite;
-        }
-        .animate-ripple-delay {
-          animation: ripple 2s infinite 0.5s;
-        }
-      `}</style>
+    <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-12 animate-fadeIn">
 
-      <div className={`relative w-72 h-72 bg-white rounded-full flex items-center justify-center transition-all duration-1000 border-8 shadow-2xl z-10 ${getCircleColor()}`}>
-        <div className="text-center z-20">
-          <h2 className="text-3xl font-bold text-slate-700 mb-2 transition-all">{getInstruction()}</h2>
-          {isActive && <span className="text-5xl font-mono text-blue-600 font-semibold">{timeLeft}s</span>}
-        </div>
-
-        {/* Ripples */}
-        {isActive && (phase === 'inhale' || phase === 'exhale') && (
-          <>
-            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-full opacity-20 -z-10 animate-ripple ${getRippleColor()}`}></div>
-            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-full opacity-20 -z-10 animate-ripple-delay ${getRippleColor()}`}></div>
-          </>
-        )}
+      <div className="text-center space-y-2">
+        <h2 className="font-heading text-3xl font-bold text-primary-900">Mindful Breathing</h2>
+        <p className="text-slate-500">4-7-8 Technique for Deep Relaxation</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="mt-12 grid grid-cols-2 gap-6 w-full">
-        <div className="bg-white p-4 rounded-2xl shadow-sm text-center border-b-4 border-yellow-400">
-          <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Cycles</span>
-          <span className="text-3xl font-bold text-slate-800">{cycleCount}</span>
-        </div>
-        <div className="bg-white p-4 rounded-2xl shadow-sm text-center border-b-4 border-green-400">
-          <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Phase</span>
-          <span className="text-xl font-bold text-green-600 capitalize">{phase}</span>
+      {/* Breathing Circle */}
+      <div className="relative flex items-center justify-center">
+        {/* Outer Rings */}
+        <div className={`absolute w-64 h-64 rounded-full border-2 border-primary-200 ${isActive ? 'animate-ping opacity-20' : 'opacity-0'}`}></div>
+        <div className={`absolute w-80 h-80 rounded-full border border-primary-100 ${isActive ? 'animate-pulse opacity-30' : 'opacity-0'}`}></div>
+
+        {/* Main Circle */}
+        <div
+          className={`
+            w-48 h-48 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 shadow-2xl flex items-center justify-center relative z-10 transition-all duration-[4000ms] ease-in-out
+            ${isActive && phase === 'Inhale' ? 'scale-125 shadow-primary-500/50' : ''}
+            ${isActive && phase === 'Exhale' ? 'scale-90 shadow-primary-500/20' : ''}
+          `}
+        >
+          {/* Inner Glow */}
+          <div className="absolute inset-0 bg-white/20 rounded-full blur-xl"></div>
+
+          <div className="text-center text-white relative z-20">
+            <FiWind size={32} className="mx-auto mb-2 opacity-80" />
+            <span className="text-xl font-bold tracking-widest uppercase">{isActive ? phase : 'Ready'}</span>
+          </div>
         </div>
       </div>
 
-      <button
-        onClick={toggleBreathing}
-        className={`mt-10 px-10 py-4 rounded-full text-white font-bold text-xl transition-all transform hover:scale-105 shadow-lg active:scale-95 w-full max-w-xs ${isActive
-            ? 'bg-gradient-to-r from-red-500 to-pink-600 shadow-red-200'
-            : 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-blue-200'
-          }`}
-      >
-        {isActive ? 'Stop Session' : 'Start Breathing'}
-      </button>
+      {/* Controls */}
+      <div className="flex items-center gap-6">
+        <button
+          onClick={() => setIsActive(!isActive)}
+          className={`
+            flex items-center gap-2 px-8 py-3 rounded-full font-bold shadow-lg transition-all transform hover:-translate-y-1
+            ${isActive
+              ? 'bg-white text-slate-600 hover:bg-slate-50'
+              : 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-primary-500/30'
+            }
+          `}
+        >
+          {isActive ? <><FiPause /> Pause</> : <><FiPlay /> Start</>}
+        </button>
+
+        <button
+          onClick={() => { setIsActive(false); setTimer(0); setCycleCount(0); setPhase('Inhale'); }}
+          className="p-3 rounded-full bg-white text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors shadow-sm"
+          title="Reset"
+        >
+          <FiRefreshCcw size={20} />
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-8 text-center">
+        <div>
+          <span className="block text-2xl font-bold text-slate-700">{Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}</span>
+          <span className="text-xs text-slate-400 uppercase tracking-wider">Time</span>
+        </div>
+        <div>
+          <span className="block text-2xl font-bold text-slate-700">{cycleCount}</span>
+          <span className="text-xs text-slate-400 uppercase tracking-wider">Cycles</span>
+        </div>
+      </div>
     </div>
   );
 };

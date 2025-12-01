@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { CircularProgressbarWithChildren, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import api from '../utils/api';
-import './JapaCounter.css';
+import { FiRefreshCw, FiVolume2, FiVolumeX } from 'react-icons/fi';
 
 const JapaCounter = () => {
   const [count, setCount] = useState(0);
   const [rounds, setRounds] = useState(0);
-  const [beadAudio] = useState(new Audio('/sounds/bead-click.mp3')); // Optional sound
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [beadAudio] = useState(new Audio('/sounds/bead-click.mp3')); // Ensure this file exists or remove
 
   // Sync with backend
   useEffect(() => {
@@ -30,24 +31,31 @@ const JapaCounter = () => {
     const newCount = count + 1;
     let newRounds = rounds;
 
-    // Play subtle sound if you have it, else ignore
-    // beadAudio.play().catch(e => {}); 
+    // Play sound
+    if (soundEnabled) {
+      beadAudio.currentTime = 0;
+      beadAudio.play().catch(() => { });
+    }
+
+    // Vibration
+    if (navigator.vibrate) navigator.vibrate(50);
 
     if (newCount >= 108) {
       newRounds += 1;
       setCount(0);
       setRounds(newRounds);
-      // Trigger vibration on mobile
+
+      // Round completion vibration
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      await api.post('/japa/round', { timestamp: new Date() });
+
+      try {
+        await api.post('/japa/round', { timestamp: new Date() });
+      } catch (e) {
+        console.error("Failed to sync round", e);
+      }
     } else {
       setCount(newCount);
-      if (navigator.vibrate) navigator.vibrate(50);
     }
-
-    // Debounce API call for individual beads usually, 
-    // but for simplicity we can sync periodically or just rely on local state + background sync.
-    // Here implies immediate round sync, local bead state.
   };
 
   const resetCounter = () => {
@@ -57,53 +65,76 @@ const JapaCounter = () => {
   };
 
   return (
-    <div className="japa-layout min-h-screen flex flex-col items-center justify-between pb-20 pt-6 bg-gradient-to-b from-yellow-50 via-white to-blue-50">
+    <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 animate-fadeIn">
 
       {/* Header Stats */}
-      <div className="w-full max-w-md px-6 grid grid-cols-2 gap-4">
-        <div className="stat-card bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500">
-          <p className="text-xs font-bold uppercase tracking-wider">Total Rounds</p>
-          <p className="text-3xl font-bold">{rounds}</p>
+      <div className="w-full max-w-md grid grid-cols-2 gap-4">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-secondary-500 flex flex-col items-center">
+          <span className="text-xs font-bold text-secondary-600 uppercase tracking-wider">Total Rounds</span>
+          <span className="text-4xl font-bold text-slate-800">{rounds}</span>
         </div>
-        <div className="stat-card bg-blue-100 text-blue-800 border-l-4 border-blue-500">
-          <p className="text-xs font-bold uppercase tracking-wider">Beads Today</p>
-          <p className="text-3xl font-bold">{(rounds * 108) + count}</p>
+        <div className="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-primary-500 flex flex-col items-center">
+          <span className="text-xs font-bold text-primary-600 uppercase tracking-wider">Beads Today</span>
+          <span className="text-4xl font-bold text-slate-800">{(rounds * 108) + count}</span>
         </div>
       </div>
 
-      {/* Main Bead Interaction */}
-      <div className="main-counter-wrapper w-72 h-72 relative mt-8 mb-8">
+      {/* Main Counter */}
+      <div className="relative w-80 h-80">
+        {/* Glow Effect */}
+        <div className="absolute inset-0 bg-secondary-400/20 rounded-full blur-3xl animate-pulse-slow"></div>
+
         <CircularProgressbarWithChildren
           value={count}
           maxValue={108}
-          strokeWidth={8}
+          strokeWidth={6}
           styles={buildStyles({
-            pathColor: `rgba(34, 197, 94, ${count / 108})`, // Green transitioning opacity
-            trailColor: '#e2e8f0',
-            pathTransitionDuration: 0.1,
+            pathColor: '#eab308', // Yellow-500
+            trailColor: '#f1f5f9', // Slate-100
+            pathTransitionDuration: 0.15,
+            strokeLinecap: 'round',
           })}
         >
-          {/* Central Tap Area */}
+          {/* Interactive Button */}
           <button
             onClick={handleChant}
-            className="bead-button w-56 h-56 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-500 shadow-inner flex flex-col items-center justify-center transform transition active:scale-95 focus:outline-none"
+            className="w-64 h-64 rounded-full bg-gradient-to-br from-secondary-400 to-secondary-600 shadow-[0_10px_40px_-10px_rgba(234,179,8,0.5)] flex flex-col items-center justify-center transform transition-all active:scale-95 hover:scale-105 focus:outline-none group relative overflow-hidden border-4 border-white"
           >
-            <span className="text-6xl font-bold text-white drop-shadow-md">{count}</span>
-            <span className="text-sm text-yellow-100 mt-2">/ 108</span>
-            <div className="absolute inset-0 rounded-full border-4 border-white opacity-30 pointer-events-none"></div>
+            {/* Shine Effect */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+            <span className="text-7xl font-bold text-white drop-shadow-lg font-heading">{count}</span>
+            <span className="text-secondary-100 font-medium mt-2">/ 108</span>
+            <span className="text-xs text-white/60 mt-4 uppercase tracking-widest">Tap to Chant</span>
           </button>
         </CircularProgressbarWithChildren>
       </div>
 
-      {/* Footer Controls */}
-      <div className="w-full max-w-md px-8 flex justify-between items-center">
-        <button onClick={resetCounter} className="text-gray-400 hover:text-red-500 font-medium text-sm transition">
-          Reset Round
+      {/* Controls */}
+      <div className="flex items-center gap-6">
+        <button
+          onClick={resetCounter}
+          className="p-4 rounded-full bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 shadow-sm transition-all"
+          title="Reset Round"
+        >
+          <FiRefreshCw size={24} />
         </button>
-        <div className="text-center">
-          <p className="text-gray-500 text-xs italic">Tap the yellow circle to chant</p>
-        </div>
+
+        <button
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          className={`p-4 rounded-full shadow-sm transition-all ${soundEnabled
+              ? 'bg-primary-100 text-primary-600 hover:bg-primary-200'
+              : 'bg-white text-slate-400 hover:bg-slate-50'
+            }`}
+          title="Toggle Sound"
+        >
+          {soundEnabled ? <FiVolume2 size={24} /> : <FiVolumeX size={24} />}
+        </button>
       </div>
+
+      <p className="text-slate-400 text-sm italic">
+        "Chant the Holy Name and be happy"
+      </p>
     </div>
   );
 };

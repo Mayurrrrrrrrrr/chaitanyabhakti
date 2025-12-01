@@ -3,8 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
-import './MainLayout.css';
-import { FiMenu } from 'react-icons/fi'; // Assuming react-icons is installed
+import { FiMenu } from 'react-icons/fi';
 
 const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(() => {
@@ -20,7 +19,7 @@ const MainLayout = () => {
     setMobileOpen(false); // Close mobile sidebar on route change
   }, [pathname]);
 
-  // Idle timer logic (kept from your original code)
+  // Idle timer logic
   const idleRef = useRef(null);
   const resetIdle = () => {
     if (idleRef.current) clearTimeout(idleRef.current);
@@ -53,7 +52,6 @@ const MainLayout = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  // Helper to get page title based on path (Simple version)
   const getPageTitle = () => {
     const path = pathname.split('/')[1];
     if (!path) return 'Dashboard';
@@ -61,7 +59,7 @@ const MainLayout = () => {
   };
 
   return (
-    <div className="main-layout">
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
       {/* Desktop Sidebar */}
       <Sidebar
         collapsed={collapsed}
@@ -70,28 +68,35 @@ const MainLayout = () => {
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      {/* Content Area */}
-      <div className={`content-wrapper ${collapsed ? 'expanded' : ''}`}>
+      {/* Content Wrapper */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
 
-        {/* Mobile Header (Visible only on mobile) */}
-        <header className="mobile-header">
-          <div className="mobile-logo-area">
-            {/* You can add a small logo here */}
-            <h3 className="app-title">{getPageTitle()}</h3>
+        {/* Mobile Header */}
+        <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between z-30 shadow-sm">
+          <div className="flex items-center gap-2">
+            <h3 className="font-heading font-bold text-lg text-primary-900 capitalize">
+              {getPageTitle()}
+            </h3>
           </div>
-          <button className="mobile-menu-btn" onClick={toggleMobileSidebar}>
-            {/* Could be used for a slide-out drawer or notifications */}
-            <FiMenu size={24} color="var(--text-color)" />
+          <button
+            className="p-2 text-primary-900 hover:bg-slate-100 rounded-lg"
+            onClick={toggleMobileSidebar}
+          >
+            <FiMenu size={24} />
           </button>
         </header>
 
-        {/* Main Page Content */}
-        <main className="main-content">
-          <Outlet />
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 scroll-smooth">
+          <div className="max-w-7xl mx-auto w-full">
+            <Outlet />
+          </div>
         </main>
 
         {/* Mobile Bottom Navigation */}
-        <BottomNav />
+        <div className="md:hidden">
+          <BottomNav />
+        </div>
       </div>
     </div>
   );
