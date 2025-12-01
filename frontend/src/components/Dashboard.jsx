@@ -1,138 +1,179 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
-import { useLanguage } from '../context/LanguageContext';
-import { FiActivity, FiWind, FiUsers, FiMusic, FiArrowRight } from 'react-icons/fi';
+import { FiSun, FiRepeat, FiWind, FiMusic, FiZap, FiTrendingUp } from 'react-icons/fi';
 
 const Dashboard = () => {
-  const { t } = useLanguage();
   const [stats, setStats] = useState({
-    japaCount: 0,
-    japaRounds: 0,
+    japaToday: 0,
+    japaStreak: 0,
     breatheMinutes: 0,
-    streak: 0
+    tasksCompleted: 0,
   });
-  const [quote, setQuote] = useState("Chant and be happy.");
+  const [quote, setQuote] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const spiritualQuotes = [
+    "Hare Krishna, Hare Krishna, Krishna Krishna, Hare Hare",
+    "The soul is neither born, and nor does it die - Bhagavad Gita",
+    "In the joy of others lies our own - Prabhupad",
+    "Chant and be happy",
+    "Love of God is dormant in everyone's heart",
+  ];
 
   useEffect(() => {
-    fetchRealtimeData();
-    const quotes = [
-      "Always remember Krishna, never forget Krishna.",
-      "Chant the Holy Name and be happy.",
-      "Service to humanity is service to God.",
-      "The soul is eternal, full of knowledge and bliss."
-    ];
-    setQuote(quotes[Math.floor(Math.random() * quotes.length)]);
+    fetchDashboardData();
+    setQuote(spiritualQuotes[Math.floor(Math.random() * spiritualQuotes.length)]);
   }, []);
 
-  const fetchRealtimeData = async () => {
+  const fetchDashboardData = async () => {
     try {
       const japaRes = await api.get('/japa/today');
-      setStats({
-        japaCount: japaRes.data?.count || 0,
-        japaRounds: japaRes.data?.rounds || 0,
-        breatheMinutes: 15, // Mock
-        streak: 5 // Mock
-      });
-    } catch (err) {
-      console.error("Dashboard sync error", err);
+      if (japaRes.data) {
+        setStats(prev => ({
+          ...prev,
+          japaToday: japaRes.data.rounds || 0,
+          japaStreak: japaRes.data.streak || 0,
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const cards = [
-    {
-      to: "/japa",
-      title: "Today's Japa",
-      value: `${stats.japaRounds} Rounds`,
-      subValue: `${(stats.japaRounds * 108) + stats.japaCount} Beads`,
-      icon: FiActivity,
-      color: "from-yellow-400 to-yellow-600",
-      textColor: "text-yellow-900",
-      bgLight: "bg-yellow-50"
-    },
-    {
-      to: "/breathe",
-      title: "Mindfulness",
-      value: `${stats.breatheMinutes} Mins`,
-      subValue: "Status: Calm",
-      icon: FiWind,
-      color: "from-green-400 to-green-600",
-      textColor: "text-green-900",
-      bgLight: "bg-green-50"
-    },
-    {
-      to: "/community",
-      title: "Streak",
-      value: `${stats.streak} Days`,
-      subValue: "Keep it up!",
-      icon: FiUsers,
-      color: "from-blue-400 to-blue-600",
-      textColor: "text-blue-900",
-      bgLight: "bg-blue-50"
-    },
-    {
-      to: "/satsang",
-      title: "Live Satsang",
-      value: "Join Now",
-      subValue: "Daily Wisdom",
-      icon: FiMusic,
-      color: "from-pink-400 to-pink-600",
-      textColor: "text-pink-900",
-      bgLight: "bg-pink-50"
-    }
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-saffron-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 animate-fadeIn">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary-900 to-primary-800 p-8 text-white shadow-xl">
-        <div className="relative z-10">
-          <h1 className="font-heading text-3xl md:text-4xl font-bold mb-2">
-            Hare Krishna, Devotee! 🙏
-          </h1>
-          <p className="text-primary-100 text-lg max-w-2xl italic">
-            "{quote}"
-          </p>
-        </div>
-        {/* Decorative Circles */}
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-40 h-40 rounded-full bg-secondary-500/20 blur-2xl"></div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-blue-50 to-pink-50 p-4 md:p-8">
+      {/* Background Decoration */}
+      <div className="fixed inset-0 opacity-5 bg-peacock bg-cover bg-center pointer-events-none"></div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {cards.map((card, index) => (
-          <Link
-            key={index}
-            to={card.to}
-            className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 hover:-translate-y-1"
-          >
-            <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity`}>
-              <card.icon size={80} className={card.textColor} />
-            </div>
+      <div className="relative max-w-7xl mx-auto">
+        {/* Bento Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-auto">
 
+          {/* Welcome Card - Spans 2 columns */}
+          <div className="md:col-span-2 lg:col-span-2 bg-gradient-to-br from-saffron-400 via-saffron-500 to-orange-600 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-lotus bg-cover bg-center opacity-10"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
             <div className="relative z-10">
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center text-white shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                <card.icon size={24} />
+              <div className="flex items-center gap-3 mb-4">
+                <FiSun className="text-white text-4xl animate-float" />
+                <h1 className="font-heading text-4xl md:text-5xl font-bold text-white">
+                  Hare Krishna! 🙏
+                </h1>
               </div>
-
-              <h3 className="text-slate-500 text-sm font-bold uppercase tracking-wider mb-1">{card.title}</h3>
-              <p className="text-2xl font-bold text-slate-800">{card.value}</p>
-              <p className={`text-sm font-medium mt-1 ${card.textColor.replace('900', '600')}`}>
-                {card.subValue}
+              <p className="text-white/90 text-lg md:text-xl italic font-light leading-relaxed">
+                "{quote}"
               </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium">
+                  ✨ Divine Day
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium">
+                  🌸 Vrindavan Vibes
+                </div>
+              </div>
             </div>
+          </div>
 
-            <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
-              <div className={`p-2 rounded-full ${card.bgLight} ${card.textColor}`}>
-                <FiArrowRight />
+          {/* Japa Card */}
+          <Link to="/japa" className="group">
+            <div className="h-full bg-white/70 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-saffron-400/20 to-orange-500/20 rounded-full blur-2xl"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-gradient-to-br from-saffron-400 to-orange-500 rounded-2xl shadow-lg">
+                    <FiRepeat className="text-white text-2xl" />
+                  </div>
+                  <FiTrendingUp className="text-saffron-500 text-xl" />
+                </div>
+                <h3 className="font-heading text-2xl font-bold text-gray-800 mb-2">Japa Rounds</h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-bold text-saffron-600">{stats.japaToday}</span>
+                  <span className="text-gray-500 text-lg">today</span>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-600">🔥 {stats.japaStreak} day streak</p>
+                </div>
               </div>
             </div>
           </Link>
-        ))}
-      </div>
 
-      {/* Recent Activity / Quick Actions Section could go here */}
+          {/* Breathe Card */}
+          <Link to="/breathe" className="group">
+            <div className="h-full bg-white/70 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-tulsi-400/20 to-krishna-500/20 rounded-full blur-2xl"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-gradient-to-br from-tulsi-500 to-krishna-500 rounded-2xl shadow-lg">
+                    <FiWind className="text-white text-2xl" />
+                  </div>
+                </div>
+                <h3 className="font-heading text-2xl font-bold text-gray-800 mb-2">Mindfulness</h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-bold text-tulsi-600">{stats.breatheMinutes}</span>
+                  <span className="text-gray-500 text-lg">mins</span>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-600">🧘 Breathe & Meditate</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Satsang Card */}
+          <Link to="/satsang" className="group">
+            <div className="h-full bg-white/70 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-lotus-400/20 to-pink-500/20 rounded-full blur-2xl"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-gradient-to-br from-lotus-500 to-pink-500 rounded-2xl shadow-lg">
+                    <FiMusic className="text-white text-2xl" />
+                  </div>
+                  <div className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">
+                    LIVE
+                  </div>
+                </div>
+                <h3 className="font-heading text-2xl font-bold text-gray-800 mb-2">Satsang</h3>
+                <p className="text-gray-600 text-sm">Daily spiritual discourse</p>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-sm text-lotus-600 font-medium">🎵 Watch Now →</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Streak Card */}
+          <div className="bg-white/70 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white/50 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-krishna-400/20 to-blue-500/20 rounded-full blur-2xl"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-krishna-500 to-blue-600 rounded-2xl shadow-lg">
+                  <FiZap className="text-white text-2xl" />
+                </div>
+              </div>
+              <h3 className="font-heading text-2xl font-bold text-gray-800 mb-2">Streak</h3>
+              <div className="flex items-baseline gap-2">
+                <span className="text-5xl font-bold text-krishna-600">{stats.japaStreak}</span>
+                <span className="text-gray-500 text-lg">days</span>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600">🌟 Keep it going!</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 };

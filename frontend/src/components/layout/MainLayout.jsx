@@ -1,65 +1,23 @@
-// frontend/src/components/layout/MainLayout.jsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
-import { FiMenu } from 'react-icons/fi';
 
 const MainLayout = () => {
-  const [collapsed, setCollapsed] = useState(() => {
-    const saved = localStorage.getItem('sidebarCollapsed');
-    return saved === 'true';
-  });
+  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
 
-  // Scroll to top on route change
-  const { pathname } = useLocation();
+  const toggleCollapse = () => setCollapsed(!collapsed);
+
+  // Close mobile sidebar on route change
   useEffect(() => {
+    setMobileOpen(false);
     window.scrollTo(0, 0);
-    setMobileOpen(false); // Close mobile sidebar on route change
-  }, [pathname]);
-
-  // Idle timer logic
-  const idleRef = useRef(null);
-  const resetIdle = () => {
-    if (idleRef.current) clearTimeout(idleRef.current);
-    idleRef.current = setTimeout(() => {
-      setCollapsed(true);
-      localStorage.setItem('sidebarCollapsed', 'true');
-    }, 30000);
-  };
-
-  useEffect(() => {
-    const handler = () => resetIdle();
-    window.addEventListener('mousemove', handler);
-    window.addEventListener('keydown', handler);
-    resetIdle();
-    return () => {
-      window.removeEventListener('mousemove', handler);
-      window.removeEventListener('keydown', handler);
-      if (idleRef.current) clearTimeout(idleRef.current);
-    };
-  }, []);
-
-  const toggleCollapse = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    localStorage.setItem('sidebarCollapsed', String(next));
-    resetIdle();
-  };
-
-  const toggleMobileSidebar = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
-  const getPageTitle = () => {
-    const path = pathname.split('/')[1];
-    if (!path) return 'Dashboard';
-    return path.charAt(0).toUpperCase() + path.slice(1);
-  };
+  }, [location.pathname]);
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-gradient-to-br from-orange-50 via-blue-50 to-pink-50 overflow-hidden font-sans">
       {/* Desktop Sidebar */}
       <Sidebar
         collapsed={collapsed}
@@ -72,25 +30,25 @@ const MainLayout = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
 
         {/* Mobile Header */}
-        <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between z-30 shadow-sm">
-          <div className="flex items-center gap-2">
-            <h3 className="font-heading font-bold text-lg text-primary-900 capitalize">
-              {getPageTitle()}
-            </h3>
-          </div>
+        <header className="md:hidden bg-gradient-to-r from-saffron-500 to-orange-600 border-b border-white/20 px-4 py-3 flex items-center justify-between z-30 shadow-lg">
           <button
-            className="p-2 text-primary-900 hover:bg-slate-100 rounded-lg"
-            onClick={toggleMobileSidebar}
+            onClick={() => setMobileOpen(true)}
+            className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
           >
-            <FiMenu size={24} />
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
           </button>
+          <div className="flex items-center gap-2">
+            <img src="/logo192.png" alt="Logo" className="w-8 h-8 drop-shadow-lg" />
+            <h1 className="font-heading text-xl font-bold text-white">Chaitanya Bhakti</h1>
+          </div>
+          <div className="w-10"></div> {/* Spacer for centering */}
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 scroll-smooth">
-          <div className="max-w-7xl mx-auto w-full">
-            <Outlet />
-          </div>
+        <main className="flex-1 overflow-y-auto scroll-smooth">
+          <Outlet />
         </main>
 
         {/* Mobile Bottom Navigation */}

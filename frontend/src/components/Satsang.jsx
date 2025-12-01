@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { useLanguage } from '../context/LanguageContext';
-import { FiYoutube, FiClock } from 'react-icons/fi';
+import { FiYoutube, FiClock, FiPlay } from 'react-icons/fi';
 
 const Satsang = () => {
-  const { t } = useLanguage();
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -14,9 +12,7 @@ const Satsang = () => {
 
   const fetchLatestSatsang = async () => {
     try {
-      // Add timestamp to prevent caching of old video data
       const res = await api.get(`/media/latest?t=${new Date().getTime()}`);
-      // Backend returns array, we find the youtube type
       const youtubeVideo = res.data.find(m => m.type === 'youtube');
       if (youtubeVideo) {
         setVideo(youtubeVideo);
@@ -28,12 +24,32 @@ const Satsang = () => {
     }
   };
 
+  // Convert YouTube URL to embed format
   const getEmbedUrl = (url) => {
     if (!url) return '';
-    // Regex to handle standard watch URLs, shortened youtu.be, and embed URLs
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    const videoId = (match && match[2].length === 11) ? match[2] : null;
+
+    // Handle various YouTube URL formats
+    let videoId = '';
+
+    // Format: https://www.youtube.com/watch?v=VIDEO_ID
+    if (url.includes('watch?v=')) {
+      const urlParams = new URLSearchParams(url.split('?')[1]);
+      videoId = urlParams.get('v');
+    }
+    // Format: https://youtu.be/VIDEO_ID
+    else if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1].split('?')[0];
+    }
+    // Format: https://www.youtube.com/embed/VIDEO_ID (already embed)
+    else if (url.includes('/embed/')) {
+      return url;
+    }
+    // Try regex as fallback
+    else {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const match = url.match(regExp);
+      videoId = (match && match[2].length === 11) ? match[2] : null;
+    }
 
     if (!videoId) return '';
     return `https://www.youtube.com/embed/${videoId}`;
@@ -41,77 +57,122 @@ const Satsang = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lotus-50 via-pink-50 to-purple-50">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-lotus-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
-      {/* Header Card */}
-      <div className="bg-gradient-to-r from-pink-500 to-rose-600 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-              <FiYoutube size={24} />
+    <div className="min-h-screen bg-gradient-to-br from-lotus-50 via-pink-50 to-purple-50 p-4 md:p-8 relative overflow-hidden">
+      {/* Background Decoration */}
+      <div className="absolute inset-0 bg-lotus bg-cover bg-center opacity-5"></div>
+      <div className="absolute top-10 right-10 w-64 h-64 bg-lotus-300/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-10 left-10 w-64 h-64 bg-pink-300/20 rounded-full blur-3xl"></div>
+
+      <div className="relative z-10 max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="bg-white/70 backdrop-blur-md rounded-3xl p-8 mb-8 shadow-xl border border-white/50 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-lotus-400/20 to-pink-500/20 rounded-full blur-2xl"></div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="p-3 bg-gradient-to-br from-lotus-500 to-pink-500 rounded-2xl shadow-lg">
+                <FiYoutube className="text-white text-3xl" />
+              </div>
+              <h1 className="font-heading text-4xl md:text-5xl font-bold text-gray-800">
+                Daily Satsang
+              </h1>
             </div>
-            <h2 className="font-heading text-2xl font-bold">Daily Satsang</h2>
+            <p className="text-gray-600 text-lg">
+              Connect with divine wisdom through our daily spiritual discourses
+            </p>
           </div>
-          <p className="text-pink-100 max-w-xl">
-            Connect with divine wisdom through our daily spiritual discourses.
-          </p>
         </div>
-        {/* Decor */}
-        <div className="absolute right-0 top-0 -mr-12 -mt-12 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
-      </div>
 
-      {/* Video Card */}
-      <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        {/* Video Section */}
         {video ? (
-          <div className="flex flex-col md:flex-row">
-            {/* Video Player */}
-            <div className="w-full md:w-2/3 bg-black aspect-video relative group">
-              <iframe
-                src={getEmbedUrl(video.url)}
-                title={video.title}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
-              ></iframe>
-            </div>
-
-            {/* Info Side */}
-            <div className="w-full md:w-1/3 p-6 flex flex-col justify-between bg-slate-50">
-              <div>
-                <div className="flex items-center gap-2 text-xs font-bold text-pink-600 uppercase tracking-wider mb-3">
-                  <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
-                  Latest Upload
-                </div>
-                <h3 className="font-heading text-xl font-bold text-slate-800 mb-3 line-clamp-3">
-                  {video.title}
-                </h3>
-                <p className="text-slate-500 text-sm leading-relaxed line-clamp-4">
-                  {video.description || "No description available."}
-                </p>
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10">
+            {/* Cinema-style backdrop */}
+            <div className="relative">
+              {/* Video Container */}
+              <div className="relative aspect-video bg-black">
+                <iframe
+                  src={getEmbedUrl(video.url)}
+                  title={video.title}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                ></iframe>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-slate-200 flex items-center gap-2 text-slate-400 text-xs">
-                <FiClock />
-                <span>Posted recently</span>
+              {/* Video Info Overlay */}
+              <div className="bg-gradient-to-t from-gray-900 via-gray-900/95 to-transparent p-8">
+                <div className="flex items-start gap-2 mb-3">
+                  <div className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse flex items-center gap-1">
+                    <FiPlay size={12} />
+                    LIVE
+                  </div>
+                  <div className="px-3 py-1 bg-white/10 backdrop-blur-sm text-white text-xs font-bold rounded-full">
+                    Latest Upload
+                  </div>
+                </div>
+
+                <h2 className="font-heading text-2xl md:text-3xl font-bold text-white mb-3 leading-tight">
+                  {video.title}
+                </h2>
+
+                {video.description && (
+                  <p className="text-gray-300 text-sm md:text-base leading-relaxed line-clamp-3 mb-4">
+                    {video.description}
+                  </p>
+                )}
+
+                <div className="flex items-center gap-4 text-gray-400 text-sm">
+                  <div className="flex items-center gap-2">
+                    <FiClock />
+                    <span>Posted recently</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FiYoutube />
+                    <span>YouTube</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="p-12 text-center">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-              <FiYoutube size={32} />
+          <div className="bg-white/70 backdrop-blur-md rounded-3xl p-16 text-center shadow-xl border border-white/50">
+            <div className="w-24 h-24 bg-gradient-to-br from-lotus-400 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <FiYoutube className="text-white text-5xl" />
             </div>
-            <h3 className="text-lg font-bold text-slate-700">No Satsang Available</h3>
-            <p className="text-slate-500 mt-2">Check back later for new spiritual content.</p>
+            <h3 className="font-heading text-2xl font-bold text-gray-800 mb-3">
+              No Satsang Available
+            </h3>
+            <p className="text-gray-600 text-lg">
+              Check back later for new spiritual content
+            </p>
           </div>
         )}
+
+        {/* Additional Info */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white/70 backdrop-blur-md rounded-2xl p-6 text-center shadow-lg border border-white/50">
+            <div className="text-4xl mb-3">🎵</div>
+            <h3 className="font-bold text-gray-800 mb-2">Kirtan</h3>
+            <p className="text-sm text-gray-600">Devotional songs and chanting</p>
+          </div>
+          <div className="bg-white/70 backdrop-blur-md rounded-2xl p-6 text-center shadow-lg border border-white/50">
+            <div className="text-4xl mb-3">📖</div>
+            <h3 className="font-bold text-gray-800 mb-2">Bhagavad Gita</h3>
+            <p className="text-sm text-gray-600">Scriptural wisdom and teachings</p>
+          </div>
+          <div className="bg-white/70 backdrop-blur-md rounded-2xl p-6 text-center shadow-lg border border-white/50">
+            <div className="text-4xl mb-3">🙏</div>
+            <h3 className="font-bold text-gray-800 mb-2">Q&A</h3>
+            <p className="text-sm text-gray-600">Spiritual guidance and answers</p>
+          </div>
+        </div>
       </div>
     </div>
   );
