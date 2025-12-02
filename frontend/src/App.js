@@ -6,6 +6,8 @@ import { AuthProvider, AuthContext } from './context/AuthContext'; // Correct pa
 // Page Imports
 import LoginPage from './pages/LoginPage';
 import Dashboard from './components/Dashboard';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Terms from './pages/Terms';
 
 // Layout & Component Imports
 import MainLayout from './components/layout/MainLayout';
@@ -86,6 +88,8 @@ function App() {
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="profile" element={<Profile />} />
             <Route path="events" element={<Events />} />
+            <Route path="privacy" element={<PrivacyPolicy />} />
+            <Route path="terms" element={<Terms />} />
           </Route>
 
           <Route

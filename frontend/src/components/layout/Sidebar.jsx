@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import {
   FiHome, FiRepeat, FiUsers, FiCalendar, FiUser,
-  FiBookOpen, FiMusic, FiSettings, FiLogOut, FiActivity, FiChevronsLeft, FiChevronsRight, FiWind, FiX
+  FiBookOpen, FiMusic, FiSettings, FiLogOut, FiActivity, FiChevronsLeft, FiChevronsRight, FiWind, FiX, FiShield, FiFileText
 } from 'react-icons/fi';
 
 const Sidebar = ({ collapsed, onToggleCollapse, mobileOpen, onMobileClose }) => {
@@ -25,9 +25,12 @@ const Sidebar = ({ collapsed, onToggleCollapse, mobileOpen, onMobileClose }) => 
     { to: "/library", icon: FiBookOpen, label: t('library'), color: "from-lotus-500 to-pink-600" },
     { to: "/satsang", icon: FiMusic, label: t('satsang'), color: "from-pink-500 to-purple-600" },
     { to: "/tasks", icon: FiActivity, label: t('tasks'), color: "from-orange-500 to-red-600" },
+    { to: "/medicines", icon: FiActivity, label: "Medicines", color: "from-blue-500 to-cyan-600" },
     { to: "/breathe", icon: FiWind, label: "Breathe", color: "from-tulsi-500 to-krishna-500" },
     ...(user?.is_super_admin ? [{ to: "/admin", icon: FiUser, label: "Admin", color: "from-gray-600 to-gray-800" }] : []),
     { to: "/profile", icon: FiSettings, label: t('profile'), color: "from-gray-500 to-gray-700" },
+    { to: "/privacy", icon: FiShield, label: "Privacy Policy", color: "from-gray-400 to-gray-600" },
+    { to: "/terms", icon: FiFileText, label: "Terms", color: "from-gray-400 to-gray-600" },
   ];
 
   return (

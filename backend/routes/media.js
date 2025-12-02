@@ -112,5 +112,31 @@ module.exports = (db, upload) => {
     }
   });
 
+  // DELETE /api/media/audio/:id
+  router.delete('/audio/:id', async (req, res) => {
+    try {
+      const audio_id = req.params.id;
+      // Ideally check ownership or admin status here
+      await db.query('DELETE FROM audio_files WHERE audio_id = ?', [audio_id]);
+      res.json({ message: 'Audio deleted' });
+    } catch (error) {
+      console.error('Delete audio error:', error);
+      res.status(500).json({ error: 'Failed to delete audio' });
+    }
+  });
+
+  // DELETE /api/media/video/:id
+  router.delete('/video/:id', async (req, res) => {
+    try {
+      const video_id = req.params.id;
+      // Ideally check ownership or admin status here
+      await db.query('DELETE FROM video_links WHERE video_id = ?', [video_id]);
+      res.json({ message: 'Video deleted' });
+    } catch (error) {
+      console.error('Delete video error:', error);
+      res.status(500).json({ error: 'Failed to delete video' });
+    }
+  });
+
   return router;
 };

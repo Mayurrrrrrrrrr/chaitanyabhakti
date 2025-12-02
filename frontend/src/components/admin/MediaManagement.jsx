@@ -1,5 +1,5 @@
 // frontend/src/components/admin/MediaManagement.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
 import './AdminForms.css';
 
@@ -13,9 +13,43 @@ const MediaManagement = () => {
 
   const [message, setMessage] = useState({ text: '', type: '' });
   const [loading, setLoading] = useState(false);
+  const [mediaList, setMediaList] = useState({ videos: [], audio: [] });
 
   // Helper to reset file input
-  const fileInputRef = React.useRef();
+  const fileInputRef = useRef();
+
+  // Fetch media list on mount
+  useEffect(() => {
+    fetchMedia();
+  }, []);
+
+  const fetchMedia = async () => {
+    try {
+      const [videosRes, audioRes] = await Promise.all([
+        api.get('/media/videos'),
+        api.get('/media/audio')
+      ]);
+      setMediaList({
+        videos: videosRes.data || [],
+        audio: audioRes.data || []
+      });
+    } catch (err) {
+      console.error('Failed to fetch media:', err);
+    }
+  };
+
+  const handleDelete = async (type, id) => {
+    if (!window.confirm('Are you sure you want to delete this item?')) return;
+
+    try {
+      await api.delete(`/media/${type}/${id}`);
+      setMessage({ text: 'Item deleted successfully', type: 'success' });
+      fetchMedia();
+    } catch (err) {
+      console.error('Delete error:', err);
+      setMessage({ text: 'Failed to delete item', type: 'error' });
+    }
+  };
 
   // Handle submitting a new video link
   const handleVideoSubmit = async (e) => {
@@ -28,16 +62,16 @@ const MediaManagement = () => {
         title: videoTitle,
         video_url: videoUrl,
         description: videoDescription,
-        is_public: 1, // Default to public
+        is_public: 1,
         category: 'satsang'
       };
-      // Backend: router.post('/video') mounted at /api/media
       await api.post('/media/video', videoData);
 
       setMessage({ text: 'Video added successfully!', type: 'success' });
       setVideoTitle('');
       setVideoUrl('');
       setVideoDescription('');
+      fetchMedia();
     } catch (err) {
       console.error('Failed to add video:', err);
       setMessage({ text: err.response?.data?.error || 'Error adding video.', type: 'error' });
@@ -61,10 +95,9 @@ const MediaManagement = () => {
     formData.append('title', audioTitle);
     formData.append('audio_file', audioFile);
     formData.append('is_public', 1);
-    formData.append('category', 'kirtan'); // Default category
+    formData.append('category', 'kirtan');
 
     try {
-      // Backend: router.post('/audio') mounted at /api/media
       await api.post('/media/audio', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -75,6 +108,7 @@ const MediaManagement = () => {
       setAudioTitle('');
       setAudioFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      fetchMedia();
     } catch (err) {
       console.error('Failed to upload audio:', err);
       setMessage({ text: err.response?.data?.error || 'Error uploading audio.', type: 'error' });
@@ -93,7 +127,7 @@ const MediaManagement = () => {
         </p>
       )}
 
-      {/* --- Add Video Form --- */}
+      {/* Add Video Form */}
       <form onSubmit={handleVideoSubmit} className="admin-form">
         <h3>Add YouTube Video</h3>
         <div className="form-group">
@@ -134,7 +168,7 @@ const MediaManagement = () => {
 
       <hr className="divider" />
 
-      {/* --- Upload Audio Form --- */}
+      {/* Upload Audio Form */}
       <form onSubmit={handleAudioSubmit} className="admin-form">
         <h3>Upload Audio File</h3>
         <div className="form-group">
@@ -163,6 +197,79 @@ const MediaManagement = () => {
           {loading ? 'Uploading...' : 'Upload Audio'}
         </button>
       </form>
+
+      <hr className="divider" />
+
+      {/* Media List */}
+      <div className="admin-list">
+        <h3>Existing Media</h3>
+
+        <div className="media-section">
+          <h4>Videos</h4>
+          {mediaList.videos.length === 0 ? (
+            <p>No videos found.</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>URL</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mediaList.videos.map(v => (
+                  <tr key={v.video_id || v.media_id}>
+                    <td>{v.title}</td>
+                    <td className="truncate-cell">{v.youtube_url || v.video_url}</td>
+                    <td>
+                      <button
+                        className="btn-delete"
+                        onClick={() => handleDelete('video', v.video_id || v.media_id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="media-section mt-8">
+          <h4>Audio</h4>
+          {mediaList.audio.length === 0 ? (
+            <p>No audio files found.</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mediaList.audio.map(a => (
+                  <tr key={a.audio_id || a.media_id}>
+                    <td>{a.title}</td>
+                    <td>{a.category}</td>
+                    <td>
+                      <button
+                        className="btn-delete"
+                        onClick={() => handleDelete('audio', a.audio_id || a.media_id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

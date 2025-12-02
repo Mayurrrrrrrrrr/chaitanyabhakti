@@ -28,14 +28,17 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const japaRes = await api.get('/japa/today');
-      if (japaRes.data) {
-        setStats(prev => ({
-          ...prev,
-          japaToday: japaRes.data.rounds || 0,
-          japaStreak: japaRes.data.streak || 0,
-        }));
-      }
+      const [japaRes, breatheRes] = await Promise.all([
+        api.get('/japa/today').catch(() => ({ data: { rounds: 0, streak: 0 } })),
+        api.get('/breathe/today').catch(() => ({ data: { minutes: 0 } }))
+      ]);
+
+      setStats(prev => ({
+        ...prev,
+        japaToday: japaRes.data.rounds || 0,
+        japaStreak: japaRes.data.streak || 0,
+        breatheMinutes: breatheRes.data.minutes || 0,
+      }));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {

@@ -40,5 +40,26 @@ module.exports = (db) => {
         }
     });
 
+    // GET /api/breathe/today (Get today's total minutes)
+    router.get('/today', async (req, res) => {
+        try {
+            const user_id = req.user.id;
+            const today = new Date().toISOString().split('T')[0];
+
+            const [result] = await db.query(
+                'SELECT SUM(duration_seconds) as total_seconds FROM breath_records WHERE user_id = ? AND DATE(completed_at) = ?',
+                [user_id, today]
+            );
+
+            const totalSeconds = result[0].total_seconds || 0;
+            const minutes = Math.round(totalSeconds / 60);
+
+            res.json({ minutes });
+        } catch (error) {
+            console.error('Get today breathe stats error:', error);
+            res.status(500).json({ error: 'Failed to fetch today stats' });
+        }
+    });
+
     return router;
 };

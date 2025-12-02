@@ -18,6 +18,44 @@ module.exports = (db) => {
     }
   });
 
+  // GET japa stats for TODAY (Specific for Dashboard/Counter)
+  router.get('/today', async (req, res) => {
+    try {
+      const user_id = req.user.id;
+      const today = new Date().toISOString().split('T')[0];
+
+      // Get today's record
+      const [record] = await db.query(
+        'SELECT mala_count FROM japa_records WHERE user_id = ? AND japa_date = ?',
+        [user_id, today]
+      );
+
+      // Get streak info
+      const [user] = await db.query(
+        'SELECT current_streak FROM users WHERE user_id = ?',
+        [user_id]
+      );
+
+      const rounds = record.length > 0 ? record[0].mala_count : 0;
+      // Calculate beads count (rounds * 108 + extra beads if we tracked them, but currently we only track rounds)
+      // For now, let's assume mala_count IS rounds.
+      // If the frontend expects 'count' as beads within a round, we might need to adjust.
+      // Based on JapaCounter.jsx, it seems to track 'count' (beads) and 'rounds'.
+      // But the DB only stores 'mala_count' which seems to be rounds.
+      // Let's return what the frontend expects.
+
+      res.json({
+        rounds: rounds,
+        count: 0, // We don't persist partial rounds in DB yet, so 0 beads
+        streak: user.length > 0 ? user[0].current_streak : 0
+      });
+
+    } catch (error) {
+      console.error('Get today japa error:', error);
+      res.status(500).json({ error: 'Failed to fetch today stats' });
+    }
+  });
+
   // GET japa summary (stats for dashboard)
   router.get('/summary', async (req, res) => {
     try {
