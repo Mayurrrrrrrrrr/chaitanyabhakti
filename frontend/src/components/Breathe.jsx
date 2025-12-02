@@ -8,10 +8,12 @@ const Breathe = () => {
   const [totalTime, setTotalTime] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [selectedSound, setSelectedSound] = useState('ocean');
+  const [showSoundMenu, setShowSoundMenu] = useState(false);
 
   const phaseTimerRef = useRef(null);
   const audioContextRef = useRef(null);
-  const whiteNoiseNodeRef = useRef(null);
+  const soundNodeRef = useRef(null);
 
   const TIMINGS = {
     inhale: 4000,
@@ -20,14 +22,37 @@ const Breathe = () => {
     holdEmpty: 2000,
   };
 
+  const SOUND_OPTIONS = [
+    { id: 'ocean', name: '🌊 Ocean Waves', description: 'Calming ocean sounds' },
+    { id: 'forest', name: '🌳 Forest', description: 'Birds and rustling leaves' },
+    { id: 'rain', name: '🌧️ Rain', description: 'Gentle rainfall' },
+    { id: 'white', name: '⚪ White Noise', description: 'Pure white noise' },
+    { id: 'pink', name: '🎵 Pink Noise', description: 'Deeper, softer noise' },
+    { id: 'brown', name: '🟤 Brown Noise', description: 'Deep rumbling sound' }
+  ];
+
+  const VOICE_INSTRUCTIONS = {
+    en: {
+      inhale: 'Breathe in slowly',
+      hold: 'Hold',
+      exhale: 'Breathe out slowly'
+    },
+    hi: {
+      inhale: 'धीरे से सांस लें',
+      hold: 'रुकें',
+      exhale: 'धीरे से सांस छोड़ें'
+    }
+  };
+
+  const [voiceLanguage, setVoiceLanguage] = useState('hi');
+
   useEffect(() => {
-    // Initialize audio context
     if (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)) {
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
     }
 
     return () => {
-      stopNaturalSound();
+      stopSound();
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
@@ -48,13 +73,13 @@ const Breathe = () => {
     if (isActive) {
       runBreathingCycle();
       if (soundEnabled) {
-        startNaturalSound();
+        startSound(selectedSound);
       }
     } else {
       if (phaseTimerRef.current) {
         clearTimeout(phaseTimerRef.current);
       }
-      stopNaturalSound();
+      stopSound();
     }
     return () => {
       if (phaseTimerRef.current) {
@@ -65,133 +90,198 @@ const Breathe = () => {
 
   useEffect(() => {
     if (isActive) {
+      stopSound();
       if (soundEnabled) {
-        startNaturalSound();
-      } else {
-        stopNaturalSound();
+        startSound(selectedSound);
       }
     }
-  }, [soundEnabled]);
+  }, [selectedSound, soundEnabled]);
 
-  const startNaturalSound = async () => {
-    if (!audioContextRef.current || whiteNoiseNodeRef.current) return;
+  const generateOceanSound = (audioContext) => {
+    const bufferSize = 2 * audioContext.sampleRate;
+    const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+      output[i] *= 0.11;
+      b6 = white * 0.115926;
+    }
+
+    return noiseBuffer;
+  };
+
+  const generateWhiteNoise = (audioContext) => {
+    const bufferSize = 2 * audioContext.sampleRate;
+    const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+
+    return noiseBuffer;
+  };
+
+  const generatePinkNoise = (audioContext) => {
+    return generateOceanSound(audioContext);
+  };
+
+  const generateBrownNoise = (audioContext) => {
+    const bufferSize = 2 * audioContext.sampleRate;
+    const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+
+    let lastOut = 0.0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      output[i] = (lastOut + (0.02 * white)) / 1.02;
+      lastOut = output[i];
+      output[i] *= 3.5;
+    }
+
+    return noiseBuffer;
+  };
+
+  const startSound = async (soundType) => {
+    if (!audioContextRef.current || soundNodeRef.current) return;
 
     try {
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
 
-      const bufferSize = 2 * audioContextRef.current.sampleRate;
-      const noiseBuffer = audioContextRef.current.createBuffer(1, bufferSize, audioContextRef.current.sampleRate);
-      const output = noiseBuffer.getChannelData(0);
+      let noiseBuffer;
+      let filterFreq = 800;
 
-      // Generate pink noise (more natural than white noise)
-      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-      for (let i = 0; i < bufferSize; i++) {
-        const white = Math.random() * 2 - 1;
-        b0 = 0.99886 * b0 + white * 0.0555179;
-        b1 = 0.99332 * b1 + white * 0.0750759;
-        b2 = 0.96900 * b2 + white * 0.1538520;
-        b3 = 0.86650 * b3 + white * 0.3104856;
-        b4 = 0.55000 * b4 + white * 0.5329522;
-        b5 = -0.7616 * b5 - white * 0.0168980;
-        output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-        output[i] *= 0.11; // Reduce volume
-        b6 = white * 0.115926;
+      switch (soundType) {
+        case 'ocean':
+          noiseBuffer = generateOceanSound(audioContextRef.current);
+          filterFreq = 800;
+          break;
+        case 'forest':
+          noiseBuffer = generatePinkNoise(audioContextRef.current);
+          filterFreq = 1200;
+          break;
+        case 'rain':
+          noiseBuffer = generateWhiteNoise(audioContextRef.current);
+          filterFreq = 600;
+          break;
+        case 'white':
+          noiseBuffer = generateWhiteNoise(audioContextRef.current);
+          filterFreq = 20000;
+          break;
+        case 'pink':
+          noiseBuffer = generatePinkNoise(audioContextRef.current);
+          filterFreq = 1000;
+          break;
+        case 'brown':
+          noiseBuffer = generateBrownNoise(audioContextRef.current);
+          filterFreq = 500;
+          break;
+        default:
+          noiseBuffer = generateOceanSound(audioContextRef.current);
       }
 
-      // Create buffer source
-      const whiteNoise = audioContextRef.current.createBufferSource();
-      whiteNoise.buffer = noiseBuffer;
-      whiteNoise.loop = true;
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = noiseBuffer;
+      source.loop = true;
 
-      // Create low-pass filter for ocean wave effect
       const filter = audioContextRef.current.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.value = 800; // Ocean-like frequency
+      filter.frequency.value = filterFreq;
 
-      // Create gain node
       const gainNode = audioContextRef.current.createGain();
-      gainNode.gain.setValueAtTime(0.3, audioContextRef.current.currentTime);
+      gainNode.gain.setValueAtTime(0.2, audioContextRef.current.currentTime);
 
-      // Create LFO for wave-like modulation
       const lfo = audioContextRef.current.createOscillator();
-      lfo.frequency.value = 0.2; // Slow wave motion
+      lfo.frequency.value = 0.2;
       const lfoGain = audioContextRef.current.createGain();
-      lfoGain.gain.value = 200; // Modulation depth
+      lfoGain.gain.value = 200;
 
-      // Connect nodes
-      whiteNoise.connect(filter);
+      source.connect(filter);
       filter.connect(gainNode);
       gainNode.connect(audioContextRef.current.destination);
 
       lfo.connect(lfoGain);
       lfoGain.connect(filter.frequency);
 
-      // Start playback
-      whiteNoise.start();
+      source.start();
       lfo.start();
 
-      whiteNoiseNodeRef.current = { whiteNoise, filter, gainNode, lfo, lfoGain };
-
-      console.log('Natural ocean sound started');
+      soundNodeRef.current = { source, filter, gainNode, lfo, lfoGain };
     } catch (error) {
       console.error('Audio start error:', error);
     }
   };
 
-  const stopNaturalSound = () => {
+  const stopSound = () => {
     try {
-      if (whiteNoiseNodeRef.current) {
-        whiteNoiseNodeRef.current.whiteNoise.stop();
-        whiteNoiseNodeRef.current.lfo.stop();
-        whiteNoiseNodeRef.current.whiteNoise.disconnect();
-        whiteNoiseNodeRef.current.filter.disconnect();
-        whiteNoiseNodeRef.current.gainNode.disconnect();
-        whiteNoiseNodeRef.current.lfo.disconnect();
-        whiteNoiseNodeRef.current.lfoGain.disconnect();
-        whiteNoiseNodeRef.current = null;
-        console.log('Natural sound stopped');
+      if (soundNodeRef.current) {
+        soundNodeRef.current.source.stop();
+        soundNodeRef.current.lfo.stop();
+        soundNodeRef.current.source.disconnect();
+        soundNodeRef.current.filter.disconnect();
+        soundNodeRef.current.gainNode.disconnect();
+        soundNodeRef.current.lfo.disconnect();
+        soundNodeRef.current.lfoGain.disconnect();
+        soundNodeRef.current = null;
       }
     } catch (error) {
       console.error('Stop audio error:', error);
     }
   };
 
-  const speakInstruction = (text) => {
+  const speakInstruction = (phase) => {
     if (!voiceEnabled || !window.speechSynthesis) return;
 
     window.speechSynthesis.cancel();
 
+    const text = VOICE_INSTRUCTIONS[voiceLanguage][phase];
+    if (!text) return;
+
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.8;
-    utterance.pitch = 1;
-    utterance.volume = 0.9;
+    utterance.rate = 0.65; // Even slower for calmness
+    utterance.pitch = 0.9; // Lower pitch for soothing effect
+    utterance.volume = 0.6; // Quieter volume
 
     const voices = window.speechSynthesis.getVoices();
-    const calmVoice = voices.find(voice =>
-      voice.name.includes('Female') || voice.name.includes('Samantha')
-    );
-    if (calmVoice) utterance.voice = calmVoice;
+    if (voiceLanguage === 'hi') {
+      const hindiVoice = voices.find(voice => voice.lang.includes('hi'));
+      if (hindiVoice) utterance.voice = hindiVoice;
+    } else {
+      const calmVoice = voices.find(voice =>
+        voice.name.includes('Female') || voice.name.includes('Samantha')
+      );
+      if (calmVoice) utterance.voice = calmVoice;
+    }
 
     window.speechSynthesis.speak(utterance);
   };
 
   const runBreathingCycle = () => {
     setPhase('inhale');
-    speakInstruction('Breathe in slowly');
+    speakInstruction('inhale');
 
     phaseTimerRef.current = setTimeout(() => {
       setPhase('hold');
-      speakInstruction('Hold');
+      speakInstruction('hold');
 
       phaseTimerRef.current = setTimeout(() => {
         setPhase('exhale');
-        speakInstruction('Breathe out slowly');
+        speakInstruction('exhale');
 
         phaseTimerRef.current = setTimeout(() => {
           setPhase('holdEmpty');
-          speakInstruction('Hold');
+          speakInstruction('hold');
 
           phaseTimerRef.current = setTimeout(() => {
             setCycleCount(prev => prev + 1);
@@ -209,7 +299,7 @@ const Breathe = () => {
       setIsActive(false);
       setPhase('ready');
       window.speechSynthesis.cancel();
-      stopNaturalSound();
+      stopSound();
     } else {
       if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
@@ -224,17 +314,27 @@ const Breathe = () => {
     setCycleCount(0);
     setTotalTime(0);
     window.speechSynthesis.cancel();
-    stopNaturalSound();
+    stopSound();
   };
 
   const getPhaseText = () => {
-    switch (phase) {
-      case 'inhale': return 'Breathe In';
-      case 'hold': return 'Hold';
-      case 'exhale': return 'Breathe Out';
-      case 'holdEmpty': return 'Hold';
-      default: return 'Ready';
-    }
+    const texts = {
+      hi: {
+        inhale: 'सांस लें',
+        hold: 'रुकें',
+        exhale: 'सांस छोड़ें',
+        holdEmpty: 'रुकें',
+        ready: 'तैयार'
+      },
+      en: {
+        inhale: 'Breathe In',
+        hold: 'Hold',
+        exhale: 'Breathe Out',
+        holdEmpty: 'Hold',
+        ready: 'Ready'
+      }
+    };
+    return texts[voiceLanguage][phase] || texts.en[phase];
   };
 
   const getCircleScale = () => {
@@ -266,7 +366,7 @@ const Breathe = () => {
             Mindful Breathing
           </h1>
           <p className="text-gray-600 text-lg">
-            4-4-4-2 Technique with Ocean Sounds 🌊
+            4-4-4-2 Technique with Ambient Sounds
           </p>
         </div>
 
@@ -324,17 +424,7 @@ const Breathe = () => {
               }
             `}
           >
-            {isActive ? (
-              <>
-                <FiPause size={24} />
-                Pause
-              </>
-            ) : (
-              <>
-                <FiPlay size={24} />
-                Start
-              </>
-            )}
+            {isActive ? <><FiPause size={24} />Pause</> : <><FiPlay size={24} />Start</>}
           </button>
 
           <button
@@ -346,21 +436,54 @@ const Breathe = () => {
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`
-              flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all shadow-lg
-              ${soundEnabled
-                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}
-            `}
-          >
-            {soundEnabled ? <FiVolume2 size={20} /> : <FiVolumeX size={20} />}
-            <span className="font-bold">
-              {soundEnabled ? '🌊 Ocean Sound ON' : 'Sound OFF'}
-            </span>
-          </button>
+        <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
+          <div className="relative">
+            <button
+              onClick={() => setShowSoundMenu(!showSoundMenu)}
+              className={`
+                flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all shadow-lg
+                ${soundEnabled
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}
+              `}
+            >
+              {soundEnabled ? <FiVolume2 size={20} /> : <FiVolumeX size={20} />}
+              <span className="font-bold">
+                {soundEnabled ? SOUND_OPTIONS.find(s => s.id === selectedSound)?.name : 'Sound OFF'}
+              </span>
+            </button>
+
+            {showSoundMenu && (
+              <div className="absolute top-full mt-2 bg-white rounded-xl shadow-xl p-2 min-w-[250px] z-50">
+                {SOUND_OPTIONS.map(sound => (
+                  <button
+                    key={sound.id}
+                    onClick={() => {
+                      setSelectedSound(sound.id);
+                      setSoundEnabled(true);
+                      setShowSoundMenu(false);
+                    }}
+                    className={`
+                      w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors
+                      ${selectedSound === sound.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}
+                    `}
+                  >
+                    <div className="font-bold">{sound.name}</div>
+                    <div className="text-xs text-gray-500">{sound.description}</div>
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    setSoundEnabled(false);
+                    setShowSoundMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-red-600"
+                >
+                  <div className="font-bold">🔇 Turn Off Sound</div>
+                </button>
+              </div>
+            )}
+          </div>
 
           <button
             onClick={() => setVoiceEnabled(!voiceEnabled)}
@@ -376,6 +499,15 @@ const Breathe = () => {
               {voiceEnabled ? '🗣️ Voice ON' : 'Voice OFF'}
             </span>
           </button>
+
+          <select
+            value={voiceLanguage}
+            onChange={(e) => setVoiceLanguage(e.target.value)}
+            className="px-4 py-3 bg-white rounded-xl shadow-lg font-medium text-gray-700 border-2 border-gray-200 focus:border-purple-500 outline-none"
+          >
+            <option value="hi">हिंदी (Hindi)</option>
+            <option value="en">English</option>
+          </select>
         </div>
 
         <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-6 border border-white/50">
@@ -398,11 +530,6 @@ const Breathe = () => {
               <span><strong>Hold Empty</strong> for 2 seconds</span>
             </li>
           </ul>
-          <div className="mt-4 pt-4 border-t border-gray-300">
-            <p className="text-sm text-gray-600">
-              <strong>🌊 Background Sound:</strong> Natural ocean wave sounds for relaxation
-            </p>
-          </div>
         </div>
       </div>
     </div>

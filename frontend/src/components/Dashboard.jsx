@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
-import { FiRepeat, FiWind, FiMusic, FiZap, FiSun, FiHeart, FiTrendingUp } from 'react-icons/fi';
+import { FiRepeat, FiWind, FiMusic, FiZap, FiSun, FiHeart, FiTrendingUp, FiCheckCircle, FiCircle, FiCalendar } from 'react-icons/fi';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -12,6 +12,8 @@ const Dashboard = () => {
     breatheSessions: 0,
     tasksCompleted: 0,
   });
+  const [tasks, setTasks] = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [quote, setQuote] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -35,8 +37,6 @@ const Dashboard = () => {
       // Fetch Japa Stats
       try {
         const japaRes = await api.get('/japa/today');
-        console.log('Japa Response:', japaRes.data);
-
         if (japaRes.data) {
           setStats(prev => ({
             ...prev,
@@ -52,8 +52,6 @@ const Dashboard = () => {
       // Fetch Breathe Stats
       try {
         const breatheRes = await api.get('/breathe/stats');
-        console.log('Breathe Response:', breatheRes.data);
-
         if (breatheRes.data) {
           setStats(prev => ({
             ...prev,
@@ -65,25 +63,41 @@ const Dashboard = () => {
         console.error('Breathe fetch error:', breatheErr);
       }
 
-      // Fetch Tasks Stats
+      // Fetch Pending Tasks
       try {
-        const tasksRes = await api.get('/tasks/stats');
-        console.log('Tasks Response:', tasksRes.data);
-
-        if (tasksRes.data) {
-          setStats(prev => ({
-            ...prev,
-            tasksCompleted: tasksRes.data.completed_today || tasksRes.data.completed || 0,
-          }));
-        }
+        const tasksRes = await api.get('/tasks');
+        const pendingTasks = (tasksRes.data || []).filter(t => !t.is_completed).slice(0, 5);
+        setTasks(pendingTasks);
       } catch (tasksErr) {
         console.error('Tasks fetch error:', tasksErr);
+      }
+
+      // Fetch Upcoming Events
+      try {
+        const eventsRes = await api.get('/events');
+        const today = new Date();
+        const upcoming = (eventsRes.data || [])
+          .filter(e => new Date(e.start_date) >= today)
+          .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
+          .slice(0, 5);
+        setUpcomingEvents(upcoming);
+      } catch (eventsErr) {
+        console.error('Events fetch error:', eventsErr);
       }
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleTask = async (task) => {
+    try {
+      await api.put(`/tasks/${task.task_id}`, { is_completed: !task.is_completed });
+      fetchDashboardData();
+    } catch (err) {
+      console.error('Toggle task error:', err);
     }
   };
 
@@ -99,7 +113,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
+    <div className="min-h-screen p-4 md:p-8 bg-gradient-to-br from-orange-50 via-blue-50 to-pink-50">
       <div className="max-w-7xl mx-auto">
         {/* Welcome Card */}
         <div className="mb-8 bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400 rounded-3xl p-8 shadow-xl relative overflow-hidden">
@@ -126,7 +140,6 @@ const Dashboard = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Japa Card */}
           <Link to="/japa" className="group">
             <div className="h-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 border-yellow-200">
               <div className="flex items-center justify-between mb-4">
@@ -141,12 +154,10 @@ const Dashboard = () => {
               </div>
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <p className="text-sm text-gray-600">🔥 {stats.japaStreak} day streak</p>
-                <p className="text-xs text-gray-500 mt-1">Total: {stats.totalJapa} rounds</p>
               </div>
             </div>
           </Link>
 
-          {/* Breathe Card */}
           <Link to="/breathe" className="group">
             <div className="h-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 border-green-200">
               <div className="flex items-center justify-between mb-4">
@@ -165,15 +176,11 @@ const Dashboard = () => {
             </div>
           </Link>
 
-          {/* Satsang Card */}
           <Link to="/satsang" className="group">
             <div className="h-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 border-blue-200">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-blue-100 rounded-xl">
                   <FiMusic className="text-blue-600 text-2xl" />
-                </div>
-                <div className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">
-                  LIVE
                 </div>
               </div>
               <h3 className="font-heading text-xl font-bold text-gray-800 mb-2">Satsang</h3>
@@ -184,7 +191,6 @@ const Dashboard = () => {
             </div>
           </Link>
 
-          {/* Streak Card */}
           <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-purple-200">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-purple-100 rounded-xl">
@@ -199,6 +205,83 @@ const Dashboard = () => {
             <div className="mt-4 pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600">🌟 Keep it going!</p>
             </div>
+          </div>
+        </div>
+
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Pending Tasks */}
+          <div className="bg-white rounded-2xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-heading text-2xl font-bold text-gray-800">Pending Seva</h2>
+              <Link to="/tasks" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+                View All →
+              </Link>
+            </div>
+            {tasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No pending tasks</p>
+                <Link to="/tasks" className="text-blue-600 text-sm mt-2 inline-block">Create a task →</Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {tasks.map(task => (
+                  <div key={task.task_id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                    <button
+                      onClick={() => toggleTask(task)}
+                      className="text-gray-400 hover:text-green-600 transition-colors"
+                    >
+                      {task.is_completed ? <FiCheckCircle size={24} /> : <FiCircle size={24} />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{task.description}</p>
+                      {task.task_type && (
+                        <span className="text-xs text-gray-500">{task.task_type}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Upcoming Events */}
+          <div className="bg-white rounded-2xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-heading text-2xl font-bold text-gray-800">Upcoming Events</h2>
+              <Link to="/calendar" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+                View Calendar →
+              </Link>
+            </div>
+            {upcomingEvents.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <FiCalendar className="mx-auto text-4xl mb-2 opacity-50" />
+                <p>No upcoming events</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {upcomingEvents.map(event => (
+                  <div key={event.event_id} className="flex items-start gap-3 p-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-100">
+                    <div className="p-2 bg-white rounded-lg shadow-sm">
+                      <FiCalendar className="text-orange-600" size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-800">{event.title}</p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {new Date(event.start_date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </p>
+                      {event.description && (
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{event.description}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
