@@ -47,16 +47,16 @@ const Sidebar = ({ collapsed, onToggleCollapse, mobileOpen, onMobileClose }) => 
       <aside
         className={`
           fixed md:static top-0 left-0 z-50 h-screen 
-          bg-gradient-to-b from-saffron-600 via-orange-600 to-orange-700
+          bg-gradient-to-b from-green-600 via-blue-600 to-yellow-600
           text-white transition-all duration-300 ease-in-out shadow-2xl
           ${collapsed ? 'w-20' : 'w-72'}
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           flex flex-col
-          border-r-4 border-saffron-400/30
+          border-r-4 border-green-400/30
         `}
       >
         {/* Decorative Background */}
-        <div className="absolute inset-0 bg-peacock bg-cover bg-center opacity-5"></div>
+        <div className="absolute inset-0 bg-white/5"></div>
 
         {/* Header */}
         <div className="relative flex items-center justify-between p-6 border-b border-white/20">
@@ -84,7 +84,7 @@ const Sidebar = ({ collapsed, onToggleCollapse, mobileOpen, onMobileClose }) => 
             flex items-center gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20
             ${collapsed ? 'justify-center' : ''}
           `}>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-saffron-100 flex items-center justify-center text-saffron-600 font-bold shadow-lg shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-green-100 flex items-center justify-center text-green-600 font-bold shadow-lg shrink-0">
               {user?.profile_photo ? (
                 <img src={user.profile_photo} alt="User" className="w-full h-full rounded-full object-cover" />
               ) : (
@@ -101,7 +101,10 @@ const Sidebar = ({ collapsed, onToggleCollapse, mobileOpen, onMobileClose }) => 
         </div>
 
         {/* Navigation */}
-        <nav className="relative flex-1 overflow-y-auto px-3 py-2 space-y-1 custom-scrollbar">
+        <nav className="relative flex-1 overflow-y-auto px-3 py-2 space-y-1" style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1)'
+        }}>
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -170,23 +173,6 @@ const Sidebar = ({ collapsed, onToggleCollapse, mobileOpen, onMobileClose }) => 
           </div>
         </div>
       </aside>
-
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.3);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.5);
-        }
-      `}</style>
     </>
   );
 };
