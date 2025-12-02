@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
-import { FiRepeat, FiWind, FiMusic, FiZap, FiSun, FiHeart } from 'react-icons/fi';
+import { FiRepeat, FiWind, FiMusic, FiZap, FiSun, FiHeart, FiTrendingUp } from 'react-icons/fi';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
     japaToday: 0,
     japaStreak: 0,
+    totalJapa: 0,
     breatheMinutes: 0,
+    breatheSessions: 0,
     tasksCompleted: 0,
   });
   const [quote, setQuote] = useState('');
@@ -28,17 +30,56 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [japaRes, breatheRes] = await Promise.all([
-        api.get('/japa/today').catch(() => ({ data: { rounds: 0, streak: 0 } })),
-        api.get('/breathe/today').catch(() => ({ data: { minutes: 0 } }))
-      ]);
+      setLoading(true);
 
-      setStats(prev => ({
-        ...prev,
-        japaToday: japaRes.data.rounds || 0,
-        japaStreak: japaRes.data.streak || 0,
-        breatheMinutes: breatheRes.data.minutes || 0,
-      }));
+      // Fetch Japa Stats
+      try {
+        const japaRes = await api.get('/japa/today');
+        console.log('Japa Response:', japaRes.data);
+
+        if (japaRes.data) {
+          setStats(prev => ({
+            ...prev,
+            japaToday: japaRes.data.rounds || japaRes.data.malas || 0,
+            japaStreak: japaRes.data.streak || japaRes.data.current_streak || 0,
+            totalJapa: japaRes.data.total_rounds || japaRes.data.total_malas || 0,
+          }));
+        }
+      } catch (japaErr) {
+        console.error('Japa fetch error:', japaErr);
+      }
+
+      // Fetch Breathe Stats
+      try {
+        const breatheRes = await api.get('/breathe/stats');
+        console.log('Breathe Response:', breatheRes.data);
+
+        if (breatheRes.data) {
+          setStats(prev => ({
+            ...prev,
+            breatheMinutes: breatheRes.data.total_minutes || breatheRes.data.minutes_today || 0,
+            breatheSessions: breatheRes.data.sessions_today || breatheRes.data.total_sessions || 0,
+          }));
+        }
+      } catch (breatheErr) {
+        console.error('Breathe fetch error:', breatheErr);
+      }
+
+      // Fetch Tasks Stats
+      try {
+        const tasksRes = await api.get('/tasks/stats');
+        console.log('Tasks Response:', tasksRes.data);
+
+        if (tasksRes.data) {
+          setStats(prev => ({
+            ...prev,
+            tasksCompleted: tasksRes.data.completed_today || tasksRes.data.completed || 0,
+          }));
+        }
+      } catch (tasksErr) {
+        console.error('Tasks fetch error:', tasksErr);
+      }
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -49,7 +90,10 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-yellow-500"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your spiritual journey...</p>
+        </div>
       </div>
     );
   }
@@ -70,6 +114,13 @@ const Dashboard = () => {
             <p className="text-white/90 text-lg md:text-xl italic">
               "{quote}"
             </p>
+            <button
+              onClick={fetchDashboardData}
+              className="mt-4 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white font-semibold flex items-center gap-2 transition-colors"
+            >
+              <FiTrendingUp />
+              Refresh Stats
+            </button>
           </div>
         </div>
 
@@ -90,6 +141,7 @@ const Dashboard = () => {
               </div>
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <p className="text-sm text-gray-600">🔥 {stats.japaStreak} day streak</p>
+                <p className="text-xs text-gray-500 mt-1">Total: {stats.totalJapa} rounds</p>
               </div>
             </div>
           </Link>
@@ -108,7 +160,7 @@ const Dashboard = () => {
                 <span className="text-gray-500 text-lg">mins</span>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <p className="text-sm text-gray-600">🧘 Breathe & Meditate</p>
+                <p className="text-sm text-gray-600">🧘 {stats.breatheSessions} sessions today</p>
               </div>
             </div>
           </Link>
@@ -120,7 +172,7 @@ const Dashboard = () => {
                 <div className="p-3 bg-blue-100 rounded-xl">
                   <FiMusic className="text-blue-600 text-2xl" />
                 </div>
-                <div className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
+                <div className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">
                   LIVE
                 </div>
               </div>

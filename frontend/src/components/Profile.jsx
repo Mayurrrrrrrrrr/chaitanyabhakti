@@ -1,125 +1,232 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
+import { FiUser, FiPhone, FiMail, FiAward, FiLogOut, FiCamera, FiEdit } from 'react-icons/fi';
 import './Profile.css';
 
-// --- Inline Icons ---
-const IconUser = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
-const IconPhone = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
-const IconMail = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
-const IconAward = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>;
-const IconEdit = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-const IconLogOut = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
-
 const Profile = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [stats, setStats] = useState({ totalMalas: 0, streak: 0 });
+    const { user, logout, updateUser } = useAuth();
+    const navigate = useNavigate();
+    const fileInputRef = useRef();
 
-  useEffect(() => {
-    // Mock fetching stats - replace with real API call
-    // const fetchStats = async () => { ... }
-    // fetchStats();
-    setStats({ totalMalas: 108, streak: 12 }); // Mock data
-  }, []);
+    const [stats, setStats] = useState({ totalMalas: 0, streak: 0 });
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState('');
 
-  const handleLogout = () => {
-    if(window.confirm("Are you sure you want to logout?")) {
-        logout();
-        navigate('/login');
-    }
-  };
+    useEffect(() => {
+        fetchStats();
+    }, []);
 
-  if (!user) return <div className="loading-state">Loading Profile...</div>;
+    const fetchStats = async () => {
+        try {
+            const res = await api.get('/japa/summary');
+            if (res.data) {
+                setStats({
+                    totalMalas: res.data.total_rounds || res.data.total_malas || 0,
+                    streak: res.data.current_streak || res.data.streak || 0
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+        }
+    };
 
-  const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'VB';
+    const handleLogout = () => {
+        if (window.confirm("Are you sure you want to logout?")) {
+            logout();
+            navigate('/login');
+        }
+    };
 
-  return (
-    <div className="page-container profile-page">
-      
-      {/* Header Card */}
-      <div className="card profile-header-card">
-        <div className="profile-cover-bg"></div>
-        <div className="profile-main-info">
-            <div className="avatar-large">
-                {initials}
+    const handlePhotoClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handlePhotoChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setUploadError('Please select an image file');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            setUploadError('Image size must be less than 5MB');
+            return;
+        }
+
+        setUploading(true);
+        setUploadError('');
+
+        const formData = new FormData();
+        formData.append('profile_photo', file);
+
+        try {
+            const response = await api.post('/user/profile/photo', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            console.log('Photo upload response:', response.data);
+
+            // Update user context with new photo URL
+            if (response.data.profile_photo) {
+                updateUser({
+                    ...user,
+                    profile_photo: response.data.profile_photo
+                });
+            }
+
+            setUploadError('');
+        } catch (error) {
+            console.error('Photo upload error:', error);
+            setUploadError(error.response?.data?.error || 'Failed to upload photo');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-yellow-500"></div>
             </div>
-            <h1 className="user-name">{user.name}</h1>
-            <p className="user-spiritual-name">{user.spiritual_name || 'Aspiring Devotee'}</p>
-            <span className="role-badge">{user.is_super_admin ? 'Administrator' : 'Member'}</span>
+        );
+    }
+
+    const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'VB';
+
+    return (
+        <div className="page-container profile-page">
+
+            {/* Header Card */}
+            <div className="card profile-header-card">
+                <div className="profile-cover-bg"></div>
+                <div className="profile-main-info">
+                    {/* Avatar with Photo Upload */}
+                    <div className="relative inline-block">
+                        <div className="avatar-large">
+                            {user.profile_photo ? (
+                                <img
+                                    src={user.profile_photo}
+                                    alt={user.name}
+                                    className="w-full h-full object-cover rounded-full"
+                                />
+                            ) : (
+                                <span>{initials}</span>
+                            )}
+                        </div>
+
+                        {/* Camera Button */}
+                        <button
+                            onClick={handlePhotoClick}
+                            disabled={uploading}
+                            className="absolute bottom-0 right-0 w-10 h-10 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors disabled:opacity-50"
+                            title="Upload Photo"
+                        >
+                            {uploading ? (
+                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                            ) : (
+                                <FiCamera size={18} />
+                            )}
+                        </button>
+
+                        {/* Hidden File Input */}
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoChange}
+                            className="hidden"
+                        />
+                    </div>
+
+                    {uploadError && (
+                        <div className="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                            {uploadError}
+                        </div>
+                    )}
+
+                    <h1 className="user-name">{user.name}</h1>
+                    <p className="user-spiritual-name">{user.spiritual_name || 'Aspiring Devotee'}</p>
+                    <span className="role-badge">{user.is_super_admin ? 'Administrator' : 'Member'}</span>
+                </div>
+            </div>
+
+            {/* Stats Row */}
+            <div className="profile-stats-row">
+                <div className="card stat-card">
+                    <span className="stat-number">{stats.totalMalas}</span>
+                    <span className="stat-desc">Total Rounds</span>
+                </div>
+                <div className="card stat-card">
+                    <span className="stat-number">{stats.streak}</span>
+                    <span className="stat-desc">Day Streak</span>
+                </div>
+                <div className="card stat-card">
+                    <span className="stat-number">4</span>
+                    <span className="stat-desc">Groups</span>
+                </div>
+            </div>
+
+            {/* Details Section */}
+            <div className="card details-card">
+                <div className="card-header-row">
+                    <h3>Personal Details</h3>
+                    <button className="icon-btn-text" disabled title="Edit Profile (Coming Soon)">
+                        <FiEdit /> Edit
+                    </button>
+                </div>
+
+                <div className="detail-list">
+                    <div className="detail-item">
+                        <div className="detail-icon"><FiPhone /></div>
+                        <div className="detail-content">
+                            <label>Mobile Number</label>
+                            <p>{user.mobile_number}</p>
+                        </div>
+                    </div>
+
+                    <div className="detail-item">
+                        <div className="detail-icon"><FiMail /></div>
+                        <div className="detail-content">
+                            <label>Email</label>
+                            <p>{user.email || 'Not provided'}</p>
+                        </div>
+                    </div>
+
+                    <div className="detail-item">
+                        <div className="detail-icon"><FiAward /></div>
+                        <div className="detail-content">
+                            <label>Initiation Status</label>
+                            <p>{user.initiation_status || 'Aspiring'}</p>
+                        </div>
+                    </div>
+
+                    <div className="detail-item">
+                        <div className="detail-icon"><FiUser /></div>
+                        <div className="detail-content">
+                            <label>Yatra / Center</label>
+                            <p>{user.center || 'Local Temple'}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div className="profile-actions">
+                <button className="btn-logout-large" onClick={handleLogout}>
+                    <FiLogOut /> Logout
+                </button>
+            </div>
+
         </div>
-      </div>
-
-      {/* Stats Row */}
-      <div className="profile-stats-row">
-          <div className="card stat-card">
-              <span className="stat-number">{stats.totalMalas}</span>
-              <span className="stat-desc">Total Malas</span>
-          </div>
-          <div className="card stat-card">
-              <span className="stat-number">{stats.streak}</span>
-              <span className="stat-desc">Day Streak</span>
-          </div>
-          <div className="card stat-card">
-              <span className="stat-number">4</span>
-              <span className="stat-desc">Groups</span>
-          </div>
-      </div>
-
-      {/* Details Section */}
-      <div className="card details-card">
-          <div className="card-header-row">
-              <h3>Personal Details</h3>
-              <button className="icon-btn-text" disabled title="Edit Profile (Coming Soon)">
-                  <IconEdit /> Edit
-              </button>
-          </div>
-          
-          <div className="detail-list">
-              <div className="detail-item">
-                  <div className="detail-icon"><IconPhone /></div>
-                  <div className="detail-content">
-                      <label>Mobile Number</label>
-                      <p>{user.mobile_number}</p>
-                  </div>
-              </div>
-              
-              <div className="detail-item">
-                  <div className="detail-icon"><IconMail /></div>
-                  <div className="detail-content">
-                      <label>Email</label>
-                      <p>{user.email || 'Not provided'}</p>
-                  </div>
-              </div>
-
-              <div className="detail-item">
-                  <div className="detail-icon"><IconAward /></div>
-                  <div className="detail-content">
-                      <label>Initiation Status</label>
-                      <p>{user.initiation_status || 'Aspiring'}</p>
-                  </div>
-              </div>
-
-              <div className="detail-item">
-                  <div className="detail-icon"><IconUser /></div>
-                  <div className="detail-content">
-                      <label>Yatra / Center</label>
-                      <p>{user.center || 'Local Temple'}</p>
-                  </div>
-              </div>
-          </div>
-      </div>
-
-      {/* Actions */}
-      <div className="profile-actions">
-          <button className="btn-logout-large" onClick={handleLogout}>
-              <IconLogOut /> Logout
-          </button>
-      </div>
-
-    </div>
-  );
+    );
 };
 
 export default Profile;
