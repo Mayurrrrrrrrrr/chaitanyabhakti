@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import BottomNav from './BottomNav';
 
 const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -17,7 +16,7 @@ const MainLayout = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-orange-50 via-blue-50 to-pink-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50 overflow-hidden font-sans">
       {/* Desktop Sidebar */}
       <Sidebar
         collapsed={collapsed}
@@ -30,7 +29,7 @@ const MainLayout = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
 
         {/* Mobile Header */}
-        <header className="md:hidden bg-gradient-to-r from-saffron-500 to-orange-600 border-b border-white/20 px-4 py-3 flex items-center justify-between z-30 shadow-lg">
+        <header className="md:hidden bg-gradient-to-r from-green-500 via-blue-500 to-yellow-500 border-b border-white/20 px-4 py-3 flex items-center justify-between z-30 shadow-lg">
           <button
             onClick={() => setMobileOpen(true)}
             className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -47,14 +46,9 @@ const MainLayout = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto scroll-smooth">
+        <main className="flex-1 overflow-y-auto scroll-smooth pb-6">
           <Outlet />
         </main>
-
-        {/* Mobile Bottom Navigation */}
-        <div className="md:hidden">
-          <BottomNav />
-        </div>
       </div>
     </div>
   );

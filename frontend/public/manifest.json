@@ -1,6 +1,6 @@
 {
-  "short_name": "Vaishnav Bhakti",
-  "name": "Vaishnav Bhakti - Spiritual Life Manager",
+  "short_name": "Chaitanya Bhakti",
+  "name": "Chaitanya Bhakti - Spiritual Life Manager",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +20,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#FF6B35",
-  "background_color": "#FFF5E1"
+  "theme_color": "#27ae60",
+  "background_color": "#f0f9f4"
 }
