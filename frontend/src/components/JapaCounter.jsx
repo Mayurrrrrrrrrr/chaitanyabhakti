@@ -49,12 +49,14 @@ const JapaCounter = () => {
       }
 
       try {
-        await api.post('/japa/round', {
-          timestamp: new Date(),
-          count: 108
+        await api.post('/japa', {
+          rounds: newRounds,
+          japa_date: new Date().toISOString().split('T')[0]
         });
+        console.log('✅ Round saved successfully');
       } catch (error) {
         console.error("Failed to sync round:", error);
+        alert('Failed to save round. Please check your connection.');
       }
     } else {
       setCount(newCount);

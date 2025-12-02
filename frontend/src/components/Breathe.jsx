@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiPlay, FiPause, FiRefreshCw, FiVolume2, FiVolumeX } from 'react-icons/fi';
+import api from '../utils/api';
 
 const Breathe = () => {
   const [phase, setPhase] = useState('ready');
@@ -294,8 +295,29 @@ const Breathe = () => {
     }, TIMINGS.inhale);
   };
 
+  const saveBreathSession = async () => {
+    if (totalTime === 0 || cycleCount === 0) {
+      // Don't save if no meaningful session
+      return;
+    }
+
+    try {
+      await api.post('/breathe', {
+        technique_id: '4-4-4-2',
+        technique_name: 'Box Breathing (4-4-4-2)',
+        duration_seconds: totalTime
+      });
+      console.log('✅ Breath session saved successfully');
+    } catch (error) {
+      console.error('Failed to save breath session:', error);
+      // Don't show alert to avoid disrupting the calm experience
+    }
+  };
+
   const handleToggle = async () => {
     if (isActive) {
+      // Save session before stopping
+      await saveBreathSession();
       setIsActive(false);
       setPhase('ready');
       window.speechSynthesis.cancel();
@@ -308,7 +330,9 @@ const Breathe = () => {
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    // Save current session before resetting
+    await saveBreathSession();
     setIsActive(false);
     setPhase('ready');
     setCycleCount(0);
