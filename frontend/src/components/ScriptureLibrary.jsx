@@ -3,10 +3,10 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import api from '../services/api';
 import './ScriptureLibrary.css';
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// ✅ FIX: Use unpkg CDN for better VPS compatibility
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
-// --- Inline Icons (No dependencies) ---
+// Inline Icons
 const IconBook = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>;
 const IconArrowLeft = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>;
 const IconPlay = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>;
@@ -33,6 +33,7 @@ const ScriptureLibrary = () => {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [pdfScale, setPdfScale] = useState(1.0);
+  const [pdfError, setPdfError] = useState(null);
 
   const synth = window.speechSynthesis;
   const utteranceRef = useRef(null);
@@ -130,6 +131,12 @@ const ScriptureLibrary = () => {
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
     setPageNumber(1);
+    setPdfError(null);
+  };
+
+  const onDocumentLoadError = (error) => {
+    console.error('PDF Load Error:', error);
+    setPdfError('Failed to load PDF. Please try opening in a new tab.');
   };
 
   const changePage = (offset) => {
@@ -138,6 +145,21 @@ const ScriptureLibrary = () => {
 
   const changeScale = (delta) => {
     setPdfScale(prev => Math.min(Math.max(prev + delta, 0.5), 2.0));
+  };
+
+  // ✅ FIX: Get full URL for PDF with proper base URL handling
+  const getPdfUrl = (contentUrl) => {
+    if (!contentUrl) return null;
+
+    // If it's already a full URL, return as is
+    if (contentUrl.startsWith('http')) {
+      return contentUrl;
+    }
+
+    // Otherwise, construct full URL from API base
+    const apiUrl = process.env.REACT_APP_API_URL || window.location.origin;
+    const baseUrl = apiUrl.replace('/api', ''); // Remove /api if present
+    return `${baseUrl}${contentUrl}`;
   };
 
   // --- LIST VIEW ---
@@ -169,12 +191,14 @@ const ScriptureLibrary = () => {
     );
   }
 
+  const pdfUrl = getPdfUrl(selectedBook.content_url);
+
   // --- READER VIEW ---
   return (
     <div className="page-container reader-page">
       {/* Floating Toolbar */}
       <div className="reader-toolbar card">
-        <button className="toolbar-btn back-btn" onClick={() => { setSelectedBook(null); handleStop(); setPageNumber(1); }}>
+        <button className="toolbar-btn back-btn" onClick={() => { setSelectedBook(null); handleStop(); setPageNumber(1); setPdfError(null); }}>
           <IconArrowLeft /> <span className="btn-label">Library</span>
         </button>
 
@@ -223,7 +247,7 @@ const ScriptureLibrary = () => {
           </div>
 
           {/* PDF Viewer Section */}
-          {selectedBook.content_url && selectedBook.content_url.endsWith('.pdf') && (
+          {pdfUrl && pdfUrl.endsWith('.pdf') && (
             <div className="pdf-viewer-section">
               <div className="pdf-controls">
                 <button onClick={() => changePage(-1)} disabled={pageNumber <= 1} className="pdf-nav-btn">
@@ -242,26 +266,45 @@ const ScriptureLibrary = () => {
                 </div>
               </div>
               <div className="pdf-document-container">
-                <Document
-                  file={selectedBook.content_url}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  loading={<div className="pdf-loading">Loading PDF...</div>}
-                  error={<div className="pdf-error">Failed to load PDF. <a href={selectedBook.content_url} target="_blank" rel="noreferrer">Open in new tab</a></div>}
-                >
-                  <Page pageNumber={pageNumber} scale={pdfScale} />
-                </Document>
+                {pdfError ? (
+                  <div className="pdf-error">
+                    {pdfError}
+                    <br />
+                    <a href={pdfUrl} target="_blank" rel="noreferrer">Open PDF in new tab</a>
+                  </div>
+                ) : (
+                  <Document
+                    file={pdfUrl}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    onLoadError={onDocumentLoadError}
+                    loading={<div className="pdf-loading">Loading PDF...</div>}
+                    options={{
+                      cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+                      cMapPacked: true,
+                      standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
+                    }}
+                  >
+                    <Page
+                      pageNumber={pageNumber}
+                      scale={pdfScale}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                    />
+                  </Document>
+                )}
               </div>
             </div>
           )}
 
-          {(selectedBook.content_url || selectedBook.audio_url) && (
+          {(selectedBook.content_url && !selectedBook.content_url.endsWith('.pdf')) && (
             <div className="reader-footer">
-              {selectedBook.content_url && !selectedBook.content_url.endsWith('.pdf') && (
-                <a className="btn-nav-chapter" href={selectedBook.content_url} target="_blank" rel="noreferrer">Open Content</a>
-              )}
-              {selectedBook.audio_url && (
-                <audio controls src={selectedBook.audio_url} style={{ marginLeft: 12 }} />
-              )}
+              <a className="btn-nav-chapter" href={selectedBook.content_url} target="_blank" rel="noreferrer">Open Content</a>
+            </div>
+          )}
+
+          {selectedBook.audio_url && (
+            <div className="reader-footer">
+              <audio controls src={selectedBook.audio_url} style={{ width: '100%', marginTop: 12 }} />
             </div>
           )}
         </div>

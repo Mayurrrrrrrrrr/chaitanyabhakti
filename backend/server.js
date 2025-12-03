@@ -209,6 +209,7 @@ const mediaRoutes = require('./routes/media.js');
 const userRoutes = require('./routes/user.js');
 const eventsRoutes = require('./routes/events.js');
 const breatheRoutes = require('./routes/breathe.js');
+const notificationRoutes = require('./routes/notifications.js');
 
 // =====================================================
 // API ROUTES
@@ -230,6 +231,7 @@ app.use('/api/media', authenticateToken, mediaRoutes(pool, upload));
 app.use('/api/user', authenticateToken, userRoutes(pool, upload));
 app.use('/api/events', authenticateToken, eventsRoutes(pool));
 app.use('/api/breathe', authenticateToken, breatheRoutes(pool));
+app.use('/api/notifications', authenticateToken, notificationRoutes(pool));
 
 app.use('/api/admin', authenticateToken, adminRoutes(pool, upload));
 

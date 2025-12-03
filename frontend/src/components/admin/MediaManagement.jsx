@@ -13,12 +13,11 @@ const MediaManagement = () => {
 
   const [message, setMessage] = useState({ text: '', type: '' });
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [mediaList, setMediaList] = useState({ videos: [], audio: [] });
 
-  // Helper to reset file input
   const fileInputRef = useRef();
 
-  // Fetch media list on mount
   useEffect(() => {
     fetchMedia();
   }, []);
@@ -51,7 +50,6 @@ const MediaManagement = () => {
     }
   };
 
-  // Handle submitting a new video link
   const handleVideoSubmit = async (e) => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
@@ -80,7 +78,6 @@ const MediaManagement = () => {
     }
   };
 
-  // Handle uploading a new audio file
   const handleAudioSubmit = async (e) => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
@@ -90,7 +87,23 @@ const MediaManagement = () => {
       return;
     }
 
+    // ✅ FIX: Validate file size (max 50MB for audio)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (audioFile.size > maxSize) {
+      setMessage({ text: 'Audio file is too large. Maximum size is 50MB.', type: 'error' });
+      return;
+    }
+
+    // ✅ FIX: Validate file type
+    const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg'];
+    if (!allowedTypes.includes(audioFile.type)) {
+      setMessage({ text: 'Invalid file type. Please upload MP3, WAV, or OGG files.', type: 'error' });
+      return;
+    }
+
     setLoading(true);
+    setUploadProgress(0);
+
     const formData = new FormData();
     formData.append('title', audioTitle);
     formData.append('audio_file', audioFile);
@@ -102,19 +115,31 @@ const MediaManagement = () => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        }
       });
 
       setMessage({ text: 'Audio uploaded successfully!', type: 'success' });
       setAudioTitle('');
       setAudioFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      setUploadProgress(0);
       fetchMedia();
     } catch (err) {
       console.error('Failed to upload audio:', err);
-      setMessage({ text: err.response?.data?.error || 'Error uploading audio.', type: 'error' });
+      setMessage({ text: err.response?.data?.error || 'Error uploading audio. Check file size and format.', type: 'error' });
     } finally {
       setLoading(false);
     }
+  };
+
+  // ✅ FIX: Format file size for display
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
   };
 
   return (
@@ -183,7 +208,7 @@ const MediaManagement = () => {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="audio-file">Audio File (MP3)</label>
+          <label htmlFor="audio-file">Audio File (MP3, WAV, OGG - Max 50MB)</label>
           <input
             id="audio-file"
             type="file"
@@ -192,9 +217,37 @@ const MediaManagement = () => {
             onChange={(e) => setAudioFile(e.target.files[0])}
             required
           />
+          {audioFile && (
+            <small style={{ color: '#666', marginTop: '8px', display: 'block' }}>
+              Selected: {audioFile.name} ({formatFileSize(audioFile.size)})
+            </small>
+          )}
         </div>
+
+        {uploadProgress > 0 && uploadProgress < 100 && (
+          <div className="upload-progress" style={{ marginBottom: '16px' }}>
+            <div style={{
+              width: '100%',
+              height: '8px',
+              background: '#f0f0f0',
+              borderRadius: '4px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                width: `${uploadProgress}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #FF9933, #E67E22)',
+                transition: 'width 0.3s'
+              }}></div>
+            </div>
+            <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+              Uploading... {uploadProgress}%
+            </small>
+          </div>
+        )}
+
         <button type="submit" className="btn-submit" disabled={loading}>
-          {loading ? 'Uploading...' : 'Upload Audio'}
+          {loading ? `Uploading... ${uploadProgress}%` : 'Upload Audio'}
         </button>
       </form>
 
@@ -221,7 +274,9 @@ const MediaManagement = () => {
                 {mediaList.videos.map(v => (
                   <tr key={v.video_id || v.media_id}>
                     <td>{v.title}</td>
-                    <td className="truncate-cell">{v.youtube_url || v.video_url}</td>
+                    <td className="truncate-cell" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {v.youtube_url || v.video_url}
+                    </td>
                     <td>
                       <button
                         className="btn-delete"
@@ -237,7 +292,7 @@ const MediaManagement = () => {
           )}
         </div>
 
-        <div className="media-section mt-8">
+        <div className="media-section" style={{ marginTop: '32px' }}>
           <h4>Audio</h4>
           {mediaList.audio.length === 0 ? (
             <p>No audio files found.</p>

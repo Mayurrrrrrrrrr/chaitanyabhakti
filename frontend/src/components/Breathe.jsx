@@ -24,12 +24,9 @@ const Breathe = () => {
   };
 
   const SOUND_OPTIONS = [
-    { id: 'ocean', name: '🌊 Ocean Waves', description: 'Calming ocean sounds' },
-    { id: 'forest', name: '🌳 Forest', description: 'Birds and rustling leaves' },
-    { id: 'rain', name: '🌧️ Rain', description: 'Gentle rainfall' },
-    { id: 'white', name: '⚪ White Noise', description: 'Pure white noise' },
-    { id: 'pink', name: '🎵 Pink Noise', description: 'Deeper, softer noise' },
-    { id: 'brown', name: '🟤 Brown Noise', description: 'Deep rumbling sound' }
+    { id: 'ocean', name: '🌊 Ocean', description: 'Calming waves' },
+    { id: 'forest', name: '🌳 Forest', description: 'Birds & leaves' },
+    { id: 'rain', name: '🌧️ Rain', description: 'Rainfall' },
   ];
 
   const VOICE_INSTRUCTIONS = {
@@ -132,26 +129,6 @@ const Breathe = () => {
     return noiseBuffer;
   };
 
-  const generatePinkNoise = (audioContext) => {
-    return generateOceanSound(audioContext);
-  };
-
-  const generateBrownNoise = (audioContext) => {
-    const bufferSize = 2 * audioContext.sampleRate;
-    const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-
-    let lastOut = 0.0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      output[i] = (lastOut + (0.02 * white)) / 1.02;
-      lastOut = output[i];
-      output[i] *= 3.5;
-    }
-
-    return noiseBuffer;
-  };
-
   const startSound = async (soundType) => {
     if (!audioContextRef.current || soundNodeRef.current) return;
 
@@ -169,24 +146,12 @@ const Breathe = () => {
           filterFreq = 800;
           break;
         case 'forest':
-          noiseBuffer = generatePinkNoise(audioContextRef.current);
+          noiseBuffer = generateWhiteNoise(audioContextRef.current);
           filterFreq = 1200;
           break;
         case 'rain':
           noiseBuffer = generateWhiteNoise(audioContextRef.current);
           filterFreq = 600;
-          break;
-        case 'white':
-          noiseBuffer = generateWhiteNoise(audioContextRef.current);
-          filterFreq = 20000;
-          break;
-        case 'pink':
-          noiseBuffer = generatePinkNoise(audioContextRef.current);
-          filterFreq = 1000;
-          break;
-        case 'brown':
-          noiseBuffer = generateBrownNoise(audioContextRef.current);
-          filterFreq = 500;
           break;
         default:
           noiseBuffer = generateOceanSound(audioContextRef.current);
@@ -250,19 +215,14 @@ const Breathe = () => {
     if (!text) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.65; // Even slower for calmness
-    utterance.pitch = 0.9; // Lower pitch for soothing effect
-    utterance.volume = 0.6; // Quieter volume
+    utterance.rate = 0.65;
+    utterance.pitch = 0.9;
+    utterance.volume = 0.6;
 
     const voices = window.speechSynthesis.getVoices();
     if (voiceLanguage === 'hi') {
       const hindiVoice = voices.find(voice => voice.lang.includes('hi'));
       if (hindiVoice) utterance.voice = hindiVoice;
-    } else {
-      const calmVoice = voices.find(voice =>
-        voice.name.includes('Female') || voice.name.includes('Samantha')
-      );
-      if (calmVoice) utterance.voice = calmVoice;
     }
 
     window.speechSynthesis.speak(utterance);
@@ -296,10 +256,7 @@ const Breathe = () => {
   };
 
   const saveBreathSession = async () => {
-    if (totalTime === 0 || cycleCount === 0) {
-      // Don't save if no meaningful session
-      return;
-    }
+    if (totalTime === 0 || cycleCount === 0) return;
 
     try {
       await api.post('/breathe', {
@@ -307,16 +264,13 @@ const Breathe = () => {
         technique_name: 'Box Breathing (4-4-4-2)',
         duration_seconds: totalTime
       });
-      console.log('✅ Breath session saved successfully');
     } catch (error) {
       console.error('Failed to save breath session:', error);
-      // Don't show alert to avoid disrupting the calm experience
     }
   };
 
   const handleToggle = async () => {
     if (isActive) {
-      // Save session before stopping
       await saveBreathSession();
       setIsActive(false);
       setPhase('ready');
@@ -331,7 +285,6 @@ const Breathe = () => {
   };
 
   const handleReset = async () => {
-    // Save current session before resetting
     await saveBreathSession();
     setIsActive(false);
     setPhase('ready');
@@ -343,20 +296,8 @@ const Breathe = () => {
 
   const getPhaseText = () => {
     const texts = {
-      hi: {
-        inhale: 'सांस लें',
-        hold: 'रुकें',
-        exhale: 'सांस छोड़ें',
-        holdEmpty: 'रुकें',
-        ready: 'तैयार'
-      },
-      en: {
-        inhale: 'Breathe In',
-        hold: 'Hold',
-        exhale: 'Breathe Out',
-        holdEmpty: 'Hold',
-        ready: 'Ready'
-      }
+      hi: { inhale: 'सांस लें', hold: 'रुकें', exhale: 'सांस छोड़ें', holdEmpty: 'रुकें', ready: 'तैयार' },
+      en: { inhale: 'Breathe In', hold: 'Hold', exhale: 'Breathe Out', holdEmpty: 'Hold', ready: 'Ready' }
     };
     return texts[voiceLanguage][phase] || texts.en[phase];
   };
@@ -365,7 +306,7 @@ const Breathe = () => {
     switch (phase) {
       case 'inhale':
       case 'hold':
-        return 'scale-125';
+        return 'scale-110';
       default:
         return 'scale-100';
     }
@@ -378,182 +319,135 @@ const Breathe = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-purple-50 flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-10 right-10 w-64 h-64 bg-blue-300 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute bottom-10 left-10 w-64 h-64 bg-green-300 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-purple-50 flex flex-col items-center justify-center p-4">
+      {/* Header */}
+      <div className="text-center mb-6">
+        <h1 className="font-heading text-2xl md:text-3xl font-bold text-gray-800 mb-1">
+          Mindful Breathing
+        </h1>
+        <p className="text-gray-600 text-sm">4-4-4-2 Box Breathing</p>
       </div>
 
-      <div className="relative z-10 w-full max-w-2xl">
-        <div className="text-center mb-12">
-          <h1 className="font-heading text-4xl md:text-5xl font-bold text-gray-800 mb-3">
-            Mindful Breathing
-          </h1>
-          <p className="text-gray-600 text-lg">
-            4-4-4-2 Technique with Ambient Sounds
-          </p>
-        </div>
+      {/* Main Circle */}
+      <div className="relative mb-6">
+        <div className={`
+          w-64 h-64 rounded-full 
+          bg-gradient-to-br from-blue-400 via-green-400 to-purple-500
+          shadow-2xl flex items-center justify-center
+          transition-transform duration-[4000ms] ease-in-out
+          ${getCircleScale()}
+        `}>
+          <div className="absolute inset-0 rounded-full bg-white/20 blur-xl"></div>
 
-        <div className="flex items-center justify-center mb-12">
-          <div className="relative w-80 h-80 md:w-96 md:h-96">
-            <div className={`absolute inset-0 rounded-full border-4 border-blue-300/30 ${isActive ? 'animate-ping' : ''}`}></div>
-            <div className={`absolute inset-4 rounded-full border-2 border-green-300/30 ${isActive ? 'animate-pulse' : ''}`}></div>
+          <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="3" />
+            <circle
+              cx="50" cy="50" r="45" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"
+              strokeDasharray={`${2 * Math.PI * 45}`}
+              strokeDashoffset={`${2 * Math.PI * 45 * (1 - (phase !== 'ready' ? 0.75 : 0))}`}
+              className="transition-all duration-300"
+            />
+          </svg>
 
-            <div className={`
-              absolute inset-8 rounded-full 
-              bg-gradient-to-br from-blue-400 via-green-400 to-purple-500
-              shadow-2xl
-              flex items-center justify-center
-              transition-transform duration-[4000ms] ease-in-out
-              ${getCircleScale()}
-            `}>
-              <div className="absolute inset-0 rounded-full bg-white/20 blur-xl"></div>
-
-              <div className="relative z-10 text-center">
-                <div className="text-white text-6xl md:text-7xl font-bold mb-4">
-                  {phase === 'inhale' && '↑'}
-                  {phase === 'hold' && '●'}
-                  {phase === 'exhale' && '↓'}
-                  {phase === 'holdEmpty' && '○'}
-                  {phase === 'ready' && '✨'}
-                </div>
-                <div className="text-white text-2xl md:text-3xl font-heading font-bold">
-                  {getPhaseText()}
-                </div>
-              </div>
+          <div className="relative z-10 text-center">
+            <div className="text-6xl font-bold text-white drop-shadow-2xl mb-2">
+              {phase === 'inhale' && '↑'}
+              {phase === 'hold' && '●'}
+              {phase === 'exhale' && '↓'}
+              {phase === 'holdEmpty' && '○'}
+              {phase === 'ready' && '✨'}
+            </div>
+            <div className="text-white text-xl font-medium">
+              {getPhaseText()}
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-6 mb-8">
-          <div className="bg-white/70 backdrop-blur-md rounded-2xl p-6 text-center shadow-lg border border-white/50">
-            <div className="text-4xl font-bold text-blue-600">{cycleCount}</div>
-            <div className="text-sm text-gray-600 mt-1">Cycles</div>
-          </div>
-          <div className="bg-white/70 backdrop-blur-md rounded-2xl p-6 text-center shadow-lg border border-white/50">
-            <div className="text-4xl font-bold text-green-600">{formatTime(totalTime)}</div>
-            <div className="text-sm text-gray-600 mt-1">Time</div>
-          </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 mb-6 w-full max-w-sm">
+        <div className="bg-white/70 backdrop-blur-md rounded-xl p-3 text-center shadow-lg border border-white/50">
+          <div className="text-3xl font-bold text-blue-600">{cycleCount}</div>
+          <div className="text-xs text-gray-600">Cycles</div>
         </div>
+        <div className="bg-white/70 backdrop-blur-md rounded-xl p-3 text-center shadow-lg border border-white/50">
+          <div className="text-3xl font-bold text-green-600">{formatTime(totalTime)}</div>
+          <div className="text-xs text-gray-600">Time</div>
+        </div>
+      </div>
 
-        <div className="flex items-center justify-center gap-4 mb-6">
+      {/* Controls */}
+      <div className="flex items-center justify-center gap-3 mb-4">
+        <button
+          onClick={handleToggle}
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold shadow-xl transition-all ${isActive ? 'bg-white text-gray-700' : 'bg-gradient-to-r from-blue-500 to-green-500 text-white'}`}
+        >
+          {isActive ? <><FiPause size={20} />Pause</> : <><FiPlay size={20} />Start</>}
+        </button>
+
+        <button onClick={handleReset} className="p-3 bg-white/70 rounded-xl text-gray-600 hover:bg-white shadow-lg">
+          <FiRefreshCw size={20} />
+        </button>
+      </div>
+
+      {/* Options */}
+      <div className="flex gap-2 mb-4 flex-wrap justify-center">
+        <div className="relative">
           <button
-            onClick={handleToggle}
-            className={`
-              flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg shadow-xl
-              transition-all duration-300 hover:scale-105
-              ${isActive
-                ? 'bg-white text-gray-700 hover:bg-gray-50'
-                : 'bg-gradient-to-r from-blue-500 to-green-500 text-white hover:shadow-2xl'
-              }
-            `}
+            onClick={() => setShowSoundMenu(!showSoundMenu)}
+            className={`flex items-center gap-1 px-4 py-2 rounded-lg font-medium shadow-md ${soundEnabled ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'}`}
           >
-            {isActive ? <><FiPause size={24} />Pause</> : <><FiPlay size={24} />Start</>}
+            {soundEnabled ? <FiVolume2 size={16} /> : <FiVolumeX size={16} />}
+            <span className="text-sm">{soundEnabled ? SOUND_OPTIONS.find(s => s.id === selectedSound)?.name : 'OFF'}</span>
           </button>
 
-          <button
-            onClick={handleReset}
-            className="p-4 bg-white/70 backdrop-blur-md rounded-2xl text-gray-600 hover:text-gray-800 hover:bg-white transition-all shadow-lg border border-white/50"
-            title="Reset"
-          >
-            <FiRefreshCw size={24} />
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
-          <div className="relative">
-            <button
-              onClick={() => setShowSoundMenu(!showSoundMenu)}
-              className={`
-                flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all shadow-lg
-                ${soundEnabled
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}
-              `}
-            >
-              {soundEnabled ? <FiVolume2 size={20} /> : <FiVolumeX size={20} />}
-              <span className="font-bold">
-                {soundEnabled ? SOUND_OPTIONS.find(s => s.id === selectedSound)?.name : 'Sound OFF'}
-              </span>
-            </button>
-
-            {showSoundMenu && (
-              <div className="absolute top-full mt-2 bg-white rounded-xl shadow-xl p-2 min-w-[250px] z-50">
-                {SOUND_OPTIONS.map(sound => (
-                  <button
-                    key={sound.id}
-                    onClick={() => {
-                      setSelectedSound(sound.id);
-                      setSoundEnabled(true);
-                      setShowSoundMenu(false);
-                    }}
-                    className={`
-                      w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors
-                      ${selectedSound === sound.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}
-                    `}
-                  >
-                    <div className="font-bold">{sound.name}</div>
-                    <div className="text-xs text-gray-500">{sound.description}</div>
-                  </button>
-                ))}
+          {showSoundMenu && (
+            <div className="absolute top-full mt-2 bg-white rounded-lg shadow-xl p-2 min-w-[200px] z-50">
+              {SOUND_OPTIONS.map(sound => (
                 <button
-                  onClick={() => {
-                    setSoundEnabled(false);
-                    setShowSoundMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-red-600"
+                  key={sound.id}
+                  onClick={() => { setSelectedSound(sound.id); setSoundEnabled(true); setShowSoundMenu(false); }}
+                  className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 ${selectedSound === sound.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                 >
-                  <div className="font-bold">🔇 Turn Off Sound</div>
+                  <div className="font-bold text-sm">{sound.name}</div>
                 </button>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => setVoiceEnabled(!voiceEnabled)}
-            className={`
-              flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all shadow-lg
-              ${voiceEnabled
-                ? 'bg-green-500 text-white hover:bg-green-600'
-                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}
-            `}
-          >
-            {voiceEnabled ? <FiVolume2 size={20} /> : <FiVolumeX size={20} />}
-            <span className="font-bold">
-              {voiceEnabled ? '🗣️ Voice ON' : 'Voice OFF'}
-            </span>
-          </button>
-
-          <select
-            value={voiceLanguage}
-            onChange={(e) => setVoiceLanguage(e.target.value)}
-            className="px-4 py-3 bg-white rounded-xl shadow-lg font-medium text-gray-700 border-2 border-gray-200 focus:border-purple-500 outline-none"
-          >
-            <option value="hi">हिंदी (Hindi)</option>
-            <option value="en">English</option>
-          </select>
+              ))}
+              <button
+                onClick={() => { setSoundEnabled(false); setShowSoundMenu(false); }}
+                className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 text-red-600 text-sm"
+              >
+                🔇 Turn Off
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-6 border border-white/50">
-          <h3 className="font-heading text-xl font-bold text-gray-800 mb-3">How it works:</h3>
-          <ul className="space-y-2 text-gray-700">
-            <li className="flex items-center gap-2">
-              <span className="text-blue-500 text-xl">↑</span>
-              <span><strong>Inhale</strong> for 4 seconds</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-green-500 text-xl">●</span>
-              <span><strong>Hold</strong> for 4 seconds</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-purple-500 text-xl">↓</span>
-              <span><strong>Exhale</strong> for 4 seconds</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-gray-500 text-xl">○</span>
-              <span><strong>Hold Empty</strong> for 2 seconds</span>
-            </li>
-          </ul>
+        <button
+          onClick={() => setVoiceEnabled(!voiceEnabled)}
+          className={`flex items-center gap-1 px-4 py-2 rounded-lg font-medium shadow-md ${voiceEnabled ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
+        >
+          {voiceEnabled ? <FiVolume2 size={16} /> : <FiVolumeX size={16} />}
+          <span className="text-sm">Voice</span>
+        </button>
+
+        <select
+          value={voiceLanguage}
+          onChange={(e) => setVoiceLanguage(e.target.value)}
+          className="px-3 py-2 bg-white rounded-lg shadow-md font-medium text-gray-700 text-sm"
+        >
+          <option value="hi">हिंदी</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+
+      {/* Guide */}
+      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 max-w-sm border border-white/50">
+        <h3 className="font-bold text-sm text-gray-800 mb-2">Technique:</h3>
+        <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+          <div className="flex items-center gap-1"><span className="text-blue-500">↑</span> Inhale 4s</div>
+          <div className="flex items-center gap-1"><span className="text-green-500">●</span> Hold 4s</div>
+          <div className="flex items-center gap-1"><span className="text-purple-500">↓</span> Exhale 4s</div>
+          <div className="flex items-center gap-1"><span className="text-gray-500">○</span> Hold 2s</div>
         </div>
       </div>
     </div>
