@@ -1,314 +1,239 @@
-import React, { useState, useEffect, useRef } from 'react';
+// frontend/src/components/ScriptureLibrary.jsx
+import React, { useState, useEffect } from 'react';
+import { FiBook, FiSearch, FiFilter, FiDownload, FiPlay, FiX, FiMaximize, FiMinimize } from 'react-icons/fi';
 import { Document, Page, pdfjs } from 'react-pdf';
-import api from '../services/api';
-import './ScriptureLibrary.css';
+import api from '../utils/api';
 
-// ✅ FIX: Use unpkg CDN for better VPS compatibility
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-
-// Inline Icons
-const IconBook = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>;
-const IconArrowLeft = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>;
-const IconPlay = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>;
-const IconPause = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>;
-const IconStop = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="6" width="12" height="12" /></svg>;
-const IconPlus = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
-const IconMinus = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>;
-const IconChevronLeft = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>;
-const IconChevronRight = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>;
-
-const pickTitle = (item, language) => {
-  if (language === 'en') return item.title_en || item.title;
-  return item.title;
-};
+// Configure PDF worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 const ScriptureLibrary = () => {
-  const [books, setBooks] = useState([]);
-  const [selectedBook, setSelectedBook] = useState(null);
-  const [fontSize, setFontSize] = useState(22);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-
-  // PDF viewer states
+  const [scriptures, setScriptures] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedScripture, setSelectedScripture] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
-  const [pdfScale, setPdfScale] = useState(1.0);
-  const [pdfError, setPdfError] = useState(null);
-
-  const synth = window.speechSynthesis;
-  const utteranceRef = useRef(null);
-  const [language] = useState(localStorage.getItem('appLanguage') || 'hi');
-
-  // Load voices when they become available
-  const [voices, setVoices] = useState([]);
-  useEffect(() => {
-    const updateVoices = () => {
-      setVoices(synth.getVoices());
-    };
-    updateVoices();
-    if (synth.onvoiceschanged !== undefined) {
-      synth.onvoiceschanged = updateVoices;
-    }
-  }, [synth]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-    api.get('/scriptures')
-      .then(res => { if (mounted) setBooks(res.data || []); })
-      .catch(() => { });
-    return () => { mounted = false; };
+    fetchScriptures();
   }, []);
 
-  // Stop audio on unmount or book change
-  useEffect(() => {
-    return () => {
-      if (synth) {
-        synth.cancel();
-      }
-    };
-  }, [synth]);
-
-  const handleSpeak = (text) => {
-    if (synth.speaking && !isPaused) {
-      synth.pause();
-      setIsPaused(true);
-      setIsSpeaking(false);
-      return;
+  const fetchScriptures = async () => {
+    try {
+      const res = await api.get('/scriptures');
+      setScriptures(res.data);
+    } catch (error) {
+      console.error('Failed to fetch scriptures:', error);
+    } finally {
+      setLoading(false);
     }
-
-    if (isPaused) {
-      synth.resume();
-      setIsPaused(false);
-      setIsSpeaking(true);
-      return;
-    }
-
-    if (synth.speaking) {
-      synth.cancel();
-    }
-
-    const utterance = new SpeechSynthesisUtterance(text);
-
-    const hindiVoice = voices.find(v => v.lang === 'hi-IN') || voices.find(v => v.lang.includes('hi'));
-
-    if (hindiVoice) {
-      utterance.voice = hindiVoice;
-      utterance.lang = 'hi-IN';
-    } else {
-      console.warn("Hindi voice not found, using default.");
-    }
-
-    utterance.rate = 0.85;
-    utterance.pitch = 1;
-
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      setIsPaused(false);
-    };
-
-    utterance.onerror = (e) => {
-      console.error("TTS Error:", e);
-      setIsSpeaking(false);
-    };
-
-    utteranceRef.current = utterance;
-    synth.speak(utterance);
-    setIsSpeaking(true);
-  };
-
-  const handleStop = () => {
-    if (synth) {
-      synth.cancel();
-      setIsSpeaking(false);
-      setIsPaused(false);
-    }
-  };
-
-  const changeFontSize = (delta) => {
-    setFontSize(prev => Math.min(Math.max(prev + delta, 18), 40));
   };
 
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
-    setPageNumber(1);
-    setPdfError(null);
   };
 
-  const onDocumentLoadError = (error) => {
-    console.error('PDF Load Error:', error);
-    setPdfError('Failed to load PDF. Please try opening in a new tab.');
-  };
+  const filteredScriptures = scriptures.filter(scripture => {
+    const matchesSearch = scripture.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      scripture.author?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || scripture.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
-  const changePage = (offset) => {
-    setPageNumber(prevPageNumber => Math.min(Math.max(prevPageNumber + offset, 1), numPages));
-  };
+  const categories = ['All', ...new Set(scriptures.map(s => s.category).filter(Boolean))];
 
-  const changeScale = (delta) => {
-    setPdfScale(prev => Math.min(Math.max(prev + delta, 0.5), 2.0));
-  };
-
-  // ✅ FIX: Get full URL for PDF with proper base URL handling
-  const getPdfUrl = (contentUrl) => {
-    if (!contentUrl) return null;
-
-    // If it's already a full URL, return as is
-    if (contentUrl.startsWith('http')) {
-      return contentUrl;
-    }
-
-    // Otherwise, construct full URL from API base
-    const apiUrl = process.env.REACT_APP_API_URL || window.location.origin;
-    const baseUrl = apiUrl.replace('/api', ''); // Remove /api if present
-    return `${baseUrl}${contentUrl}`;
-  };
-
-  // --- LIST VIEW ---
-  if (!selectedBook) {
-    return (
-      <div className="page-container library-page">
-        <div className="page-header">
-          <h1 className="page-title">Scripture Library</h1>
-          <p className="page-subtitle">Timeless wisdom for your soul</p>
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 font-heading">Scripture Library</h1>
+          <p className="text-gray-500 mt-1">Access sacred texts and wisdom</p>
         </div>
 
-        <div className="books-grid">
-          {(books || []).map(book => (
-            <div key={book.scripture_id} className="book-card" onClick={() => setSelectedBook(book)}>
-              <div className="book-cover" style={{ background: 'linear-gradient(135deg, #27ae60, #3498db, #f1c40f)' }}>
-                <div className="book-spine"></div>
-                <span className="cover-title">{pickTitle(book, language)}</span>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search scriptures..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-saffron-500 outline-none w-full sm:w-64"
+            />
+          </div>
+
+          <div className="relative">
+            <FiFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="pl-10 pr-8 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-saffron-500 outline-none appearance-none bg-white w-full sm:w-48"
+            >
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-saffron-500"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredScriptures.map((scripture) => (
+            <div
+              key={scripture.scripture_id}
+              className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col"
+            >
+              <div className="relative h-48 bg-gradient-to-br from-saffron-100 to-orange-50 overflow-hidden">
+                {scripture.cover_url ? (
+                  <img
+                    src={scripture.cover_url}
+                    alt={scripture.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-saffron-300">
+                    <FiBook size={64} />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
               </div>
-              <div className="book-info">
-                <h3 className="book-title-text">{pickTitle(book, language)}</h3>
-                <p className="book-author">{book.author}</p>
-                <p className="book-summary">{book.description}</p>
-                <button className="btn-read">Read Now</button>
+
+              <div className="p-5 flex-1 flex flex-col">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="px-2 py-1 bg-saffron-50 text-saffron-600 text-xs font-medium rounded-lg">
+                    {scripture.category || 'General'}
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-bold text-gray-800 mb-1 line-clamp-1" title={scripture.title}>
+                  {scripture.title}
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">{scripture.author || 'Unknown Author'}</p>
+
+                <div className="mt-auto flex items-center gap-2 pt-4 border-t border-gray-50">
+                  {scripture.content_url && (
+                    <button
+                      onClick={() => setSelectedScripture(scripture)}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-saffron-500 text-white rounded-xl hover:bg-saffron-600 transition-colors text-sm font-medium"
+                    >
+                      <FiBook /> Read
+                    </button>
+                  )}
+                  {scripture.audio_url && (
+                    <a
+                      href={scripture.audio_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-gray-500 hover:text-saffron-600 hover:bg-saffron-50 rounded-xl transition-colors"
+                      title="Listen Audio"
+                    >
+                      <FiPlay size={20} />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           ))}
         </div>
-      </div>
-    );
-  }
+      )}
 
-  const pdfUrl = getPdfUrl(selectedBook.content_url);
+      {/* PDF Reader Modal */}
+      {selectedScripture && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className={`bg-white rounded-2xl shadow-2xl w-full flex flex-col overflow-hidden transition-all duration-300 ${isFullscreen ? 'h-full' : 'max-w-4xl h-[85vh]'}`}>
 
-  // --- READER VIEW ---
-  return (
-    <div className="page-container reader-page">
-      {/* Floating Toolbar */}
-      <div className="reader-toolbar card">
-        <button className="toolbar-btn back-btn" onClick={() => { setSelectedBook(null); handleStop(); setPageNumber(1); setPdfError(null); }}>
-          <IconArrowLeft /> <span className="btn-label">Library</span>
-        </button>
-
-        <div className="toolbar-group font-controls">
-          <button className="toolbar-btn icon-only" onClick={() => changeFontSize(-2)} title="Decrease Text Size">
-            <IconMinus />
-          </button>
-          <span className="font-indicator">A</span>
-          <button className="toolbar-btn icon-only" onClick={() => changeFontSize(2)} title="Increase Text Size">
-            <IconPlus />
-          </button>
-        </div>
-
-        <div className="toolbar-group audio-controls">
-          {isSpeaking ? (
-            <button className="toolbar-btn active-pulse" onClick={() => handleSpeak(selectedBook.description || '')}>
-              <IconPause /> <span className="btn-label">Pause</span>
-            </button>
-          ) : (
-            <button className="toolbar-btn" onClick={() => handleSpeak(selectedBook.description || '')}>
-              <IconPlay /> <span className="btn-label">Listen</span>
-            </button>
-          )}
-          {(isSpeaking || isPaused) && (
-            <button className="toolbar-btn" onClick={handleStop} title="Stop Audio">
-              <IconStop />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Content Display */}
-      <div className="reader-content-wrapper">
-        <div className="card reader-paper">
-          <h2 className="chapter-title">{selectedBook.title}</h2>
-          <p className="chapter-author">{selectedBook.author}</p>
-          <div className="chapter-divider"></div>
-
-          <div
-            className="chapter-text"
-            style={{ fontSize: `${fontSize}px`, lineHeight: '1.8' }}
-          >
-            {selectedBook.description && selectedBook.description.split('\n').map((paragraph, idx) => (
-              <p key={idx}>{paragraph}</p>
-            ))}
-          </div>
-
-          {/* PDF Viewer Section */}
-          {pdfUrl && pdfUrl.endsWith('.pdf') && (
-            <div className="pdf-viewer-section">
-              <div className="pdf-controls">
-                <button onClick={() => changePage(-1)} disabled={pageNumber <= 1} className="pdf-nav-btn">
-                  <IconChevronLeft /> Previous
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white">
+              <h3 className="font-bold text-lg text-gray-800 truncate pr-4">
+                {selectedScripture.title}
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors hidden md:block"
+                  title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                >
+                  {isFullscreen ? <FiMinimize size={20} /> : <FiMaximize size={20} />}
                 </button>
-                <span className="pdf-page-info">
-                  Page {pageNumber} of {numPages || '...'}
-                </span>
-                <button onClick={() => changePage(1)} disabled={pageNumber >= numPages} className="pdf-nav-btn">
-                  Next <IconChevronRight />
+                <button
+                  onClick={() => setSelectedScripture(null)}
+                  className="p-2 text-gray-500 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors"
+                >
+                  <FiX size={24} />
                 </button>
-                <div className="pdf-zoom-controls">
-                  <button onClick={() => changeScale(-0.1)} className="pdf-zoom-btn"><IconMinus /></button>
-                  <span className="pdf-zoom-level">{Math.round(pdfScale * 100)}%</span>
-                  <button onClick={() => changeScale(0.1)} className="pdf-zoom-btn"><IconPlus /></button>
-                </div>
               </div>
-              <div className="pdf-document-container">
-                {pdfError ? (
-                  <div className="pdf-error">
-                    {pdfError}
-                    <br />
-                    <a href={pdfUrl} target="_blank" rel="noreferrer">Open PDF in new tab</a>
+            </div>
+
+            {/* PDF Viewer */}
+            <div className="flex-1 overflow-auto bg-gray-50 flex justify-center p-4">
+              <Document
+                file={selectedScripture.content_url}
+                onLoadSuccess={onDocumentLoadSuccess}
+                loading={
+                  <div className="flex flex-col items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-saffron-500 mb-4"></div>
+                    <p className="text-gray-500">Loading PDF...</p>
                   </div>
-                ) : (
-                  <Document
-                    file={pdfUrl}
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    onLoadError={onDocumentLoadError}
-                    loading={<div className="pdf-loading">Loading PDF...</div>}
-                    options={{
-                      cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
-                      cMapPacked: true,
-                      standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
-                    }}
-                  >
-                    <Page
-                      pageNumber={pageNumber}
-                      scale={pdfScale}
-                      renderTextLayer={false}
-                      renderAnnotationLayer={false}
-                    />
-                  </Document>
-                )}
-              </div>
+                }
+                error={
+                  <div className="flex flex-col items-center justify-center h-64 text-red-500">
+                    <p>Failed to load PDF.</p>
+                    <a
+                      href={selectedScripture.content_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                      Download to View
+                    </a>
+                  </div>
+                }
+              >
+                <Page
+                  pageNumber={pageNumber}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                  className="shadow-lg"
+                  width={Math.min(window.innerWidth * 0.9, 800)}
+                />
+              </Document>
             </div>
-          )}
 
-          {(selectedBook.content_url && !selectedBook.content_url.endsWith('.pdf')) && (
-            <div className="reader-footer">
-              <a className="btn-nav-chapter" href={selectedBook.content_url} target="_blank" rel="noreferrer">Open Content</a>
-            </div>
-          )}
+            {/* Modal Footer (Controls) */}
+            <div className="p-4 border-t border-gray-100 bg-white flex items-center justify-between">
+              <button
+                disabled={pageNumber <= 1}
+                onClick={() => setPageNumber(prev => prev - 1)}
+                className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
 
-          {selectedBook.audio_url && (
-            <div className="reader-footer">
-              <audio controls src={selectedBook.audio_url} style={{ width: '100%', marginTop: 12 }} />
+              <span className="text-sm font-medium text-gray-600">
+                Page {pageNumber} of {numPages || '--'}
+              </span>
+
+              <button
+                disabled={pageNumber >= numPages}
+                onClick={() => setPageNumber(prev => prev + 1)}
+                className="px-4 py-2 text-sm font-medium text-white bg-saffron-500 rounded-lg hover:bg-saffron-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

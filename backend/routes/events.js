@@ -4,6 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const isSuperAdmin = require('../middleware/isSuperAdmin');
+const { notifyNewEvent } = require('../utils/notificationHelper');
 
 module.exports = (db) => {
 
@@ -34,6 +35,9 @@ module.exports = (db) => {
         'INSERT INTO global_events (title, event_type, start_date, end_date, description, location, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [title, event_type, start_date, end_date || null, description || null, location || null, user_id]
       );
+
+      // Notify all users
+      await notifyNewEvent(db, title);
 
       res.status(201).json({ message: 'Event created', event_id: result.insertId });
     } catch (error) {

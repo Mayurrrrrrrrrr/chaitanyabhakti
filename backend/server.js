@@ -141,16 +141,28 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB limit
+        files: 10 // Max files per request
+    },
     fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif|mp3|wav|mpeg|mp4|mov|avi|pdf/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-
-        if (mimetype && extname) {
-            return cb(null, true);
+        // Allow all file types
+        if (file.fieldname === 'audio_file') {
+            // Validate audio files
+            if (file.mimetype.startsWith('audio/')) {
+                cb(null, true);
+            } else {
+                cb(new Error('Only audio files are allowed for audio_file field'));
+            }
+        } else if (file.fieldname === 'pdf_file') {
+            // Validate PDF files
+            if (file.mimetype === 'application/pdf') {
+                cb(null, true);
+            } else {
+                cb(new Error('Only PDF files are allowed for pdf_file field'));
+            }
         } else {
-            cb(new Error('Invalid file type: ' + file.mimetype));
+            cb(null, true);
         }
     }
 });

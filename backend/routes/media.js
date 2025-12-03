@@ -3,6 +3,7 @@
 //
 const express = require('express');
 const router = express.Router();
+const { notifyNewMedia } = require('../utils/notificationHelper');
 
 //
 // Converted to module.exports = (db, upload) => { ... }
@@ -25,6 +26,11 @@ module.exports = (db, upload) => {
         'INSERT INTO audio_files (user_id, family_id, title, title_en, file_url, category, is_public, file_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         [user_id, family_id || null, title, title_en || null, file_url, category || 'other', is_public || 0, req.file.size]
       );
+
+      // Notify users
+      if (is_public == 1 || is_public == '1') {
+        await notifyNewMedia(db, title, 'audio');
+      }
 
       res.status(201).json({ message: 'Audio uploaded', audio_id: result.insertId, file_url });
     } catch (error) {
@@ -62,6 +68,11 @@ module.exports = (db, upload) => {
         'INSERT INTO video_links (added_by, family_id, title, title_en, youtube_url, youtube_id, category, is_public, description, thumbnail_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [user_id || null, family_id || null, title || null, title_en || null, video_url, youtube_id || null, category || 'other', is_public || 1, description || null, thumbnail_url || null]
       );
+
+      // Notify users
+      if (is_public == 1 || is_public == '1') {
+        await notifyNewMedia(db, title, 'video');
+      }
 
       res.status(201).json({ message: 'Video link added', video_id: result.insertId });
     } catch (error) {

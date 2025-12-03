@@ -6,6 +6,7 @@ import {
   FiHome, FiRepeat, FiUsers, FiCalendar, FiUser,
   FiBookOpen, FiMusic, FiSettings, FiLogOut, FiActivity, FiChevronsLeft, FiChevronsRight, FiWind, FiX, FiShield, FiFileText
 } from 'react-icons/fi';
+import NotificationBell from '../NotificationBell';
 
 const Sidebar = ({ collapsed, onToggleCollapse, mobileOpen, onMobileClose }) => {
   const { user, logout } = useAuth();
@@ -68,6 +69,9 @@ const Sidebar = ({ collapsed, onToggleCollapse, mobileOpen, onMobileClose }) => 
               </h2>
             )}
           </div>
+
+          {/* Notification Bell */}
+          <NotificationBell />
 
           {/* Mobile Close */}
           <button
