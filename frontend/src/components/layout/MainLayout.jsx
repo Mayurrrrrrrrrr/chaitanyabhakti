@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 
+import { getUserPreferences } from '../../supabase';
+import { useAuth } from '../../context/AuthContext';
+
 const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [seniorMode, setSeniorMode] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
 
   const toggleCollapse = () => setCollapsed(!collapsed);
 
@@ -15,8 +20,23 @@ const MainLayout = () => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // Load Senior Mode Preference
+  const loadPreferences = React.useCallback(async () => {
+    if (user) {
+      const { data } = await getUserPreferences(user.id);
+      if (data && data.text_size === 'large') {
+        setSeniorMode(true);
+      }
+    }
+  }, [user]);
+
+  // Senior mode temporarily disabled for stability
+  // useEffect(() => {
+  //   loadPreferences();
+  // }, [loadPreferences]);
+
   return (
-    <div className="flex h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50 overflow-hidden font-sans">
+    <div className={`flex h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50 overflow-hidden font-sans ${seniorMode ? 'senior-mode' : ''}`}>
       {/* Desktop Sidebar */}
       <Sidebar
         collapsed={collapsed}
@@ -46,7 +66,7 @@ const MainLayout = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto scroll-smooth pb-6">
+        <main className={`flex-1 overflow-y-auto scroll-smooth pb-6 ${seniorMode ? 'text-lg' : ''}`}>
           <Outlet />
         </main>
       </div>

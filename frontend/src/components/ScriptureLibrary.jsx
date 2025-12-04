@@ -1,8 +1,9 @@
 // frontend/src/components/ScriptureLibrary.jsx
 import React, { useState, useEffect } from 'react';
-import { FiBook, FiSearch, FiFilter, FiDownload, FiPlay, FiX, FiMaximize, FiMinimize } from 'react-icons/fi';
+import { FiBook, FiSearch, FiFilter, FiDownload, FiPlay, FiX, FiMaximize, FiMinimize, FiPlus, FiUpload, FiLink, FiVolume2 } from 'react-icons/fi';
 import { Document, Page, pdfjs } from 'react-pdf';
 import api from '../utils/api';
+import { uploadScripture, supabase } from '../supabase';
 
 // Configure PDF worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -17,18 +18,105 @@ const ScriptureLibrary = () => {
   const [pageNumber, setPageNumber] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Add Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addMode, setAddMode] = useState('upload'); // 'upload' or 'url'
+  const [uploading, setUploading] = useState(false);
+  const [newScripture, setNewScripture] = useState({
+    title: '',
+    author: '',
+    category: 'General',
+    url: ''
+  });
+
   useEffect(() => {
     fetchScriptures();
   }, []);
 
   const fetchScriptures = async () => {
     try {
-      const res = await api.get('/scriptures');
-      setScriptures(res.data);
+      // Fetch from Supabase first if available, else fallback to API
+      const { data, error } = await supabase
+        .from('scriptures')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setScriptures(data.map(s => ({
+          scripture_id: s.id,
+          title: s.title,
+          author: s.source,
+          category: 'General', // Default if not in schema yet
+          content_url: s.pdf_url,
+          cover_url: null
+        })));
+      } else {
+        // Fallback to existing API
+        const res = await api.get('/scriptures');
+        setScriptures(res.data);
+      }
     } catch (error) {
       console.error('Failed to fetch scriptures:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const result = await uploadScripture(file, {
+        title: newScripture.title,
+        source: newScripture.author
+      });
+
+      if (result.success) {
+        alert('Scripture uploaded successfully!');
+        setShowAddModal(false);
+        fetchScriptures();
+        setNewScripture({ title: '', author: '', category: 'General', url: '' });
+      } else {
+        alert('Upload failed: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Upload error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUrlSubmit = async () => {
+    // For now, just adding to local state or DB if we had an endpoint
+    // Since we don't have a direct "add by URL" DB function in the plan for scriptures yet,
+    // we'll simulate or use a direct insert if possible.
+    try {
+      const { error } = await supabase.from('scriptures').insert({
+        title: newScripture.title,
+        source: newScripture.author,
+        pdf_url: newScripture.url
+      });
+
+      if (error) throw error;
+
+      alert('Scripture added successfully!');
+      setShowAddModal(false);
+      fetchScriptures();
+      setNewScripture({ title: '', author: '', category: 'General', url: '' });
+    } catch (error) {
+      alert('Error adding scripture: ' + error.message);
+    }
+  };
+
+  const handleTTS = (text) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert('Text-to-speech not supported in this browser.');
     }
   };
 
@@ -38,7 +126,7 @@ const ScriptureLibrary = () => {
 
   const filteredScriptures = scriptures.filter(scripture => {
     const matchesSearch = scripture.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      scripture.author?.toLowerCase().includes(searchTerm.toLowerCase());
+      (scripture.author && scripture.author.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = selectedCategory === 'All' || scripture.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -54,8 +142,8 @@ const ScriptureLibrary = () => {
           <p className="text-gray-500 mt-1">Access sacred texts and wisdom</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row gap-3 items-center">
+          <div className="relative w-full sm:w-auto">
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -66,18 +154,12 @@ const ScriptureLibrary = () => {
             />
           </div>
 
-          <div className="relative">
-            <FiFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="pl-10 pr-8 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-saffron-500 outline-none appearance-none bg-white w-full sm:w-48"
-            >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-saffron-500 text-white rounded-xl hover:bg-saffron-600 transition-colors"
+          >
+            <FiPlus /> Add New
+          </button>
         </div>
       </div>
 
@@ -129,21 +211,101 @@ const ScriptureLibrary = () => {
                       <FiBook /> Read
                     </button>
                   )}
-                  {scripture.audio_url && (
-                    <a
-                      href={scripture.audio_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 text-gray-500 hover:text-saffron-600 hover:bg-saffron-50 rounded-xl transition-colors"
-                      title="Listen Audio"
-                    >
-                      <FiPlay size={20} />
-                    </a>
-                  )}
+                  <button
+                    onClick={() => handleTTS(scripture.title + ". " + (scripture.author || ""))}
+                    className="p-2 text-gray-500 hover:text-saffron-600 hover:bg-saffron-50 rounded-xl transition-colors"
+                    title="Read Aloud"
+                  >
+                    <FiVolume2 size={20} />
+                  </button>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Add Scripture Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-800">Add New Scripture</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+                <FiX size={24} />
+              </button>
+            </div>
+
+            <div className="flex gap-4 mb-6 border-b border-gray-100">
+              <button
+                className={`pb-2 px-1 ${addMode === 'upload' ? 'border-b-2 border-saffron-500 text-saffron-600' : 'text-gray-500'}`}
+                onClick={() => setAddMode('upload')}
+              >
+                Upload PDF
+              </button>
+              <button
+                className={`pb-2 px-1 ${addMode === 'url' ? 'border-b-2 border-saffron-500 text-saffron-600' : 'text-gray-500'}`}
+                onClick={() => setAddMode('url')}
+              >
+                Add Link
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  value={newScripture.title}
+                  onChange={(e) => setNewScripture({ ...newScripture, title: e.target.value })}
+                  className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-saffron-500 outline-none"
+                  placeholder="e.g. Bhagavad Gita"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Source/Author</label>
+                <input
+                  type="text"
+                  value={newScripture.author}
+                  onChange={(e) => setNewScripture({ ...newScripture, author: e.target.value })}
+                  className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-saffron-500 outline-none"
+                  placeholder="e.g. Vyasa"
+                />
+              </div>
+
+              {addMode === 'upload' ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <FiUpload className="mx-auto h-12 w-12 text-gray-400" />
+                  <p className="mt-2 text-sm text-gray-600">Click to upload PDF</p>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    disabled={uploading}
+                  />
+                  {uploading && <p className="text-saffron-500 mt-2">Uploading...</p>}
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">PDF URL</label>
+                  <input
+                    type="url"
+                    value={newScripture.url}
+                    onChange={(e) => setNewScripture({ ...newScripture, url: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-saffron-500 outline-none"
+                    placeholder="https://example.com/file.pdf"
+                  />
+                  <button
+                    onClick={handleUrlSubmit}
+                    className="w-full mt-4 bg-saffron-500 text-white py-2 rounded-lg hover:bg-saffron-600 transition-colors"
+                  >
+                    Add Scripture
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 // frontend/src/components/Breathe.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { FiPlay, FiPause, FiRefreshCw, FiWind, FiClock } from 'react-icons/fi';
+import { FiPlay, FiPause, FiRefreshCw, FiWind, FiVolume2, FiVolumeX, FiMusic, FiMic } from 'react-icons/fi';
 
 const Breathe = () => {
   const [isActive, setIsActive] = useState(false);
@@ -9,14 +9,81 @@ const Breathe = () => {
   const [cycleCount, setCycleCount] = useState(0);
   const [selectedTechnique, setSelectedTechnique] = useState('box'); // box, 478, relax
 
+  // Audio Settings
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [selectedSound, setSelectedSound] = useState('ocean');
+  const [voiceLanguage, setVoiceLanguage] = useState('english'); // english, hindi
+
+  const ambientAudioRef = useRef(new Audio());
+  const voiceAudioRef = useRef(new Audio());
+
   const techniques = {
     box: { name: 'Box Breathing', inhale: 4, hold1: 4, exhale: 4, hold2: 4, color: 'text-blue-500' },
     '478': { name: '4-7-8 Relax', inhale: 4, hold1: 7, exhale: 8, hold2: 0, color: 'text-green-500' },
     relax: { name: 'Coherent', inhale: 6, hold1: 0, exhale: 6, hold2: 0, color: 'text-purple-500' }
   };
 
+  const sounds = {
+    ocean: 'https://actions.google.com/sounds/v1/water/waves_crashing_on_rock_beach.ogg',
+    rain: 'https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg',
+    forest: 'https://actions.google.com/sounds/v1/ambiences/forest_morning.ogg',
+    om: 'https://ia800300.us.archive.org/17/items/OmChanting_201608/Om%20Chanting.mp3',
+    water: 'https://actions.google.com/sounds/v1/water/stream_water_flowing.ogg',
+    fire: 'https://actions.google.com/sounds/v1/ambiences/fire.ogg',
+    air: 'https://actions.google.com/sounds/v1/weather/wind_blowing.ogg',
+    trees: 'https://actions.google.com/sounds/v1/nature/wind_in_trees.ogg'
+  };
+
   const timerRef = useRef(null);
   const currentTech = techniques[selectedTechnique];
+
+  // Handle Ambient Sound
+  useEffect(() => {
+    if (isActive && soundEnabled) {
+      ambientAudioRef.current.src = sounds[selectedSound];
+      ambientAudioRef.current.loop = true;
+      ambientAudioRef.current.volume = 0.5;
+      ambientAudioRef.current.play().catch(e => console.log("Audio play failed", e));
+    } else {
+      ambientAudioRef.current.pause();
+    }
+    return () => ambientAudioRef.current.pause();
+  }, [isActive, soundEnabled, selectedSound]);
+
+  // Handle Voice Instructions
+  useEffect(() => {
+    if (isActive && voiceEnabled) {
+      playVoiceInstruction(phase);
+    }
+  }, [phase, isActive, voiceEnabled, voiceLanguage]);
+
+  const playVoiceInstruction = (currentPhase) => {
+    // Using Web Speech API for TTS as a fallback/simple solution
+    // In a real production app, you'd use pre-recorded files for better quality
+    if ('speechSynthesis' in window) {
+      const text = getInstructionText(currentPhase);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = voiceLanguage === 'hindi' ? 'hi-IN' : 'en-US';
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const getInstructionText = (currentPhase) => {
+    if (voiceLanguage === 'hindi') {
+      if (currentPhase === 'Inhale') return 'Saans lein';
+      if (currentPhase === 'Hold') return 'Rokein';
+      if (currentPhase === 'Exhale') return 'Saans chodein';
+      if (currentPhase === 'Hold (Empty)') return 'Rokein';
+    } else {
+      if (currentPhase === 'Inhale') return 'Inhale deeply';
+      if (currentPhase === 'Hold') return 'Hold your breath';
+      if (currentPhase === 'Exhale') return 'Exhale slowly';
+      if (currentPhase === 'Hold (Empty)') return 'Hold empty';
+    }
+    return '';
+  };
 
   useEffect(() => {
     if (isActive) {
@@ -47,12 +114,9 @@ const Breathe = () => {
         setTimeLeft(tech.exhale);
       }
     } else if (phase === 'Hold' && tech.hold1 > 0 && tech.hold2 > 0) {
-      // This logic is tricky for generalized phases. Simplified:
-      // If we just finished Hold1, go to Exhale
       setPhase('Exhale');
       setTimeLeft(tech.exhale);
     } else if (phase === 'Hold' && tech.hold1 > 0 && tech.hold2 === 0) {
-      // 4-7-8 case: Inhale -> Hold -> Exhale -> (Loop)
       setPhase('Exhale');
       setTimeLeft(tech.exhale);
     } else if (phase === 'Exhale') {
@@ -78,6 +142,7 @@ const Breathe = () => {
     setPhase('Inhale');
     setTimeLeft(techniques[selectedTechnique].inhale);
     setCycleCount(0);
+    window.speechSynthesis.cancel();
   };
 
   const changeTechnique = (techKey) => {
@@ -86,9 +151,9 @@ const Breathe = () => {
     setPhase('Inhale');
     setTimeLeft(techniques[techKey].inhale);
     setCycleCount(0);
+    window.speechSynthesis.cancel();
   };
 
-  // Visual scaling calculation
   const getScale = () => {
     if (phase === 'Inhale') return 1 + ((currentTech.inhale - timeLeft) / currentTech.inhale) * 0.5;
     if (phase === 'Hold') return 1.5;
@@ -99,11 +164,50 @@ const Breathe = () => {
   return (
     <div className="h-[calc(100vh-6rem)] flex flex-col items-center justify-center p-4 max-w-md mx-auto">
       {/* Header */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800 font-heading flex items-center justify-center gap-2">
           <FiWind className="text-saffron-500" /> Breathe
         </h1>
         <p className="text-gray-500">Center your mind and body</p>
+      </div>
+
+      {/* Settings Bar */}
+      <div className="flex gap-4 mb-6 w-full justify-center">
+        {/* Sound Toggle */}
+        <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-gray-100">
+          <button onClick={() => setSoundEnabled(!soundEnabled)} className={`${soundEnabled ? 'text-saffron-500' : 'text-gray-400'}`}>
+            {soundEnabled ? <FiVolume2 /> : <FiVolumeX />}
+          </button>
+          {soundEnabled && (
+            <select
+              value={selectedSound}
+              onChange={(e) => setSelectedSound(e.target.value)}
+              className="text-sm border-none bg-transparent focus:ring-0 cursor-pointer"
+            >
+              <option value="ocean">Ocean</option>
+              <option value="rain">Rain</option>
+              <option value="forest">Forest</option>
+              <option value="om">Om</option>
+            </select>
+          )}
+        </div>
+
+        {/* Voice Toggle */}
+        <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-gray-100">
+          <button onClick={() => setVoiceEnabled(!voiceEnabled)} className={`${voiceEnabled ? 'text-saffron-500' : 'text-gray-400'}`}>
+            <FiMic />
+          </button>
+          {voiceEnabled && (
+            <select
+              value={voiceLanguage}
+              onChange={(e) => setVoiceLanguage(e.target.value)}
+              className="text-sm border-none bg-transparent focus:ring-0 cursor-pointer"
+            >
+              <option value="english">English</option>
+              <option value="hindi">Hindi</option>
+            </select>
+          )}
+        </div>
       </div>
 
       {/* Technique Selector */}
@@ -113,8 +217,8 @@ const Breathe = () => {
             key={key}
             onClick={() => changeTechnique(key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedTechnique === key
-                ? 'bg-white text-saffron-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+              ? 'bg-white text-saffron-600 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
               }`}
           >
             {tech.name}

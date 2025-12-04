@@ -1,7 +1,9 @@
 // frontend/src/App.js
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, AuthContext } from './context/AuthContext'; // Correct path
+import { AuthProvider, AuthContext } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
+import { initOneSignal } from './onesignal';
 
 // Page Imports
 import LoginPage from './pages/LoginPage';
@@ -52,71 +54,78 @@ const PublicRoute = ({ children }) => {
 };
 
 function App() {
+  useEffect(() => {
+    // Initialize OneSignal
+    initOneSignal();
+  }, []);
+
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public Route */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <LoginPage />
-              </PublicRoute>
-            }
-          />
+      <LanguageProvider>
+        <Router>
+          <Routes>
+            {/* Public Route */}
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <LoginPage />
+                </PublicRoute>
+              }
+            />
 
-          {/* ✅ Protected User Routes */}
-          <Route
-            path="/"
-            element={<ProtectedRoute><MainLayout /></ProtectedRoute>}
-          >
-            {/* Default route for "/" is /dashboard */}
-            <Route index element={<Navigate to="/dashboard" replace />} />
+            {/* ✅ Protected User Routes */}
+            <Route
+              path="/"
+              element={<ProtectedRoute><MainLayout /></ProtectedRoute>}
+            >
+              {/* Default route for "/" is /dashboard */}
+              <Route index element={<Navigate to="/dashboard" replace />} />
 
-            {/* All component pages are children of MainLayout */}
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="library" element={<ScriptureLibrary />} />
-            <Route path="japa" element={<JapaCounter />} />
-            <Route path="family" element={<Family />} />
-            <Route path="family/:family_id" element={<FamilyDetail />} />
-            <Route path="calendar" element={<Calendar />} />
-            <Route path="satsang" element={<Satsang />} />
-            <Route path="tasks" element={<Tasks />} />
-            <Route path="medicines" element={<Medicines />} />
-            <Route path="breathe/*" element={<Breathe />} />
-            <Route path="leaderboard" element={<Leaderboard />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="events" element={<Events />} />
-            <Route path="privacy" element={<PrivacyPolicy />} />
-            <Route path="terms" element={<Terms />} />
-          </Route>
+              {/* All component pages are children of MainLayout */}
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="library" element={<ScriptureLibrary />} />
+              <Route path="japa" element={<JapaCounter />} />
+              <Route path="family" element={<Family />} />
+              <Route path="family/:family_id" element={<FamilyDetail />} />
+              <Route path="calendar" element={<Calendar />} />
+              <Route path="satsang" element={<Satsang />} />
+              <Route path="tasks" element={<Tasks />} />
+              <Route path="medicines" element={<Medicines />} />
+              <Route path="breathe/*" element={<Breathe />} />
+              <Route path="leaderboard" element={<Leaderboard />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="events" element={<Events />} />
+              <Route path="privacy" element={<PrivacyPolicy />} />
+              <Route path="terms" element={<Terms />} />
+            </Route>
 
-          <Route
-            path="/admin"
-            element={<ProtectedRoute><AdminRoute><AdminPanel /></AdminRoute></ProtectedRoute>}
-          />
-          <Route
-            path="/admin/users"
-            element={<ProtectedRoute><AdminRoute><UserManagement /></AdminRoute></ProtectedRoute>}
-          />
-          <Route
-            path="/admin/scriptures"
-            element={<ProtectedRoute><AdminRoute><ScriptureManagement /></AdminRoute></ProtectedRoute>}
-          />
-          <Route
-            path="/admin/media"
-            element={<ProtectedRoute><AdminRoute><MediaManagement /></AdminRoute></ProtectedRoute>}
-          />
-          <Route
-            path="/admin/events"
-            element={<ProtectedRoute><AdminRoute><EventManagement /></AdminRoute></ProtectedRoute>}
-          />
+            <Route
+              path="/admin"
+              element={<ProtectedRoute><AdminRoute><AdminPanel /></AdminRoute></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/users"
+              element={<ProtectedRoute><AdminRoute><UserManagement /></AdminRoute></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/scriptures"
+              element={<ProtectedRoute><AdminRoute><ScriptureManagement /></AdminRoute></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/media"
+              element={<ProtectedRoute><AdminRoute><MediaManagement /></AdminRoute></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/events"
+              element={<ProtectedRoute><AdminRoute><EventManagement /></AdminRoute></ProtectedRoute>}
+            />
 
-          {/* Catch all - redirect to login if not found */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </Router>
+            {/* Catch all - redirect to login if not found */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </Router>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

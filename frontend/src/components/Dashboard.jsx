@@ -1,9 +1,10 @@
 // frontend/src/components/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { FiClock, FiCalendar, FiActivity, FiCheckCircle } from 'react-icons/fi';
+import { FiClock, FiCalendar, FiActivity, FiCheckCircle, FiTrendingUp, FiUsers, FiDollarSign, FiBell, FiGrid } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import api from '../utils/api';
+import { supabase } from '../supabase';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -11,7 +12,8 @@ const Dashboard = () => {
   const [stats, setStats] = useState({
     japaCount: 0,
     tasksPending: 0,
-    nextEvent: null
+    nextEvent: null,
+    streak: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -32,18 +34,30 @@ const Dashboard = () => {
 
       // 3. Get Next Event
       const eventsRes = await api.get('/events');
-      // Filter for future events and sort by date
       const now = new Date();
       const futureEvents = eventsRes.data
         .filter(e => new Date(e.start_date) >= now)
         .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
-
       const nextEvent = futureEvents.length > 0 ? futureEvents[0] : null;
+
+      // 4. Get Streak (Mock or from Supabase if function exists)
+      // For now, we'll try to fetch from user_stats if it exists, else default to 0
+      let streak = 0;
+      const { data: userStats } = await supabase
+        .from('user_stats')
+        .select('current_streak')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (userStats) {
+        streak = userStats.current_streak;
+      }
 
       setStats({
         japaCount: todayJapa,
         tasksPending: pendingTasks,
-        nextEvent: nextEvent
+        nextEvent: nextEvent,
+        streak: streak
       });
     } catch (error) {
       console.error('Dashboard data fetch error:', error);
@@ -105,6 +119,23 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Streak Card */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div className="flex items-center gap-2 text-orange-600 mb-4">
+            <FiTrendingUp />
+            <span className="font-semibold uppercase tracking-wider text-xs">Current Streak</span>
+          </div>
+          <div className="text-center py-4">
+            <h2 className="text-5xl font-bold text-gray-800 mb-1">
+              {loading ? '...' : stats.streak}
+            </h2>
+            <p className="text-gray-500 text-sm">Days in a row</p>
+          </div>
+          <div className="text-center text-xs text-orange-500 font-medium bg-orange-50 py-2 rounded-lg">
+            Keep it up! 🔥
+          </div>
+        </div>
+
         {/* Tasks Card */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
           <div className="flex items-center gap-2 text-blue-600 mb-4">
@@ -150,7 +181,7 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Quote/Wisdom */}
-        <div className="md:col-span-2 bg-gradient-to-br from-purple-500 to-indigo-600 p-6 rounded-2xl text-white shadow-lg flex items-center justify-center text-center">
+        <div className="md:col-span-1 bg-gradient-to-br from-purple-500 to-indigo-600 p-6 rounded-2xl text-white shadow-lg flex items-center justify-center text-center">
           <div>
             <p className="text-lg font-medium italic opacity-90 mb-2">
               "Chant the Holy Name and be happy."
@@ -159,6 +190,51 @@ const Dashboard = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* Temple Management Section */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <FiGrid className="text-saffron-500" />
+          Temple Management
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Member Attendance */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-saffron-300 transition-colors cursor-pointer group">
+            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-3 group-hover:bg-blue-100 transition-colors">
+              <FiUsers size={20} />
+            </div>
+            <h3 className="font-bold text-gray-800">Attendance</h3>
+            <p className="text-xs text-gray-500 mt-1">Track member visits</p>
+          </div>
+
+          {/* Event Scheduling */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-saffron-300 transition-colors cursor-pointer group">
+            <div className="w-10 h-10 bg-green-50 text-green-600 rounded-lg flex items-center justify-center mb-3 group-hover:bg-green-100 transition-colors">
+              <FiCalendar size={20} />
+            </div>
+            <h3 className="font-bold text-gray-800">Scheduling</h3>
+            <p className="text-xs text-gray-500 mt-1">Manage temple events</p>
+          </div>
+
+          {/* Donations */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-saffron-300 transition-colors cursor-pointer group">
+            <div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-lg flex items-center justify-center mb-3 group-hover:bg-yellow-100 transition-colors">
+              <FiDollarSign size={20} />
+            </div>
+            <h3 className="font-bold text-gray-800">Donations</h3>
+            <p className="text-xs text-gray-500 mt-1">Manage contributions</p>
+          </div>
+
+          {/* Announcements */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-saffron-300 transition-colors cursor-pointer group">
+            <div className="w-10 h-10 bg-red-50 text-red-600 rounded-lg flex items-center justify-center mb-3 group-hover:bg-red-100 transition-colors">
+              <FiBell size={20} />
+            </div>
+            <h3 className="font-bold text-gray-800">Announcements</h3>
+            <p className="text-xs text-gray-500 mt-1">Notify community</p>
+          </div>
+        </div>
       </div>
     </div>
   );
