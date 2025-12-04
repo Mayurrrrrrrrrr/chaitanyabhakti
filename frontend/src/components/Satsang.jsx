@@ -103,6 +103,9 @@ const Satsang = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
+      // Fetch from existing API (Videos)
+      const videosRes = await api.get('/media/videos').catch(() => ({ data: [] }));
+
       // Fetch from existing API (Legacy Audio)
       const audioRes = await api.get('/media/audio').catch(() => ({ data: [] }));
 
