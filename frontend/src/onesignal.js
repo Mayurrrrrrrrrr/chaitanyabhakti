@@ -4,14 +4,19 @@ const OneSignal = window.OneSignal || [];
 
 export const initOneSignal = () => {
     return new Promise((resolve) => {
+        if (window.OneSignalInitialized) {
+            resolve();
+            return;
+        }
         OneSignal.push(() => {
             OneSignal.init({
-                appId: process.env.REACT_APP_ONESIGNAL_APP_ID || "YOUR_ONESIGNAL_APP_ID", // Replace with env var
+                appId: process.env.REACT_APP_ONESIGNAL_APP_ID || "YOUR_ONESIGNAL_APP_ID",
                 allowLocalhostAsSecureOrigin: true,
                 notifyButton: {
-                    enable: false, // We will use our own UI in Profile
+                    enable: false,
                 },
             });
+            window.OneSignalInitialized = true;
             resolve();
         });
     });

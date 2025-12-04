@@ -24,10 +24,19 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
   <title>Vaishnav Bhakti</title>
-  <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function (OneSignal) {
+      await OneSignal.init({
+        appId: "3c220e6f-4842-4e57-8f4f-ebfdb49d66d7",
+      });
+    });
+  </script>
   <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
   <meta name="theme-color" content="#ff6b35" />
   <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 </head>

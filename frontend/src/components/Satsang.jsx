@@ -316,7 +316,7 @@ const Satsang = () => {
                       src={getEmbedUrl(selectedVideo.youtube_url)}
                       title={selectedVideo.title}
                       frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                       className="absolute inset-0 w-full h-full"
                     ></iframe>
